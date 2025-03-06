@@ -1,6 +1,6 @@
+using hotel_api.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using RepositoryModels.Repositories;
 using RepositoryModels.Repository;
@@ -50,7 +50,7 @@ builder.Services.AddDbContext<DbContextSql>((serviceProvider, dbContextBuilder) 
 
 builder.Services.AddDirectoryBrowser();
 builder.Services.AddControllers().AddNewtonsoftJson();
-builder.Services.AddAutoMapper(typeof(Program).Assembly);
+builder.Services.AddAutoMapper(typeof(AutomapperConfig));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

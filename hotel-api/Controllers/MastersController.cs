@@ -7,7 +7,7 @@ using Repository.Models;
 using RepositoryModels.Repository;
 using System.Data;
 
-namespace hotel_react_api.Controllers
+namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
@@ -16,7 +16,7 @@ namespace hotel_react_api.Controllers
         private readonly DbContextSql _context = context;
         private readonly IMapper _mapper = mapper;
 
-        private void SetClusterDefaults(ICommonParams model, int companyid, int userId)
+        private static void SetClusterDefaults(ICommonParams model, int companyid, int userId)
         {
             model.CreatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             model.ModifiedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
@@ -735,12 +735,7 @@ namespace hotel_react_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-                if (string.IsNullOrEmpty(clusterMaster.ClusterName) ||
-                    string.IsNullOrEmpty(clusterMaster.ClusterDescription) ||
-                    string.IsNullOrEmpty(clusterMaster.ClusterLocation))
-                {
-                    return BadRequest(new { Code = 400, Message = "Cluster Name, Description, and Location are required", Data = Array.Empty<object>() });
-                }
+                
                 clusterMaster.CreatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 clusterMaster.ModifiedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
                 clusterMaster.IsActive = true;
@@ -768,12 +763,7 @@ namespace hotel_react_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-                if (string.IsNullOrEmpty(clusterMaster.ClusterName) ||
-                    string.IsNullOrEmpty(clusterMaster.ClusterDescription) ||
-                    string.IsNullOrEmpty(clusterMaster.ClusterLocation))
-                {
-                    return BadRequest(new { Code = 400, Message = "Cluster Name, Description, and Location are required", Data = Array.Empty<object>() });
-                }
+                
                 var cm = _mapper.Map<ClusterMaster>(clusterMaster);
                 SetClusterDefaults(cm, companyId,userId);
 

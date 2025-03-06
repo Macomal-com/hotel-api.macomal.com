@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using FluentValidation;
+using FluentValidation.Validators;
 
 namespace Repository.Models
 {
@@ -24,5 +26,15 @@ namespace Repository.Models
         public string ClusterLocation { get; set; } = String.Empty;
         public int NoOfProperties { get; set; }
 
+    }
+
+    public class ClusterValidator : AbstractValidator<ClusterMaster>
+    {
+        public ClusterValidator()
+        {
+            RuleFor(x => x.ClusterName).NotEmpty().WithMessage("Cluster Name is required");
+            RuleFor(x => x.ClusterDescription).NotEmpty().WithMessage("Cluster Description is required");
+            RuleFor(x => x.ClusterLocation).NotEmpty().WithMessage("Cluster Location is required");
+        }
     }
 }
