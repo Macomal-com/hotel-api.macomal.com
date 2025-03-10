@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Routing.Constraints;
 
 namespace Repository.Models
 {
-    public class LandlordDetails
+    public class LandlordDetails : ICommonParams
     {
         [Key]
         public int LandlordId { get; set; }
@@ -18,7 +18,7 @@ namespace Repository.Models
         public string PhoneNumber { get; set; } = String.Empty;
         public double CommissionPercentage { get; set; }
         public string CreatedDate { get; set; } = string.Empty;
-        public string ModifiedDate { get; set; } = string.Empty;
+        public string UpdatedDate { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public int CompanyId { get; set; }
         public int UserId { get; set; }

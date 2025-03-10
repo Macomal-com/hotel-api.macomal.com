@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Http;
 
 namespace Repository.Models
 {
-    public class CompanyDetails
+    public class CompanyDetails : ICommonParams
     {
         [Key]
-        public int CompanyId { get; set; }
+        public int PropertyId { get; set; }
         public string CompanyName { get; set; } = string.Empty;
         public string CompanyAddress { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
@@ -38,9 +38,10 @@ namespace Repository.Models
         public string WifiDueDate { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public string CreatedDate { get; set; } = string.Empty;
-        public string ModifiedDate { get; set; } = string.Empty;
+        public string UpdatedDate { get; set; } = string.Empty;
         public int UserId { get; set; }
 
+        public int CompanyId { get; set; }
 
         public string FaxNo { get; set; } = string.Empty;
         public string BussinessType { get; set; } = string.Empty;

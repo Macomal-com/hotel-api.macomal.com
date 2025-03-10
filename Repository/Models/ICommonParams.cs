@@ -9,7 +9,7 @@ namespace Repository.Models
     public interface ICommonParams
     {
         public string CreatedDate { get; set; }
-        public string ModifiedDate { get; set; }
+        public string UpdatedDate { get; set; }
         public bool IsActive { get; set; }
         public int CompanyId { get; set; }
         public int UserId { get; set; }

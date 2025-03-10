@@ -19,7 +19,7 @@ namespace hotel_api.Controllers
         private static void SetClusterDefaults(ICommonParams model, int companyid, int userId)
         {
             model.CreatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            model.ModifiedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+            model.UpdatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
             model.IsActive = true;
             model.CompanyId = companyid;
             model.UserId = userId;
@@ -28,6 +28,7 @@ namespace hotel_api.Controllers
         //-----------------------------
         //GET APIS
         //-----------------------------
+
         [HttpGet("GetCompanyDetails")]
         public async Task<IActionResult> GetCompanyDetails()
         {
@@ -113,7 +114,7 @@ namespace hotel_api.Controllers
             {
                 var data = await _context.ClusterMaster.ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Cluster not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Cluster details fetched successfully", Data = data });
             }
@@ -253,19 +254,97 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("GetRoomRateMaster")]
+        public async Task<IActionResult> GetRoomRateMaster()
+        {
+            try
+            {
+                var data = await _context.RoomRateMaster.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Room Rates not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Room Rates fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetServicableMaster")]
+        public async Task<IActionResult> GetServicableMaster()
+        {
+            try
+            {
+                var data = await _context.ServicableMaster.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Servicable Master not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Servicable Master fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetVendorMaster")]
+        public async Task<IActionResult> GetVendorMaster()
+        {
+            try
+            {
+                var data = await _context.VendorMaster.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Vendor Master not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Vendor Master fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
 
         //-----------------------------
         //GET BY ID APIS
         //-----------------------------
+
         [HttpGet("GetCompanyById")]
         public async Task<IActionResult> GetCompanyById(int id)
         {
             try
             {
                 var data = await _context.CompanyDetails
-                          .Where(x => x.CompanyId == id).ToListAsync();
+                          .Where(x => x.PropertyId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Company not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data });
             }
@@ -283,7 +362,7 @@ namespace hotel_api.Controllers
                 var data = await _context.ClusterMaster
                           .Where(x => x.ClusterId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Cluster not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Cluster details fetched successfully", Data = data });
             }
@@ -301,7 +380,7 @@ namespace hotel_api.Controllers
                 var data = await _context.BedTypeMaster
                           .Where(x => x.BedTypeId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Bed Type not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Bed Type fetched successfully", Data = data });
             }
@@ -319,7 +398,7 @@ namespace hotel_api.Controllers
                 var data = await _context.BuildingMaster
                           .Where(x => x.BuildingId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Building not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Building fetched successfully", Data = data });
             }
@@ -335,9 +414,9 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.FloorMaster
-                          .Where(x => x.BuildingId == id).ToListAsync();
+                          .Where(x => x.FloorId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Floor not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Floor fetched successfully", Data = data });
             }
@@ -355,7 +434,7 @@ namespace hotel_api.Controllers
                 var data = await _context.LandlordDetails
                           .Where(x => x.LandlordId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Landlord not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Landlord fetched successfully", Data = data });
             }
@@ -373,7 +452,7 @@ namespace hotel_api.Controllers
                 var data = await _context.OwnerMaster
                           .Where(x => x.OwnerId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Owner not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Owner fetched successfully", Data = data });
             }
@@ -391,7 +470,7 @@ namespace hotel_api.Controllers
                 var data = await _context.RoomCategoryMaster
                           .Where(x => x.Id == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Room Category not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Room Category fetched successfully", Data = data });
             }
@@ -409,7 +488,7 @@ namespace hotel_api.Controllers
                 var data = await _context.RoomMaster
                           .Where(x => x.RoomId == id).ToListAsync();
 
-                return data == null
+                return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Room not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Room fetched successfully", Data = data });
             }
@@ -419,11 +498,65 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("GetRoomRateById")]
+        public async Task<IActionResult> GetRoomRateById(int id)
+        {
+            try
+            {
+                var data = await _context.RoomRateMaster
+                          .Where(x => x.RoomRateId == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Room Rate not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Room Rate fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetServicableById")]
+        public async Task<IActionResult> GetServicableById(int id)
+        {
+            try
+            {
+                var data = await _context.ServicableMaster
+                          .Where(x => x.ServiceId == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Servicable not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Servicable fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetVendorById")]
+        public async Task<IActionResult> GetVendorById(int id)
+        {
+            try
+            {
+                var data = await _context.VendorMaster
+                          .Where(x => x.VendorId == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Vendor fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
 
 
         //-----------------------------
         //PATCH APIS
         //-----------------------------
+
         [HttpPatch("PatchCluster")]
         public async Task<IActionResult> PatchCluster(int id, [FromBody] JsonPatchDocument<ClusterMaster> patchDocument)
         {
@@ -441,7 +574,7 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(cluster, ModelState);
-            cluster.ModifiedDate = DateTime.Now.ToString();
+            cluster.UpdatedDate = DateTime.Now.ToString();
             if (!ModelState.IsValid)
             {
                 var errorMessages = ModelState
@@ -474,7 +607,7 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(company, ModelState);
-            company.ModifiedDate = DateTime.Now.ToString();
+            company.UpdatedDate = DateTime.Now.ToString();
             if (!ModelState.IsValid)
             {
                 var errorMessages = ModelState
@@ -606,7 +739,7 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(landlord, ModelState);
-            landlord.ModifiedDate = DateTime.Now.ToString();
+            landlord.UpdatedDate = DateTime.Now.ToString();
             if (!ModelState.IsValid)
             {
                 var errorMessages = ModelState
@@ -721,40 +854,112 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Room updated successfully" });
         }
 
+        [HttpPatch("PatchRoomRateMaster")]
+        public async Task<IActionResult> PatchRoomRateMaster(int id, [FromBody] JsonPatchDocument<RoomRateMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var room = await _context.RoomRateMaster.FindAsync(id);
+
+            if (room == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(room, ModelState);
+            room.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Room Rate updated successfully" });
+        }
+
+        [HttpPatch("PatchServicableMaster")]
+        public async Task<IActionResult> PatchServicableMaster(int id, [FromBody] JsonPatchDocument<ServicableMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var service = await _context.ServicableMaster.FindAsync(id);
+
+            if (service == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(service, ModelState);
+            service.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Service updated successfully" });
+        }
+
+        [HttpPatch("PatchVendorMaster")]
+        public async Task<IActionResult> PatchVendorMaster(int id, [FromBody] JsonPatchDocument<VendorMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var vendor = await _context.VendorMaster.FindAsync(id);
+
+            if (vendor == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(vendor, ModelState);
+            vendor.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Vendor updated successfully" });
+        }
+
 
         //-----------------------------
         //POST APIS
         //-----------------------------
+
         [HttpPost("AddClusterMaster")]
-        public async Task<IActionResult> AddClusterMaster([FromBody] ClusterMaster clusterMaster)
-        {
-            if (clusterMaster == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-                
-                clusterMaster.CreatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                clusterMaster.ModifiedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                clusterMaster.IsActive = true;
-                clusterMaster.CompanyId = companyId;
-                clusterMaster.UserId = userId;
-
-                _context.ClusterMaster.Add(clusterMaster);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Cluster created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
-            }
-        }
-
-        [HttpPost("AddClusterMasterDto")]
-        public async Task<IActionResult> AddClusterMasterDto([FromBody] ClusterDTO clusterMaster)
+        public async Task<IActionResult> AddClusterMaster([FromBody] ClusterDTO clusterMaster)
         {
             if (clusterMaster == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
@@ -770,8 +975,7 @@ namespace hotel_api.Controllers
                 _context.ClusterMaster.Add(cm);
                 await _context.SaveChangesAsync();
 
-                return CreatedAtAction(nameof(GetClusterMaster), new { id = cm.ClusterId },
-                                       new { Code = 201, Message = "Cluster created successfully", Data = clusterMaster });
+                return Ok(new { Code = 200, Message = "Cluster Created successfully" });
             }
             catch (Exception ex)
             {
@@ -779,40 +983,24 @@ namespace hotel_api.Controllers
             }
         }
 
-        
-
-
-
-
-
-        [HttpPut("UpdateCluster")]
-        public async Task<IActionResult> UpdateCluster([FromBody] ClusterMaster clusterMaster)
+        [HttpPost("AddCompanyDetails")]
+        public async Task<IActionResult> AddCompanyDetails([FromBody] CompanyDetailsDTO companyDetails)
         {
-            if (clusterMaster == null)
+            if (companyDetails == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
             try
             {
-                var x = await _context.ClusterMaster
-                                                  .FirstOrDefaultAsync(x => x.ClusterId == clusterMaster.ClusterId);
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                
+                var cm = _mapper.Map<CompanyDetails>(companyDetails);
+                SetClusterDefaults(cm, companyId,userId);
 
-                if (x == null)
-                {
-                    return NotFound(new { Code = 404, Message = "Cluster not found", Data = Array.Empty<object>() });
-                }
-
-                x.ClusterName = clusterMaster.ClusterName;
-                x.ClusterDescription = clusterMaster.ClusterDescription;
-                x.ClusterLocation = clusterMaster.ClusterLocation;
-                x.CreatedDate = clusterMaster.CreatedDate;
-                x.ModifiedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                x.IsActive = true;
-                x.CompanyId = clusterMaster.CompanyId;
-                x.UserId = clusterMaster.UserId;
-
-                _context.ClusterMaster.Update(x);
+                _context.CompanyDetails.Add(cm);
                 await _context.SaveChangesAsync();
 
-                return Ok(new { Code = 200, Message = "Cluster updated successfully", Data = clusterMaster });
+                return Ok(new { Code = 200, Message = "Company created successfully" });
             }
             catch (Exception ex)
             {
@@ -820,7 +1008,254 @@ namespace hotel_api.Controllers
             }
         }
 
-        
+        [HttpPost("AddBedTypeMaster")]
+        public async Task<IActionResult> AddBedTypeMaster([FromBody] BedTypeMasterDTO bedtypeMaster)
+        {
+            if (bedtypeMaster == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
 
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<BedTypeMaster>(bedtypeMaster);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.BedTypeMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Bed Type created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddBuildingMaster")]
+        public async Task<IActionResult> AddBuildingMaster([FromBody] BuildingMasterDTO buildingMaster)
+        {
+            if (buildingMaster == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<BuildingMaster>(buildingMaster);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.BuildingMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Building created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddFloorMaster")]
+        public async Task<IActionResult> AddFloorMaster([FromBody] FloorMasterDTO floorMaster)
+        {
+            if (floorMaster == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<FloorMaster>(floorMaster);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.FloorMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Floor created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddLandlordDetails")]
+        public async Task<IActionResult> AddLandlordDetails([FromBody] LandlordDetailsDTO landlord)
+        {
+            if (landlord == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<LandlordDetails>(landlord);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.LandlordDetails.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Landlord created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddOwnerMaster")]
+        public async Task<IActionResult> AddOwnerMaster([FromBody] OwnerMasterDTO owner)
+        {
+            if (owner == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<OwnerMaster>(owner);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.OwnerMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Owner created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddRoomCategoryMaster")]
+        public async Task<IActionResult> AddRoomCategoryMaster([FromBody] RoomCategoryMasterDTO roomCat)
+        {
+            if (roomCat == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<RoomCategoryMaster>(roomCat);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.RoomCategoryMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Room Category created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddRoomMaster")]
+        public async Task<IActionResult> AddRoomMaster([FromBody] RoomMasterDTO room)
+        {
+            if (room == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<RoomMaster>(room);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.RoomMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Room created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddRoomRateMaster")]
+        public async Task<IActionResult> AddRoomRateMaster([FromBody] RoomRateMasterDTO room)
+        {
+            if (room == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<RoomRateMaster>(room);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.RoomRateMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Room Rate created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddServicableMaster")]
+        public async Task<IActionResult> AddServicableMaster([FromBody] ServicableMasterDTO service)
+        {
+            if (service == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<ServicableMaster>(service);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.ServicableMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Service created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddVendorMaster")]
+        public async Task<IActionResult> AddVendorMaster([FromBody] VendorMasterDTO vendor)
+        {
+            if (vendor == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<VendorMaster>(vendor);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.VendorMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Vendor created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
     }
 }

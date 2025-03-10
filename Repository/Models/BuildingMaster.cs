@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Repository.Models
 {
-    public class BuildingMaster
+    public class BuildingMaster : ICommonParams
     {
         [Key]
         public int BuildingId { get; set; }

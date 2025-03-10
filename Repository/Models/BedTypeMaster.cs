@@ -1,9 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-
 namespace Repository.Models
 {
-    public class BedTypeMaster
+    public class BedTypeMaster : ICommonParams
     {
         [Key]
         public int BedTypeId { get; set; }

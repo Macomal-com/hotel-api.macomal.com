@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class RoomMaster
+    public class RoomMaster : ICommonParams
     {
         [Key]
         public int RoomId { get; set; }

@@ -7,25 +7,22 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class FloorMaster : ICommonParams
+    public class ServicableMaster : ICommonParams
     {
         [Key]
-        public int FloorId { get; set; }
-        public int FloorNumber { get; set; }
-        public int BuildingId { get; set; }
-        public int PropertyId { get; set; }
+        public int ServiceId { get; set; }
+        public string ServiceName { get; set; } = String.Empty;
+        public string ServiceDescription { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public string CreatedDate { get; set; } = String.Empty;
         public string UpdatedDate { get; set; } = String.Empty;
-        public string CreatedBy { get; set; } = String.Empty;
         public int UserId { get; set; }
         public int CompanyId { get; set; }
     }
-    public class FloorMasterDTO
+
+    public class ServicableMasterDTO
     {
-        [Key]
-        public int FloorNumber { get; set; }
-        public int BuildingId { get; set; }
-        public int PropertyId { get; set; }
-    }
+        public string ServiceName { get; set; } = String.Empty;
+        public string ServiceDescription { get; set; } = String.Empty;
+        }
 }

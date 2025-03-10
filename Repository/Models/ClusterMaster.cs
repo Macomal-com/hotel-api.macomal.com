@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentValidation;
-using FluentValidation.Validators;
 
 namespace Repository.Models
 {
@@ -13,7 +12,7 @@ namespace Repository.Models
         public string ClusterLocation { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public string CreatedDate { get; set; } = String.Empty;
-        public string ModifiedDate { get; set; } = String.Empty;
+        public string UpdatedDate { get; set; } = String.Empty;
         public int CompanyId { get; set; }
         public int UserId { get; set; }
         public int NoOfProperties { get; set; }

@@ -18,6 +18,9 @@ namespace RepositoryModels.Repository
         public DbSet<OwnerMaster> OwnerMaster { get; set; }
         public DbSet<RoomCategoryMaster> RoomCategoryMaster { get; set; }
         public DbSet<RoomMaster> RoomMaster { get; set; }
+        public DbSet<RoomRateMaster> RoomRateMaster { get; set; }
+        public DbSet<ServicableMaster> ServicableMaster { get; set; }
+        public DbSet<VendorMaster> VendorMaster { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
