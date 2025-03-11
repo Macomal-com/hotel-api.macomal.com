@@ -21,6 +21,12 @@ namespace RepositoryModels.Repository
         public DbSet<RoomRateMaster> RoomRateMaster { get; set; }
         public DbSet<ServicableMaster> ServicableMaster { get; set; }
         public DbSet<VendorMaster> VendorMaster { get; set; }
+        public DbSet<UserCreation> UserCreation { get; set; }
+        public DbSet<StaffManagementMaster> StaffManagementMaster { get; set; }
+        public DbSet<PaymentMode> PaymentMode { get; set; }
+        public DbSet<GroupMaster> GroupMaster { get; set; }
+        public DbSet<SubGroupMaster> SubGroupMaster { get; set; }
+
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
@@ -30,5 +36,5 @@ namespace RepositoryModels.Repository
         //    // Other configurations...
         //}
     }
-   
+
 }

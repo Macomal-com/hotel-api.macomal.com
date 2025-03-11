@@ -332,6 +332,136 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("GetUser")]
+        public async Task<IActionResult> GetUser()
+        {
+            try
+            {
+                var data = await _context.UserCreation.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Users fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetStaff")]
+        public async Task<IActionResult> GetStaff()
+        {
+            try
+            {
+                var data = await _context.StaffManagementMaster.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetPaymentMode")]
+        public async Task<IActionResult> GetPaymentMode()
+        {
+            try
+            {
+                var data = await _context.PaymentMode.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetGroup")]
+        public async Task<IActionResult> GetGroup()
+        {
+            try
+            {
+                var data = await _context.GroupMaster.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Group fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetSubGroup")]
+        public async Task<IActionResult> GetSubGroup()
+        {
+            try
+            {
+                var data = await _context.SubGroupMaster.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
+            }
+            catch (SqlException sqlEx)
+            {
+                // _logger.LogError($"SQL Error: {sqlEx.Message}");
+                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                // _logger.LogError($"Error: {ex.Message}");
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
         //-----------------------------
         //GET BY ID APIS
         //-----------------------------
@@ -552,6 +682,95 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("GetUserById")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            try
+            {
+                var data = await _context.UserCreation
+                          .Where(x => x.Id == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "User fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetStaffById")]
+        public async Task<IActionResult> GetStaffById(int id)
+        {
+            try
+            {
+                var data = await _context.StaffManagementMaster
+                          .Where(x => x.StaffId == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetPaymentModeById")]
+        public async Task<IActionResult> GetPaymentModeById(int id)
+        {
+            try
+            {
+                var data = await _context.PaymentMode
+                          .Where(x => x.PaymentId == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetGroupById")]
+        public async Task<IActionResult> GetGroupById(int id)
+        {
+            try
+            {
+                var data = await _context.GroupMaster
+                          .Where(x => x.Id == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Gruop fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpGet("GetSubGroupById")]
+        public async Task<IActionResult> GetSubGroupById(int id)
+        {
+            try
+            {
+                var data = await _context.SubGroupMaster
+                          .Where(x => x.SubGroupId == id).ToListAsync();
+
+                return data.Count == 0
+                    ? NotFound(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
 
         //-----------------------------
         //PATCH APIS
@@ -953,6 +1172,170 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Vendor updated successfully" });
         }
 
+        [HttpPatch("PatchUser")]
+        public async Task<IActionResult> PatchUser(int id, [FromBody] JsonPatchDocument<UserCreation> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var vendor = await _context.UserCreation.FindAsync(id);
+
+            if (vendor == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(vendor, ModelState);
+            vendor.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "User updated successfully" });
+        }
+
+        [HttpPatch("PatchStaff")]
+        public async Task<IActionResult> PatchStaff(int id, [FromBody] JsonPatchDocument<StaffManagementMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var staff = await _context.StaffManagementMaster.FindAsync(id);
+
+            if (staff == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(staff, ModelState);
+            staff.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Staff updated successfully" });
+        }
+
+        [HttpPatch("PatchPaymentMode")]
+        public async Task<IActionResult> PatchPaymentMode(int id, [FromBody] JsonPatchDocument<PaymentMode> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var mode = await _context.PaymentMode.FindAsync(id);
+
+            if (mode == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(mode, ModelState);
+            mode.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Payment Mode updated successfully" });
+        }
+
+        [HttpPatch("PatchGroup")]
+        public async Task<IActionResult> PatchGroup(int id, [FromBody] JsonPatchDocument<GroupMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var group = await _context.GroupMaster.FindAsync(id);
+
+            if (group == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(group, ModelState);
+            group.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Group updated successfully" });
+        }
+
+        [HttpPatch("PatchSubGroup")]
+        public async Task<IActionResult> PatchSubGroup(int id, [FromBody] JsonPatchDocument<SubGroupMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var group = await _context.SubGroupMaster.FindAsync(id);
+
+            if (group == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(group, ModelState);
+            group.UpdatedDate = DateTime.Now.ToString();
+            if (!ModelState.IsValid)
+            {
+                var errorMessages = ModelState
+                                    .Where(x => x.Value.Errors.Any())
+                                    .SelectMany(x => x.Value.Errors)
+                                    .Select(x => x.ErrorMessage)
+                                    .ToList();
+                return Ok(new { Code = 500, Message = errorMessages });
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "SubGroup updated successfully" });
+        }
 
         //-----------------------------
         //POST APIS
@@ -1251,6 +1634,131 @@ namespace hotel_api.Controllers
                 await _context.SaveChangesAsync();
 
                 return Ok(new { Code = 200, Message = "Vendor created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddUser")]
+        public async Task<IActionResult> AddUser([FromBody] UserCreationDTO user)
+        {
+            if (user == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<UserCreation>(user);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.UserCreation.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "User created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddStaff")]
+        public async Task<IActionResult> AddStaff([FromBody] StaffManagementMasterDTO staff)
+        {
+            if (staff == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<StaffManagementMaster>(staff);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.StaffManagementMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Staff created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddPaymentMode")]
+        public async Task<IActionResult> AddPaymentMode([FromBody] PaymentModeDTO mode)
+        {
+            if (mode == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<PaymentMode>(mode);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.PaymentMode.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Payment Mode created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddGroup")]
+        public async Task<IActionResult> AddGroup([FromBody] GroupMasterDTO group)
+        {
+            if (group == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<GroupMaster>(group);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.GroupMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Group created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, ex.Message, Data = Array.Empty<object>() });
+            }
+        }
+
+        [HttpPost("AddSubGroup")]
+        public async Task<IActionResult> AddSubGroup([FromBody] SubGroupMasterDTO group)
+        {
+            if (group == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<SubGroupMaster>(group);
+                SetClusterDefaults(cm, companyId, userId);
+
+                _context.SubGroupMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "SubGroup created successfully" });
             }
             catch (Exception ex)
             {
