@@ -7,6 +7,7 @@ namespace Repository.Models
         [Key]
         public int BedTypeId { get; set; }
         public string BedType { get; set; } = String.Empty;
+        public string BedTypeDescription { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public string CreatedDate { get; set; } = String.Empty;
         public string UpdatedDate { get; set; } = String.Empty;
@@ -18,5 +19,7 @@ namespace Repository.Models
     {
         [Key]
         public string BedType { get; set; } = String.Empty;
+        public string BedTypeDescription { get; set; } = String.Empty;
+
     }
 }

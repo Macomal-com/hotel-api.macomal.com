@@ -12,7 +12,7 @@ namespace Repository.Models
         [Key]
         public int SubGroupId { get; set; }
         public string SubGroupName { get; set; } = String.Empty;
-        public string Descriptoion { get; set; } = String.Empty;
+        public string Description { get; set; } = String.Empty;
         public int GroupId { get; set; }
         public bool IsActive { get; set; }
         public string CreatedDate { get; set; } = String.Empty;
@@ -25,7 +25,7 @@ namespace Repository.Models
         [Key]
         public string SubGroupName { get; set; } = String.Empty;
         public int GroupId { get; set; }
-        public string Descriptoion { get; set; } = String.Empty;
+        public string Description { get; set; } = String.Empty;
 
     }
 }
