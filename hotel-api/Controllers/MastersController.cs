@@ -842,7 +842,7 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Company details updated successfully" });
         }
 
-        [HttpPatch("PatchBedTypeMaster")]
+        [HttpPatch("PatchBedTypeMaster/{id}")]
         public async Task<IActionResult> PatchBedTypeMaster(int id, [FromBody] JsonPatchDocument<BedTypeMaster> patchDocument)
         {
             if (patchDocument == null)
@@ -1106,7 +1106,7 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Room Rate updated successfully" });
         }
 
-        [HttpPatch("PatchServicableMaster")]
+        [HttpPatch("PatchServicableMaster/{id}")]
         public async Task<IActionResult> PatchServicableMaster(int id, [FromBody] JsonPatchDocument<ServicableMaster> patchDocument)
         {
             if (patchDocument == null)
@@ -1271,7 +1271,7 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Payment Mode updated successfully" });
         }
 
-        [HttpPatch("PatchGroup")]
+        [HttpPatch("PatchGroup/{id}")]
         public async Task<IActionResult> PatchGroup(int id, [FromBody] JsonPatchDocument<GroupMaster> patchDocument)
         {
             if (patchDocument == null)
@@ -1304,7 +1304,7 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Group updated successfully" });
         }
 
-        [HttpPatch("PatchSubGroup")]
+        [HttpPatch("PatchSubGroup/{id}")]
         public async Task<IActionResult> PatchSubGroup(int id, [FromBody] JsonPatchDocument<SubGroupMaster> patchDocument)
         {
             if (patchDocument == null)
