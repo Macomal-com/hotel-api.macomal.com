@@ -1350,7 +1350,12 @@ namespace hotel_api.Controllers
             var result = validator.Validate(clusterMaster);
             if (!result.IsValid)
             {
-                return StatusCode(500, new { Code = 500, result.Errors, Data = Array.Empty<object>() });
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(500, new { Code = 202, data = errors });
             }
             try
             {
