@@ -1355,7 +1355,7 @@ namespace hotel_api.Controllers
                     Error = x.ErrorMessage,
                     Field = x.PropertyName
                 }).ToList();
-                return Ok(500, new { Code = 202, data = errors });
+                return Ok(new { Code = 202, message = errors });
             }
             try
             {
