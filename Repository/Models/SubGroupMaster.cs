@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FluentValidation;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -27,5 +28,18 @@ namespace Repository.Models
         public int GroupId { get; set; }
         public string Description { get; set; } = String.Empty;
 
+    }
+
+    public class SubGroupValidator : AbstractValidator<SubGroupMasterDTO>
+    {
+        public SubGroupValidator()
+        {
+            RuleFor(x => x.SubGroupName)
+                .NotNull().WithMessage("SubGroup Name cannot be null")
+                .NotEmpty().WithMessage("SubGroup Name is required");
+            RuleFor(x => x.GroupId)
+                .NotNull().WithMessage("Group Name cannot be null")
+                .NotEmpty().WithMessage("Group Name is required");
+        }
     }
 }

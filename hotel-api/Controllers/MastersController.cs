@@ -1411,7 +1411,12 @@ namespace hotel_api.Controllers
             var result = validator.Validate(bedtypeMaster);
             if (!result.IsValid)
             {
-                return StatusCode(500, new { Code = 500, result.Errors, Data = Array.Empty<object>() });
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, message = errors });
             }
             try
             {
@@ -1612,7 +1617,17 @@ namespace hotel_api.Controllers
         {
             if (service == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
+            var validator = new ServiveValidator();
+            var result = validator.Validate(service);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, message = errors });
+            }
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1737,7 +1752,17 @@ namespace hotel_api.Controllers
         {
             if (group == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
+            var validator = new GroupValidator();
+            var result = validator.Validate(group);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, message = errors });
+            }
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1762,7 +1787,17 @@ namespace hotel_api.Controllers
         {
             if (group == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
+            var validator = new SubGroupValidator();
+            var result = validator.Validate(group);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, message = errors });
+            }
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
