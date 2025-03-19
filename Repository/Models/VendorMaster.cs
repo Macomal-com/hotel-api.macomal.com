@@ -1,4 +1,5 @@
-﻿using System;
+﻿using FluentValidation;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -28,5 +29,24 @@ namespace Repository.Models
         public string VendorEmail { get; set; } = String.Empty;
         public string VendorPhone { get; set; } = String.Empty;
         public int ServiceId { get; set; }
+    }
+
+    public class VendorValidator : AbstractValidator<VendorMasterDTO>
+    {
+        public VendorValidator()
+        {
+            RuleFor(x => x.VendorName)
+                .NotNull().WithMessage("Vendor Name cannot be null")
+                .NotEmpty().WithMessage("Vendor Name is required");
+            RuleFor(x => x.VendorEmail)
+                .NotNull().WithMessage("Email cannot be null")
+                .NotEmpty().WithMessage("Email is required");
+            RuleFor(x => x.VendorPhone)
+                .NotNull().WithMessage("Phone Number cannot be null")
+                .NotEmpty().WithMessage("Phone Number is required");
+            RuleFor(x => x.ServiceId)
+                .NotNull().WithMessage("Service Id cannot be null")
+                .NotEmpty().WithMessage("Service Id is required");
+        }
     }
 }
