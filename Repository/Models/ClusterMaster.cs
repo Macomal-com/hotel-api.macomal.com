@@ -27,13 +27,22 @@ namespace Repository.Models
 
     }
 
-    public class ClusterValidator : AbstractValidator<ClusterMaster>
+    public class ClusterValidator : AbstractValidator<ClusterDTO>
     {
         public ClusterValidator()
         {
-            RuleFor(x => x.ClusterName).NotEmpty().WithMessage("Cluster Name is required");
-            RuleFor(x => x.ClusterDescription).NotEmpty().WithMessage("Cluster Description is required");
-            RuleFor(x => x.ClusterLocation).NotEmpty().WithMessage("Cluster Location is required");
+            RuleFor(x => x.ClusterName)
+                .NotNull().WithMessage("Cluster Name cannot be null")
+                .NotEmpty().WithMessage("Cluster Name is required");
+
+            RuleFor(x => x.ClusterDescription)
+                .NotNull().WithMessage("Cluster Description cannot be null")
+                .NotEmpty().WithMessage("Cluster Description is required");
+
+            RuleFor(x => x.ClusterLocation)
+                .NotNull().WithMessage("Cluster Location cannot be null")
+                .NotEmpty().WithMessage("Cluster Location is required");
         }
     }
+
 }

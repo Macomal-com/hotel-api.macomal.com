@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using FluentValidation;
+using System.ComponentModel.DataAnnotations;
 
 namespace Repository.Models
 {
@@ -22,4 +23,16 @@ namespace Repository.Models
         public string BedTypeDescription { get; set; } = String.Empty;
 
     }
+
+    public class BedTypeValidator : AbstractValidator<BedTypeMasterDTO>
+    {
+        public BedTypeValidator()
+        {
+            RuleFor(x => x.BedType)
+                .NotNull().WithMessage("Bed Type cannot be null")
+                .NotEmpty().WithMessage("Bed Type is required");
+            
+        }
+    }
+
 }

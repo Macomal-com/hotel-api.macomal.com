@@ -1346,7 +1346,12 @@ namespace hotel_api.Controllers
         {
             if (clusterMaster == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
+            var validator = new ClusterValidator();
+            var result = validator.Validate(clusterMaster);
+            if (!result.IsValid)
+            {
+                return StatusCode(500, new { Code = 500, result.Errors, Data = Array.Empty<object>() });
+            }
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1397,6 +1402,12 @@ namespace hotel_api.Controllers
             if (bedtypeMaster == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
 
+            var validator = new BedTypeValidator();
+            var result = validator.Validate(bedtypeMaster);
+            if (!result.IsValid)
+            {
+                return StatusCode(500, new { Code = 500, result.Errors, Data = Array.Empty<object>() });
+            }
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
