@@ -14,4 +14,15 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         public int UserId { get; set; }
     }
+
+    public interface ICommonProperties
+    {
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public bool IsActive { get; set; }
+        public int CompanyId { get; set; }
+        public int UserId { get; set; }
+    }
+
+
 }

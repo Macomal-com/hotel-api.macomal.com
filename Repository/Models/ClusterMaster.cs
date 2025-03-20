@@ -1,9 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using RepositoryModels.Repository;
 
 namespace Repository.Models
 {
-    public class ClusterMaster : ICommonParams
+    public class ClusterMaster : ICommonProperties
     {
         [Key]
         public int ClusterId { get; set; }
@@ -11,8 +13,8 @@ namespace Repository.Models
         public string ClusterDescription { get; set; } = String.Empty;
         public string ClusterLocation { get; set; } = String.Empty;
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = String.Empty;
-        public string UpdatedDate { get; set; } = String.Empty;
+        public DateTime CreatedDate { get; set; } = DateTime.Now;
+        public DateTime UpdatedDate { get; set; } = DateTime.Now;
         public int CompanyId { get; set; }
         public int UserId { get; set; }
         public int NoOfProperties { get; set; }
@@ -27,21 +29,52 @@ namespace Repository.Models
 
     }
 
-    public class ClusterValidator : AbstractValidator<ClusterDTO>
+    public class ClusterValidator : AbstractValidator<ClusterMaster>
     {
-        public ClusterValidator()
+        private readonly DbContextSql _context;
+        public ClusterValidator(DbContextSql context)
         {
+            _context = context;
             RuleFor(x => x.ClusterName)
-                .NotNull().WithMessage("Cluster Name cannot be null")
+                .NotNull().WithMessage("Cluster Name is required")
                 .NotEmpty().WithMessage("Cluster Name is required");
-
-            RuleFor(x => x.ClusterDescription)
-                .NotNull().WithMessage("Cluster Description cannot be null")
-                .NotEmpty().WithMessage("Cluster Description is required");
+        
 
             RuleFor(x => x.ClusterLocation)
-                .NotNull().WithMessage("Cluster Location cannot be null")
+                .NotNull().WithMessage("Cluster Location is required")
                 .NotEmpty().WithMessage("Cluster Location is required");
+
+            RuleFor(x => x.NoOfProperties)
+                .NotNull().WithMessage("No of properties is required")
+                .GreaterThan(0).WithMessage("No of properties is required");
+
+            RuleFor(x => x)
+                .MustAsync(IsUniqueClusterName)
+                .When(x => x.ClusterId == 0)
+                .WithMessage("Cluster Name already exists");
+
+            RuleFor(x => x)
+                .MustAsync(IsUniqueUpdateClusterName)
+                .When(x => x.ClusterId > 0)
+                .WithMessage("Cluster Name already exists");
+
+        }
+
+        private async Task<bool> IsUniqueClusterName(ClusterMaster clusterMaster, CancellationToken cancellationToken)
+        {
+            
+                return !await _context.ClusterMaster.AnyAsync(x => x.ClusterName == clusterMaster.ClusterName && x.IsActive == true, cancellationToken);
+            
+
+        }
+
+
+        private async Task<bool> IsUniqueUpdateClusterName(ClusterMaster clusterMaster, CancellationToken cancellationToken)
+        {
+
+            return !await _context.ClusterMaster.AnyAsync(x => x.ClusterName == clusterMaster.ClusterName && x.ClusterId != clusterMaster.ClusterId && x.IsActive == true, cancellationToken);
+
+
         }
     }
 
