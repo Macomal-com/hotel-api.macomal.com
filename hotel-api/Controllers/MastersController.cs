@@ -35,7 +35,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.CompanyDetails.ToListAsync();
+                var data = await _context.CompanyDetails.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -61,7 +61,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.BedTypeMaster.ToListAsync();
+                var data = await _context.BedTypeMaster.Where(bm=>bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -125,7 +125,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.ClusterMaster.ToListAsync();
+                var data = await _context.ClusterMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 return data.Count == 0
                     ? NotFound(new { Code = 404, Message = "Cluster not found", Data = Array.Empty<object>() })
@@ -142,7 +142,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.FloorMaster.ToListAsync();
+                var data = await _context.FloorMaster.Where(fm=>fm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -168,7 +168,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.LandlordDetails.ToListAsync();
+                var data = await _context.LandlordDetails.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -194,7 +194,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.OwnerMaster.ToListAsync();
+                var data = await _context.OwnerMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -220,7 +220,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.RoomCategoryMaster.ToListAsync();
+                var data = await _context.RoomCategoryMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -246,7 +246,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.RoomCategoryMaster.ToListAsync();
+                var data = await _context.RoomCategoryMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -272,7 +272,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.RoomRateMaster.ToListAsync();
+                var data = await _context.RoomRateMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -337,7 +337,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.VendorMaster.ToListAsync();
+                var data = await _context.VendorMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -363,7 +363,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.UserCreation.ToListAsync();
+                var data = await _context.UserCreation.Where(uc=>uc.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -389,7 +389,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.StaffManagementMaster.ToListAsync();
+                var data = await _context.StaffManagementMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -415,7 +415,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.PaymentMode.ToListAsync();
+                var data = await _context.PaymentMode.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -441,7 +441,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.GroupMaster.ToListAsync();
+                var data = await _context.GroupMaster.Where(bm => bm.IsActive).ToListAsync();
 
                 if (data.Count == 0)
                 {
