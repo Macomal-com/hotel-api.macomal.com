@@ -87,7 +87,19 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.BuildingMaster.ToListAsync();
+                var data = await (from rs in _context.BuildingMaster
+                                  where rs.IsActive == true
+                                  join gm in _context.CompanyDetails on rs.PropertyId equals gm.PropertyId
+                                  select new
+                                  {
+                                      rs.BuildingId,
+                                      rs.BuildingName,
+                                      rs.BuildingDescription,
+                                      rs.PropertyId,
+                                      rs.NoOfFloors,
+                                      rs.NoOfRooms,
+                                      gm.CompanyName
+                                  }).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -286,7 +298,20 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.ServicableMaster.ToListAsync();
+                var data = await (from rs in _context.ServicableMaster
+                                  where rs.IsActive == true
+                                  join gm in _context.GroupMaster on rs.GroupId equals gm.Id
+                                  join sgm in _context.SubGroupMaster on rs.SubGroupId equals sgm.SubGroupId
+                                  select new
+                                  {
+                                      rs.ServiceId,
+                                      rs.ServiceName,
+                                      rs.ServiceDescription,
+                                      rs.GroupId,
+                                      rs.SubGroupId,
+                                      gm.GroupName,
+                                      sgm.SubGroupName
+                                  }).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -451,7 +476,7 @@ namespace hotel_api.Controllers
                                       rs.SubGroupName,
                                       rs.Description,
                                       rs.GroupId,
-                                      GroupName = gm.GroupName
+                                      gm.GroupName
                                   }).ToListAsync();
 
 
