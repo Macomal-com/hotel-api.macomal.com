@@ -27,6 +27,10 @@ namespace RepositoryModels.Repository
         public DbSet<GroupMaster> GroupMaster { get; set; }
         public DbSet<SubGroupMaster> SubGroupMaster { get; set; }
 
+        public DbSet<UserDetails> UserDetails { get; set; }
+
+        public DbSet<UserPropertyMapping> UserPropertyMapping { get; set; }
+
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
