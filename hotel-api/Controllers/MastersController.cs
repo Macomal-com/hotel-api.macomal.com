@@ -5,6 +5,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Repository.Models;
 using RepositoryModels.Repository;
+using System.ComponentModel.Design;
 using System.Data;
 
 namespace hotel_api.Controllers
@@ -441,7 +442,18 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.SubGroupMaster.ToListAsync();
+                var data = await (from rs in _context.SubGroupMaster
+                                  where rs.IsActive == true
+                                  join gm in _context.GroupMaster on rs.GroupId equals gm.Id
+                                  select new
+                                  {
+                                      rs.SubGroupId,
+                                      rs.SubGroupName,
+                                      rs.Description,
+                                      rs.GroupId,
+                                      GroupName = gm.GroupName
+                                  }).ToListAsync();
+
 
                 if (data.Count == 0)
                 {
