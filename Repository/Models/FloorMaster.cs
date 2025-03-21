@@ -14,7 +14,7 @@ namespace Repository.Models
     {
         [Key]
         public int FloorId { get; set; }
-        public int FloorNumber { get; set; }
+        public string FloorNumber { get; set; } = string.Empty;
         public int? BuildingId { get; set; }
         public int PropertyId { get; set; }
         public bool IsActive { get; set; }
@@ -28,7 +28,7 @@ namespace Repository.Models
     public class FloorMasterDTO
     {
         [Key]
-        public int FloorNumber { get; set; }
+        public string FloorNumber { get; set; }
         public int BuildingId { get; set; }
         public int PropertyId { get; set; }
         public int NoOfRooms { get; set; }
@@ -66,6 +66,7 @@ namespace Repository.Models
 
             RuleFor(x => x)
                 .MustAsync(IsCountExceed)
+                .When(x=>x.FloorId == 0)
                 .WithMessage("You have already created total floors in this building.");
         }
 
@@ -99,18 +100,31 @@ namespace Repository.Models
         {
             if (floorMaster.BuildingId > 0)
             {
-                var totalFloorCount = await _context.BuildingMaster.CountAsync(x=>x.BuildingId == floorMaster.BuildingId);
+                var buildingMaster = await _context.BuildingMaster.FirstOrDefaultAsync(x=>x.BuildingId == floorMaster.BuildingId && x.IsActive == true);
 
-                if(totalFloorCount == 0)
+                if(buildingMaster == null)
                 {
-                    return true;
-                }
-                var alreadyCreatedCount = await _context.FloorMaster.CountAsync(x => x.BuildingId == floorMaster.BuildingId);
-
-                if (totalFloorCount == alreadyCreatedCount)
                     return false;
+                }
                 else
-                    return true;
+                {
+                    if(buildingMaster.NoOfFloors == 0)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        var alreadyCreatedCount = await _context.FloorMaster.CountAsync(x => x.BuildingId == floorMaster.BuildingId && x.IsActive == true);
+                        if (buildingMaster.NoOfFloors == alreadyCreatedCount)
+                        {
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
+                    }
+                }
 
             }
             else

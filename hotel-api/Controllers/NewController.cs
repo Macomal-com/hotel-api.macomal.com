@@ -302,17 +302,21 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(room, ModelState);
-                var validator = new RoomMasterValidator(_context);
-                var result = await validator.ValidateAsync(room);
-                if (!result.IsValid)
+                if(room.IsActive == true)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var validator = new RoomMasterValidator(_context);
+                    var result = await validator.ValidateAsync(room);
+                    if (!result.IsValid)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, Message = errors });
+                    }
                 }
+                
                 room.UpdatedDate = DateTime.Now;
                 if (!ModelState.IsValid)
                 {

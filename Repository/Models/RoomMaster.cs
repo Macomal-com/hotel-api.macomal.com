@@ -63,13 +63,13 @@ namespace Repository.Models
                 .WithMessage("Room No already exists");
 
             RuleFor(x => x)
-                .MustAsync(IsRoomCategoryCountExceed)
-                .WithMessage("You have already created total floors in this room type.");
+                .MustAsync(IsRoomCategoryCountExceed)               
+                .WithMessage("You have already created total rooms in this room type.");
 
             RuleFor(x => x)
                 .MustAsync(IsFloorCountExceed)
-                .When(x=>x.FloorId > 0)
-                .WithMessage("You have already created total floors in this room type.");
+                .When(x=>x.FloorId > 0 )             
+                .WithMessage("You have already created total rooms in this floor.");
 
         }
 
@@ -90,9 +90,11 @@ namespace Repository.Models
 
         private async Task<bool> IsRoomCategoryCountExceed(RoomMaster master, CancellationToken cancellationToken)
         {
-            var alreadyCreatedCount = await _context.RoomMaster.CountAsync(x => x.RoomTypeId == master.RoomTypeId && x.PropertyId == master.PropertyId && x.IsActive == true);
+            var alreadyCreatedCount = master.RoomId > 0 ?
+                await _context.RoomMaster.CountAsync(x => x.RoomTypeId == master.RoomTypeId && x.PropertyId == master.PropertyId && x.IsActive == true && x.RoomId != master.RoomId) : 
+                await _context.RoomMaster.CountAsync(x => x.RoomTypeId == master.RoomTypeId && x.PropertyId == master.PropertyId && x.IsActive == true);
 
-            var roomcategory = await _context.RoomCategoryMaster.FirstOrDefaultAsync(x => x.Id == master.RoomId && x.IsActive == true);
+            var roomcategory = await _context.RoomCategoryMaster.FirstOrDefaultAsync(x => x.Id == master.RoomTypeId && x.IsActive == true);
 
            if(roomcategory == null)
             {
@@ -112,13 +114,20 @@ namespace Repository.Models
 
         private async Task<bool> IsFloorCountExceed(RoomMaster master, CancellationToken cancellationToken)
         {
-            var alreadyCreatedCount = await _context.RoomMaster.CountAsync(x => x.RoomTypeId == master.RoomTypeId && x.PropertyId == master.PropertyId && x.IsActive == true);
+            var alreadyCreatedCount = master.RoomId > 0 ?
+                await _context.RoomMaster.CountAsync(x => x.FloorId == master.FloorId && x.PropertyId == master.PropertyId && x.IsActive == true && x.RoomId != master.RoomId)
+                : await _context.RoomMaster.CountAsync(x => x.FloorId == master.FloorId && x.PropertyId == master.PropertyId && x.IsActive == true);
 
             var floorMaster = await _context.FloorMaster.FirstOrDefaultAsync(x => x.FloorId == master.FloorId && x.IsActive == true);
 
             if (floorMaster == null)
             {
                 return false;
+            }
+
+            if (floorMaster.NoOfRooms == 0)
+            {
+                return true;
             }
 
             if (floorMaster.NoOfRooms == alreadyCreatedCount)
