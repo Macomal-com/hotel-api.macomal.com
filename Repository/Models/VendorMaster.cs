@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class VendorMaster : ICommonParams
+    public class VendorMaster : ICommonProperties
     {
         [Key]
         public int VendorId { get; set; }
@@ -17,8 +17,8 @@ namespace Repository.Models
         public string VendorPhone { get; set; } = String.Empty;
         public int ServiceId { get; set; }
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = String.Empty;
-        public string UpdatedDate { get; set; } = String.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
     }

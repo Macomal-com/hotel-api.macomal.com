@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class UserCreation : ICommonParams
+    public class UserCreation : ICommonProperties
     {
         [Key]
         public int Id { get; set; }
@@ -16,8 +16,8 @@ namespace Repository.Models
         public string Role { get; set; } = String.Empty;
         public string Password { get; set; } = String.Empty;
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = String.Empty;
-        public string UpdatedDate { get; set; } = String.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
     }

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Repository.Models
 {
-    public class OwnerMaster : ICommonParams
+    public class OwnerMaster : ICommonProperties
     {
         [Key]
         public int OwnerId { get; set; }
@@ -17,8 +17,8 @@ namespace Repository.Models
         public string AgreementDocumentsPath { get; set; } = String.Empty;
         public double CommissionPercentage { get; set; }
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = String.Empty;
-        public string UpdatedDate { get; set; } = String.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public string CreatedBy { get; set; } = String.Empty;
         public int UserId { get; set; }
         public int CompanyId { get; set; }

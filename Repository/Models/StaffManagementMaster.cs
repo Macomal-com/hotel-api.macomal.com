@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class StaffManagementMaster : ICommonParams
+    public class StaffManagementMaster : ICommonProperties
     {
         [Key]
         public int StaffId { get; set; }
@@ -17,8 +17,8 @@ namespace Repository.Models
         public double Salary { get; set; }
         public int PropertyId { get; set; }
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = String.Empty;
-        public string UpdatedDate { get; set; } = String.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
     }

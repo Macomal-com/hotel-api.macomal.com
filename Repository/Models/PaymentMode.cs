@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class PaymentMode : ICommonParams
+    public class PaymentMode : ICommonProperties
     {
         [Key]
         public int PaymentId { get; set; }
@@ -16,8 +16,8 @@ namespace Repository.Models
         public string ProviderEmail { get; set; } = String.Empty;
         public double TransactionCharges { get; set; }
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = String.Empty;
-        public string UpdatedDate { get; set; } = String.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
     }
