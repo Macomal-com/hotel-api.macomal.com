@@ -852,6 +852,197 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
 
 
+        //SUB GROUP
+        [HttpGet("GetSubGroup")]
+        public async Task<IActionResult> GetSubGroup()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await (from rs in _context.SubGroupMaster
+                                  join gm in _context.GroupMaster on rs.GroupId equals gm.Id
+                                  where rs.IsActive == true && gm.IsActive == true &&
+                                  rs.CompanyId == companyId && rs.UserId == userId
+                                  select new
+                                  {
+                                      rs.SubGroupId,
+                                      rs.SubGroupName,
+                                      rs.Description,
+                                      rs.GroupId,
+                                      gm.GroupName
+                                  }).ToListAsync();
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "Sub Group not found", Data = Array.Empty<object>() });
+                }
+                return Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddSubGroup")]
+        public async Task<IActionResult> AddSubGroup([FromBody] SubGroupMasterDTO group)
+        {
+            if (group == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+            
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<SubGroupMaster>(group);
+                SetMastersDefault(cm, companyId, userId);
+               
+                var validator = new SubGroupValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+                _context.SubGroupMaster.Add(cm);
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "SubGroup created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetSubGroupById/{Id}")]
+        public async Task<IActionResult> GetSubGroupById(int id)
+        {
+            try
+            {
+                var data = await _context.SubGroupMaster
+                          .Where(x => x.SubGroupId == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchSubGroup/{id}")]
+        public async Task<IActionResult> PatchSubGroup(int id, [FromBody] JsonPatchDocument<SubGroupMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var group = await _context.SubGroupMaster.FindAsync(id);
+
+            if (group == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(group, ModelState);
+            var validator = new SubGroupValidator(_context);
+            var result = await validator.ValidateAsync(group);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, Message = errors });
+            }
+            group.UpdatedDate = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "SubGroup updated successfully" });
+        }
+
+
+
+        //SERVICE MASTER
+        [HttpGet("GetServicableMaster")]
+        public async Task<IActionResult> GetServicableMaster()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await (from rs in _context.ServicableMaster
+                                  join gm in _context.GroupMaster on rs.GroupId equals gm.Id
+                                  join sgm in _context.SubGroupMaster on rs.SubGroupId equals sgm.SubGroupId
+                                  where rs.IsActive == true && rs.CompanyId == companyId && rs.UserId == userId
+                                  && gm.IsActive == true && sgm.IsActive == true
+                                  select new
+                                  {
+                                      rs.ServiceId,
+                                      rs.ServiceName,
+                                      rs.ServiceDescription,
+                                      rs.GroupId,
+                                      rs.SubGroupId,
+                                      gm.GroupName,
+                                      sgm.SubGroupName
+                                  }).ToListAsync();               
+
+                return Ok(new { Code = 200, Message = "Servicable Master fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddServicableMaster")]
+        public async Task<IActionResult> AddServicableMaster([FromBody] ServicableMasterDTO service)
+        {
+            if (service == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+            
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<ServicableMaster>(service);
+                SetMastersDefault(cm, companyId, userId);
+
+                var validator = new ServiveValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                _context.ServicableMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Service created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
 
 
 
@@ -973,44 +1164,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpGet("GetServicableMaster")]
-        public async Task<IActionResult> GetServicableMaster()
-        {
-            try
-            {
-                var data = await (from rs in _context.ServicableMaster
-                                  where rs.IsActive == true
-                                  join gm in _context.GroupMaster on rs.GroupId equals gm.Id
-                                  join sgm in _context.SubGroupMaster on rs.SubGroupId equals sgm.SubGroupId
-                                  select new
-                                  {
-                                      rs.ServiceId,
-                                      rs.ServiceName,
-                                      rs.ServiceDescription,
-                                      rs.GroupId,
-                                      rs.SubGroupId,
-                                      gm.GroupName,
-                                      sgm.SubGroupName
-                                  }).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Servicable Master not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Servicable Master fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
         [HttpGet("GetVendorMaster")]
         public async Task<IActionResult> GetVendorMaster()
@@ -1118,42 +1272,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
         
 
-        [HttpGet("GetSubGroup")]
-        public async Task<IActionResult> GetSubGroup()
-        {
-            try
-            {
-                var data = await (from rs in _context.SubGroupMaster
-                                  where rs.IsActive == true
-                                  join gm in _context.GroupMaster on rs.GroupId equals gm.Id
-                                  select new
-                                  {
-                                      rs.SubGroupId,
-                                      rs.SubGroupName,
-                                      rs.Description,
-                                      rs.GroupId,
-                                      gm.GroupName
-                                  }).ToListAsync();
-
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
         //-----------------------------
         //GET BY ID APIS
@@ -1334,23 +1453,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
        
 
-        [HttpGet("GetSubGroupById")]
-        public async Task<IActionResult> GetSubGroupById(int id)
-        {
-            try
-            {
-                var data = await _context.SubGroupMaster
-                          .Where(x => x.SubGroupId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
         //-----------------------------
         //PATCH APIS
@@ -1633,38 +1736,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
         
 
-        [HttpPatch("PatchSubGroup/{id}")]
-        public async Task<IActionResult> PatchSubGroup(int id, [FromBody] JsonPatchDocument<SubGroupMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var group = await _context.SubGroupMaster.FindAsync(id);
-
-            if (group == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(group, ModelState);
-            group.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "SubGroup updated successfully" });
-        }
+        
 
         //-----------------------------
         //POST APIS
@@ -1732,40 +1804,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpPost("AddServicableMaster")]
-        public async Task<IActionResult> AddServicableMaster([FromBody] ServicableMasterDTO service)
-        {
-            if (service == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-            var validator = new ServiveValidator(_context);
-            var result = validator.Validate(service);
-            if (!result.IsValid)
-            {
-                var errors = result.Errors.Select(x => new
-                {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, message = errors });
-            }
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<ServicableMaster>(service);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.ServicableMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Service created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
         [HttpPost("AddVendorMaster")]
         public async Task<IActionResult> AddVendorMaster([FromBody] VendorMasterDTO vendor)
@@ -1868,40 +1907,5 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         }
 
         
-
-        [HttpPost("AddSubGroup")]
-        public async Task<IActionResult> AddSubGroup([FromBody] SubGroupMasterDTO group)
-        {
-            if (group == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-            var validator = new SubGroupValidator(_context);
-            var result = validator.Validate(group);
-            if (!result.IsValid)
-            {
-                var errors = result.Errors.Select(x => new
-                {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, message = errors });
-            }
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<SubGroupMaster>(group);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.SubGroupMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "SubGroup created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
     }
 }

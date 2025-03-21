@@ -33,7 +33,7 @@ namespace Repository.Models
 
     }
 
-    public class SubGroupValidator : AbstractValidator<SubGroupMasterDTO>
+    public class SubGroupValidator : AbstractValidator<SubGroupMaster>
     {
         private readonly DbContextSql _context;
         public SubGroupValidator(DbContextSql context)
@@ -55,21 +55,14 @@ namespace Repository.Models
                 .When(x => x.SubGroupId > 0)
                 .WithMessage("SubGroup Name already exists");
         }
-        private async Task<bool> IsUniqueClusterName(SubGroupMasterDTO subGroupMaster, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueClusterName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
         {
-
-            return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.IsActive == true, cancellationToken);
-
-
+            return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.IsActive == true && x.CompanyId == subGroupMaster.CompanyId, cancellationToken);
         }
 
-
-        private async Task<bool> IsUniqueUpdateClusterName(SubGroupMasterDTO subGroupMaster, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueUpdateClusterName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
         {
-
-            return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.SubGroupId != subGroupMaster.SubGroupId && x.IsActive == true, cancellationToken);
-
-
+            return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.SubGroupId != subGroupMaster.SubGroupId && x.IsActive == true && x.CompanyId == subGroupMaster.CompanyId, cancellationToken);
         }
     }
 }
