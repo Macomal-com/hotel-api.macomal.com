@@ -943,58 +943,9 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpGet("GetRoomCategoryMaster")]
-        public async Task<IActionResult> GetRoomCategoryMaster()
-        {
+       
 
-            try
-            {
-                var data = await _context.RoomCategoryMaster.Where(bm => bm.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Room Category not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Room Category fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetRoomMaster")]
-        public async Task<IActionResult> GetRoomMaster()
-        {
-            try
-            {
-                var data = await _context.RoomCategoryMaster.Where(bm => bm.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Rooms not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Rooms fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
         [HttpGet("GetRoomRateMaster")]
         public async Task<IActionResult> GetRoomRateMaster()
@@ -1270,42 +1221,9 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpGet("GetRoomCategoryById")]
-        public async Task<IActionResult> GetRoomCategoryById(int id)
-        {
-            try
-            {
-                var data = await _context.RoomCategoryMaster
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+      
 
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Room Category not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Room Category fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetRoomById")]
-        public async Task<IActionResult> GetRoomById(int id)
-        {
-            try
-            {
-                var data = await _context.RoomMaster
-                          .Where(x => x.RoomId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Room not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Room fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
+       
         [HttpGet("GetRoomRateById")]
         public async Task<IActionResult> GetRoomRateById(int id)
         {
@@ -1513,72 +1431,8 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             return Ok(new { Code = 200, Message = "Owner updated successfully" });
         }
 
-        [HttpPatch("PatchRoomCategoryMaster/{id}")]
-        public async Task<IActionResult> PatchRoomCategoryMaster(int id, [FromBody] JsonPatchDocument<RoomCategoryMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var roomCat = await _context.RoomCategoryMaster.FindAsync(id);
-
-            if (roomCat == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(roomCat, ModelState);
-            roomCat.UpdatedDate = DateTime.Now.ToString();
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Room Category updated successfully" });
-        }
-
-        [HttpPatch("PatchRoomMaster/{id}")]
-        public async Task<IActionResult> PatchRoomMaster(int id, [FromBody] JsonPatchDocument<RoomMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var room = await _context.RoomMaster.FindAsync(id);
-
-            if (room == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(room, ModelState);
-            room.UpdatedDate = DateTime.Now.ToString();
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Room updated successfully" });
-        }
-
+       
+        
         [HttpPatch("PatchRoomRateMaster/{id}")]
         public async Task<IActionResult> PatchRoomRateMaster(int id, [FromBody] JsonPatchDocument<RoomRateMaster> patchDocument)
         {
@@ -1851,56 +1705,8 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpPost("AddRoomCategoryMaster")]
-        public async Task<IActionResult> AddRoomCategoryMaster([FromBody] RoomCategoryMasterDTO roomCat)
-        {
-            if (roomCat == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<RoomCategoryMaster>(roomCat);
-                SetClusterDefaults(cm, companyId, userId);
-
-                _context.RoomCategoryMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Room Category created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpPost("AddRoomMaster")]
-        public async Task<IActionResult> AddRoomMaster([FromBody] RoomMasterDTO room)
-        {
-            if (room == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<RoomMaster>(room);
-                SetClusterDefaults(cm, companyId, userId);
-
-                _context.RoomMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Room created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
+        
+        
         [HttpPost("AddRoomRateMaster")]
         public async Task<IActionResult> AddRoomRateMaster([FromBody] RoomRateMasterDTO room)
         {
