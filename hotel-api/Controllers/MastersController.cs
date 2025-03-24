@@ -1042,7 +1042,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-
         [HttpGet("GetServicableById/{Id}")]
         public async Task<IActionResult> GetServicableById(int id)
         {
@@ -1094,6 +1093,130 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
             return Ok(new { Code = 200, Message = "Service updated successfully" });
         }
+
+
+        //VENDOR MASTER
+        [HttpGet("GetVendorMaster")]
+        public async Task<IActionResult> GetVendorMaster()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await (from rs in _context.VendorMaster
+                                  join gm in _context.ServicableMaster on rs.ServiceId equals gm.ServiceId
+                                  where rs.IsActive == true && gm.IsActive == true &&
+                                  rs.CompanyId == companyId && rs.UserId == userId
+                                  select new
+                                  {
+                                      rs.VendorId,
+                                      rs.VendorName,
+                                      rs.VendorEmail,
+                                      rs.VendorPhone,
+                                      rs.ServiceId,
+                                      gm.ServiceName
+                                  }).ToListAsync();
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "Service not found", Data = Array.Empty<object>() });
+                }
+                return Ok(new { Code = 200, Message = "Service fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddVendorMaster")]
+        public async Task<IActionResult> AddVendorMaster([FromBody] VendorMasterDTO vendor)
+        {
+            if (vendor == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<VendorMaster>(vendor);
+                SetMastersDefault(cm, companyId, userId);
+
+                var validator = new VendorValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+                _context.VendorMaster.Add(cm);
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Vendor created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetVendorById/{Id}")]
+        public async Task<IActionResult> GetVendorById(int id)
+        {
+            try
+            {
+                var data = await _context.VendorMaster
+                          .Where(x => x.VendorId == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Vendor fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchVendor/{id}")]
+        public async Task<IActionResult> PatchVendor(int id, [FromBody] JsonPatchDocument<VendorMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var vendor = await _context.VendorMaster.FindAsync(id);
+
+            if (vendor == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(vendor, ModelState);
+            var validator = new VendorValidator(_context);
+            var result = await validator.ValidateAsync(vendor);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, Message = errors });
+            }
+            vendor.UpdatedDate = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Vendor updated successfully" });
+        }
+
+
+
 
 
 
@@ -1203,34 +1326,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 }
 
                 return Ok(new { Code = 200, Message = "Room Rates fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        
-
-        [HttpGet("GetVendorMaster")]
-        public async Task<IActionResult> GetVendorMaster()
-        {
-            try
-            {
-                var data = await _context.VendorMaster.Where(bm => bm.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Vendor Master not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Vendor Master fetched successfully", Data = data });
             }
             catch (SqlException sqlEx)
             {
@@ -1406,24 +1501,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return data != null
                     ? NotFound(new { Code = 404, Message = "Room Rate not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Room Rate fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetVendorById")]
-        public async Task<IActionResult> GetVendorById(int id)
-        {
-            try
-            {
-                var data = await _context.VendorMaster
-                          .Where(x => x.VendorId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Vendor fetched successfully", Data = data });
             }
             catch (Exception ex)
             {
@@ -1798,33 +1875,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 await _context.SaveChangesAsync();
 
                 return Ok(new { Code = 200, Message = "Room Rate created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        
-
-        [HttpPost("AddVendorMaster")]
-        public async Task<IActionResult> AddVendorMaster([FromBody] VendorMasterDTO vendor)
-        {
-            if (vendor == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<VendorMaster>(vendor);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.VendorMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Vendor created successfully" });
             }
             catch (Exception ex)
             {

@@ -1,4 +1,6 @@
 ﻿using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using RepositoryModels.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -31,22 +33,41 @@ namespace Repository.Models
         public int ServiceId { get; set; }
     }
 
-    public class VendorValidator : AbstractValidator<VendorMasterDTO>
+    public class VendorValidator : AbstractValidator<VendorMaster>
     {
-        public VendorValidator()
+        private readonly DbContextSql _context;
+        public VendorValidator(DbContextSql context)
         {
+            _context = context;
             RuleFor(x => x.VendorName)
-                .NotNull().WithMessage("Vendor Name cannot be null")
+                .NotNull().WithMessage("Vendor Name is required")
                 .NotEmpty().WithMessage("Vendor Name is required");
-            RuleFor(x => x.VendorEmail)
-                .NotNull().WithMessage("Email cannot be null")
-                .NotEmpty().WithMessage("Email is required");
             RuleFor(x => x.VendorPhone)
-                .NotNull().WithMessage("Phone Number cannot be null")
-                .NotEmpty().WithMessage("Phone Number is required");
+                .NotNull().WithMessage("Phone Number is required")
+                .NotEmpty().WithMessage("Phone Number is required")
+                .MinimumLength(10).WithMessage("Phone Number should be 10 numbers")
+                .MaximumLength(10).WithMessage("Phone Number should be 10 numbers");
             RuleFor(x => x.ServiceId)
                 .NotNull().WithMessage("Service Id cannot be null")
                 .NotEmpty().WithMessage("Service Id is required");
+            RuleFor(x => x)
+                .MustAsync(IsPhoneNumberExists)
+                .When(x => x.VendorId == 0)
+                .WithMessage("Another Vendor already registered with same phone number");
+
+            RuleFor(x => x)
+                .MustAsync(IsPhoneNumberUpdateExists)
+                .When(x => x.VendorId > 0)
+                .WithMessage("Another Vendor already registered with same phone number");
+        }
+        private async Task<bool> IsPhoneNumberExists(VendorMaster vm, CancellationToken cancellationToken)
+        {
+            return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.IsActive == true, cancellationToken);
+        }
+
+        private async Task<bool> IsPhoneNumberUpdateExists(VendorMaster vm, CancellationToken cancellationToken)
+        {
+            return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true, cancellationToken);
         }
     }
 }
