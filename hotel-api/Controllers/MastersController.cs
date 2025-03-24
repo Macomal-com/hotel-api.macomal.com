@@ -1043,6 +1043,58 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         }
 
 
+        [HttpGet("GetServicableById/{Id}")]
+        public async Task<IActionResult> GetServicableById(int id)
+        {
+            try
+            {
+                var data = await _context.ServicableMaster
+                          .Where(x => x.ServiceId == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Service not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Services fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchServicableMaster/{id}")]
+        public async Task<IActionResult> PatchServicableMaster(int id, [FromBody] JsonPatchDocument<ServicableMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var service = await _context.ServicableMaster.FindAsync(id);
+
+            if (service == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(service, ModelState);
+            var validator = new ServiveValidator(_context);
+            var result = await validator.ValidateAsync(service);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, Message = errors });
+            }
+            service.UpdatedDate = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Service updated successfully" });
+        }
+
 
 
 
@@ -1361,24 +1413,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpGet("GetServicableById")]
-        public async Task<IActionResult> GetServicableById(int id)
-        {
-            try
-            {
-                var data = await _context.ServicableMaster
-                          .Where(x => x.ServiceId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Servicable not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Servicable fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
         [HttpGet("GetVendorById")]
         public async Task<IActionResult> GetVendorById(int id)
         {
@@ -1567,39 +1601,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             await _context.SaveChangesAsync();
 
             return Ok(new { Code = 200, Message = "Room Rate updated successfully" });
-        }
-
-        [HttpPatch("PatchServicableMaster/{id}")]
-        public async Task<IActionResult> PatchServicableMaster(int id, [FromBody] JsonPatchDocument<ServicableMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var service = await _context.ServicableMaster.FindAsync(id);
-
-            if (service == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(service, ModelState);
-            service.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Service updated successfully" });
         }
 
         [HttpPatch("PatchVendorMaster/{id}")]

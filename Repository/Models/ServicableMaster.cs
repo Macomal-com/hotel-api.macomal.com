@@ -34,7 +34,7 @@ namespace Repository.Models
         public string ServiceDescription { get; set; } = String.Empty;
     }
 
-    public class ServiveValidator : AbstractValidator<ServicableMasterDTO>
+    public class ServiveValidator : AbstractValidator<ServicableMaster>
     {
         private readonly DbContextSql _context;
         public ServiveValidator(DbContextSql context)
@@ -59,21 +59,15 @@ namespace Repository.Models
                 .When(x => x.ServiceId > 0)
                 .WithMessage("Service Name already exists");
         }
-        private async Task<bool> IsUniqueServiceName(ServicableMasterDTO ServiceMaster, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueServiceName(ServicableMaster serviceMaster, CancellationToken cancellationToken)
         {
-
-            return !await _context.ServicableMaster.AnyAsync(x => x.ServiceName == ServiceMaster.ServiceName && x.IsActive == true, cancellationToken);
-
-
+            return !await _context.ServicableMaster.AnyAsync(x => x.ServiceName == serviceMaster.ServiceName && x.IsActive == true && x.CompanyId == serviceMaster.CompanyId && x.UserId == serviceMaster.UserId, cancellationToken);
         }
 
 
-        private async Task<bool> IsUniqueUpdateServiceName(ServicableMasterDTO ServiceMaster, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueUpdateServiceName(ServicableMaster serviceMaster, CancellationToken cancellationToken)
         {
-
-            return !await _context.ServicableMaster.AnyAsync(x => x.ServiceName == ServiceMaster.ServiceName && x.ServiceId != ServiceMaster.ServiceId && x.IsActive == true, cancellationToken);
-
-
+            return !await _context.ServicableMaster.AnyAsync(x => x.ServiceName == serviceMaster.ServiceName && x.ServiceId != serviceMaster.ServiceId && x.IsActive == true, cancellationToken);
         }
     }
 }
