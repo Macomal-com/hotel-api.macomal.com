@@ -1217,6 +1217,120 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
 
 
+        //PAYMENT MODE
+        [HttpGet("GetPaymentMode")]
+        public async Task<IActionResult> GetPaymentMode()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.PaymentMode.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetPaymentModeById/{id}")]
+        public async Task<IActionResult> GetPaymentModeById(int id)
+        {
+            try
+            {
+                var data = await _context.PaymentMode
+                          .Where(x => x.PaymentId == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddPaymentMode")]
+        public async Task<IActionResult> AddPaymentMode([FromBody] PaymentModeDTO pm)
+        {
+            if (pm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<PaymentMode>(pm);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new PaymentModeValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+                _context.PaymentMode.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Payment Mode created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchPaymentMode/{id}")]
+        public async Task<IActionResult> PatchPaymentMode(int id, [FromBody] JsonPatchDocument<PaymentMode> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var pm = await _context.PaymentMode.FindAsync(id);
+
+            if (pm == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(pm, ModelState);
+            var validator = new PaymentModeValidator(_context);
+
+            var result = await validator.ValidateAsync(pm);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, message = errors });
+            }
+            pm.UpdatedDate = DateTime.Now;
+
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Payment Mode updated successfully" });
+        }
+
+
+        //STAFF MASTER
 
 
 
@@ -1272,15 +1386,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        
-
-        
-        
-
-       
-
-        
-
         [HttpGet("GetOwnerMaster")]
         public async Task<IActionResult> GetOwnerMaster()
         {
@@ -1308,10 +1413,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
-
-       
-
-        
 
         [HttpGet("GetRoomRateMaster")]
         public async Task<IActionResult> GetRoomRateMaster()
@@ -1378,32 +1479,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 }
 
                 return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetPaymentMode")]
-        public async Task<IActionResult> GetPaymentMode()
-        {
-            try
-            {
-                var data = await _context.PaymentMode.Where(bm => bm.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
             }
             catch (SqlException sqlEx)
             {
@@ -1544,24 +1619,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpGet("GetPaymentModeById")]
-        public async Task<IActionResult> GetPaymentModeById(int id)
-        {
-            try
-            {
-                var data = await _context.PaymentMode
-                          .Where(x => x.PaymentId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
        
 
         
@@ -1680,39 +1737,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             return Ok(new { Code = 200, Message = "Room Rate updated successfully" });
         }
 
-        [HttpPatch("PatchVendorMaster/{id}")]
-        public async Task<IActionResult> PatchVendorMaster(int id, [FromBody] JsonPatchDocument<VendorMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var vendor = await _context.VendorMaster.FindAsync(id);
-
-            if (vendor == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(vendor, ModelState);
-            vendor.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Vendor updated successfully" });
-        }
-
         [HttpPatch("PatchUser/{id}")]
         public async Task<IActionResult> PatchUser(int id, [FromBody] JsonPatchDocument<UserCreation> patchDocument)
         {
@@ -1777,39 +1801,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             await _context.SaveChangesAsync();
 
             return Ok(new { Code = 200, Message = "Staff updated successfully" });
-        }
-
-        [HttpPatch("PatchPaymentMode/{id}")]
-        public async Task<IActionResult> PatchPaymentMode(int id, [FromBody] JsonPatchDocument<PaymentMode> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var mode = await _context.PaymentMode.FindAsync(id);
-
-            if (mode == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(mode, ModelState);
-            mode.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Payment Mode updated successfully" });
         }
 
         
@@ -1930,33 +1921,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
-        }
-
-        [HttpPost("AddPaymentMode")]
-        public async Task<IActionResult> AddPaymentMode([FromBody] PaymentModeDTO mode)
-        {
-            if (mode == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<PaymentMode>(mode);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.PaymentMode.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Payment Mode created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        
+        }        
     }
 }
