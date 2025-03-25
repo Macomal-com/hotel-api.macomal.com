@@ -15,7 +15,7 @@ namespace Repository.Models
         [Key]
         public int Id { get; set; }
         public int TaxPercentage { get; set; }
-        public string ApplicaleServices { get; set; } = String.Empty;
+        public string ApplicableServices { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -27,7 +27,7 @@ namespace Repository.Models
         [Key]
         public int Id { get; set; }
         public int TaxPercentage { get; set; }
-        public string ApplicaleServices { get; set; } = String.Empty;
+        public string ApplicableServices { get; set; } = String.Empty;
     }
     public class GstValidator : AbstractValidator<GstMaster>
     {
@@ -38,7 +38,7 @@ namespace Repository.Models
             RuleFor(x => x.TaxPercentage)
                 .NotNull().WithMessage("Tax Percentage is required")
                 .NotEmpty().WithMessage("Tax Percentage is required");
-            RuleFor(x => x.ApplicaleServices)
+            RuleFor(x => x.ApplicableServices)
                 .NotNull().WithMessage("Applicale Services is required")
                 .NotEmpty().WithMessage("Applicale Services is required");
             RuleFor(x => x)
@@ -54,13 +54,13 @@ namespace Repository.Models
         private async Task<bool> IsUniqueService(GstMaster gm, CancellationToken cancellationToken)
         {
 
-            return !await _context.GstMaster.AnyAsync(x => x.ApplicaleServices == gm.ApplicaleServices && x.IsActive == true && x.CompanyId == gm.CompanyId, cancellationToken);
+            return !await _context.GstMaster.AnyAsync(x => x.ApplicableServices == gm.ApplicableServices && x.IsActive == true && x.CompanyId == gm.CompanyId, cancellationToken);
         }
 
 
         private async Task<bool> IsUniqueUpdateService(GstMaster gm, CancellationToken cancellationToken)
         {
-            return !await _context.GstMaster.AnyAsync(x => x.ApplicaleServices == gm.ApplicaleServices && x.Id != gm.Id && x.IsActive == true && x.CompanyId == gm.CompanyId, cancellationToken);
+            return !await _context.GstMaster.AnyAsync(x => x.ApplicableServices == gm.ApplicableServices && x.Id != gm.Id && x.IsActive == true && x.CompanyId == gm.CompanyId, cancellationToken);
         }
     }
 }
