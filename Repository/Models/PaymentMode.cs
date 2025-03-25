@@ -4,6 +4,7 @@ using RepositoryModels.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ namespace Repository.Models
         public string ProviderContact { get; set; } = String.Empty;
         public string ProviderEmail { get; set; } = String.Empty;
         public double TransactionCharges { get; set; }
+        public string TransactionType { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -30,6 +32,7 @@ namespace Repository.Models
         public string ProviderContact { get; set; } = String.Empty;
         public string ProviderEmail { get; set; } = String.Empty;
         public double TransactionCharges { get; set; }
+        public string TransactionType { get; set; } = String.Empty;
     }
     public class PaymentModeValidator : AbstractValidator<PaymentMode>
     {
@@ -42,36 +45,34 @@ namespace Repository.Models
             RuleFor(x => x.PaymentModeName)
                 .NotEmpty().WithMessage("Payment Mode is required")
                 .NotNull().WithMessage("Payment Mode is required");
-
-            RuleFor(x => x.ProviderContact)
-                .NotNull().WithMessage("Phone Number is required")
-                .NotEmpty().WithMessage("Phone Number is required")
-                .MinimumLength(10).WithMessage("Phone Number should be 10 numbers")
-                .MaximumLength(10).WithMessage("Phone Number should be 10 numbers");
-
+            RuleFor(x => x.TransactionCharges)
+                .NotEmpty().WithMessage("Transaction Charges is required")
+                .NotNull().WithMessage("Transaction Charges is required");
+            RuleFor(x => x.TransactionType)
+                .NotEmpty().WithMessage("Transaction Type is required")
+                .NotNull().WithMessage("Transaction Type is required");
             RuleFor(x => x)
-                .MustAsync(IsPhoneNumberExists)
+                .MustAsync(IsModeExists)
                 .When(x => x.PaymentId == 0)
-                .WithMessage("Another Provider already registered with same phone number");
+                .WithMessage("Another Mode Name already registered");
 
             RuleFor(x => x)
-                .MustAsync(IsPhoneNumberUpdateExists)
+                .MustAsync(IsModeUpdateExists)
                 .When(x => x.PaymentId > 0)
-                .WithMessage("Another Provider already registered with same phone number");
+                .WithMessage("Another Mode Name already registered");
         }
-
-        private async Task<bool> IsPhoneNumberExists(PaymentMode master, CancellationToken cancellationToken)
+        private async Task<bool> IsModeExists(PaymentMode master, CancellationToken cancellationToken)
         {
 
-            return !await _context.PaymentMode.AnyAsync(x => x.ProviderContact == master.ProviderContact && x.IsActive == true, cancellationToken);
+            return !await _context.PaymentMode.AnyAsync(x => x.PaymentModeName == master.PaymentModeName && x.IsActive == true, cancellationToken);
 
 
         }
 
-        private async Task<bool> IsPhoneNumberUpdateExists(PaymentMode master, CancellationToken cancellationToken)
+        private async Task<bool> IsModeUpdateExists(PaymentMode master, CancellationToken cancellationToken)
         {
 
-            return !await _context.PaymentMode.AnyAsync(x => x.ProviderContact == master.ProviderContact && x.PaymentId != master.PaymentId && x.IsActive == true, cancellationToken);
+            return !await _context.PaymentMode.AnyAsync(x => x.PaymentModeName == master.PaymentModeName && x.PaymentId != master.PaymentId && x.IsActive == true, cancellationToken);
 
 
         }

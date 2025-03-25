@@ -23,6 +23,7 @@ namespace hotel_api.Configurations
             CreateMap<PaymentModeDTO, PaymentMode>().ReverseMap();
             CreateMap<GroupMasterDTO, GroupMaster>().ReverseMap();
             CreateMap<SubGroupMasterDTO, SubGroupMaster>().ReverseMap();
+            CreateMap<VendorServiceMasterDTO, VendorServiceMaster>().ReverseMap();
         }
     }
 }

@@ -28,6 +28,8 @@ namespace RepositoryModels.Repository
         public DbSet<SubGroupMaster> SubGroupMaster { get; set; }
 
         public DbSet<UserDetails> UserDetails { get; set; }
+        public DbSet<GstMaster> GstMaster { get; set; }
+        public DbSet<VendorServiceMaster> VendorServiceMaster { get; set; }
 
         public DbSet<UserPropertyMapping> UserPropertyMapping { get; set; }
 

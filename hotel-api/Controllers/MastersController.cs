@@ -993,6 +993,9 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                                       rs.ServiceDescription,
                                       rs.GroupId,
                                       rs.SubGroupId,
+                                      rs.Amount,
+                                      rs.Discount,
+                                      rs.TaxType,
                                       gm.GroupName,
                                       sgm.SubGroupName
                                   }).ToListAsync();               
@@ -1104,7 +1107,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             try
             {
                 var data = await (from rs in _context.VendorMaster
-                                  join gm in _context.ServicableMaster on rs.ServiceId equals gm.ServiceId
+                                  join gm in _context.VendorServiceMaster on rs.ServiceId equals gm.Id
                                   where rs.IsActive == true && gm.IsActive == true &&
                                   rs.CompanyId == companyId && rs.UserId == userId
                                   select new
@@ -1114,7 +1117,8 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                                       rs.VendorEmail,
                                       rs.VendorPhone,
                                       rs.ServiceId,
-                                      gm.ServiceName
+                                      rs.CompanyName,
+                                      gm.Name
                                   }).ToListAsync();
                 if (data.Count == 0)
                 {
@@ -1460,6 +1464,281 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
 
         //GST MASTER
+        [HttpGet("GetGstMaster")]
+        public async Task<IActionResult> GetGstMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.GstMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetGstById/{id}")]
+        public async Task<IActionResult> GetGstById(int id)
+        {
+            try
+            {
+                var data = await _context.GstMaster
+                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddGstMaster")]
+        public async Task<IActionResult> AddGstMaster([FromBody] GstMasterDTO gm)
+        {
+            if (gm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<GstMaster>(gm);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new GstValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+
+
+                await _context.GstMaster.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Gst created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchGstMaster/{id}")]
+        public async Task<IActionResult> PatchGstMaster(int id, [FromBody] JsonPatchDocument<GstMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.GstMaster.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new GstValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.UpdatedDate = DateTime.Now;
+                if (!ModelState.IsValid)
+                {
+                    var errorMessages = ModelState
+                                        .Where(x => x.Value.Errors.Any())
+                                        .SelectMany(x => x.Value.Errors)
+                                        .Select(x => x.ErrorMessage)
+                                        .ToList();
+                    return Ok(new { Code = 500, Message = errorMessages });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Gst updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+
+        //VENDOR SERVICE MASTER
+        [HttpGet("GetVendorService")]
+        public async Task<IActionResult> GetVendorService()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.VendorServiceMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Vendor Service fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetVendorServiceById/{id}")]
+        public async Task<IActionResult> GetVendorServiceById(int id)
+        {
+            try
+            {
+                var data = await _context.VendorServiceMaster
+                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Vendor Service fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddVendorService")]
+        public async Task<IActionResult> AddVendorService([FromBody] VendorServiceMasterDTO vs)
+        {
+            if (vs == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<VendorServiceMaster>(vs);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new VendorServiceValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+
+
+                await _context.VendorServiceMaster.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Vendor Service created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchVendorService/{id}")]
+        public async Task<IActionResult> PatchVendorService(int id, [FromBody] JsonPatchDocument<VendorServiceMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var vs = await _context.VendorServiceMaster.FindAsync(id);
+
+                if (vs == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(vs, ModelState);
+
+                var validator = new VendorServiceValidator(_context);
+                var result = await validator.ValidateAsync(vs);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                vs.UpdatedDate = DateTime.Now;
+                if (!ModelState.IsValid)
+                {
+                    var errorMessages = ModelState
+                                        .Where(x => x.Value.Errors.Any())
+                                        .SelectMany(x => x.Value.Errors)
+                                        .Select(x => x.ErrorMessage)
+                                        .ToList();
+                    return Ok(new { Code = 500, Message = errorMessages });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Vendor Service updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+
+
+
 
 
 

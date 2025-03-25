@@ -18,6 +18,9 @@ namespace Repository.Models
         public int SubGroupId { get; set; }
         public string ServiceName { get; set; } = String.Empty;
         public string ServiceDescription { get; set; } = String.Empty;
+        public double Amount { get; set; }
+        public double Discount { get; set; }
+        public string TaxType { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -32,6 +35,9 @@ namespace Repository.Models
         public int SubGroupId { get; set; }
         public string ServiceName { get; set; } = String.Empty;
         public string ServiceDescription { get; set; } = String.Empty;
+        public double Amount { get; set; }
+        public double Discount { get; set; }
+        public string TaxType { get; set; } = String.Empty;
     }
 
     public class ServiveValidator : AbstractValidator<ServicableMaster>

@@ -17,6 +17,7 @@ namespace Repository.Models
         public string VendorName { get; set; } = String.Empty;
         public string VendorEmail { get; set; } = String.Empty;
         public string VendorPhone { get; set; } = String.Empty;
+        public string CompanyName { get; set; } = String.Empty;
         public int ServiceId { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
@@ -30,6 +31,7 @@ namespace Repository.Models
         public string VendorName { get; set; } = String.Empty;
         public string VendorEmail { get; set; } = String.Empty;
         public string VendorPhone { get; set; } = String.Empty;
+        public string CompanyName { get; set; } = String.Empty;
         public int ServiceId { get; set; }
     }
 
@@ -48,7 +50,7 @@ namespace Repository.Models
                 .MinimumLength(10).WithMessage("Phone Number should be 10 numbers")
                 .MaximumLength(10).WithMessage("Phone Number should be 10 numbers");
             RuleFor(x => x.ServiceId)
-                .NotNull().WithMessage("Service Id cannot be null")
+                .NotNull().WithMessage("Service Id is required")
                 .NotEmpty().WithMessage("Service Id is required");
             RuleFor(x => x)
                 .MustAsync(IsPhoneNumberExists)
@@ -58,7 +60,7 @@ namespace Repository.Models
             RuleFor(x => x)
                 .MustAsync(IsPhoneNumberUpdateExists)
                 .When(x => x.VendorId > 0)
-                .WithMessage("Another Vendor already registered with same phone number");
+                .WithMessage("Another Vendor already registered with same phone number updated");
         }
         private async Task<bool> IsPhoneNumberExists(VendorMaster vm, CancellationToken cancellationToken)
         {
@@ -67,6 +69,7 @@ namespace Repository.Models
 
         private async Task<bool> IsPhoneNumberUpdateExists(VendorMaster vm, CancellationToken cancellationToken)
         {
+            var data = await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true, cancellationToken);
             return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true, cancellationToken);
         }
     }
