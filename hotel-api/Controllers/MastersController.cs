@@ -1331,6 +1331,135 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
 
         //STAFF MASTER
+        [HttpGet("GetStaffMaster")]
+        public async Task<IActionResult> GetStaffMaster()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await (from rs in _context.StaffManagementMaster
+                                  join gm in _context.VendorMaster on rs.VendorId equals gm.VendorId into gmJoin
+                                  from gm in gmJoin.DefaultIfEmpty() // Left join to include staff rows with VendorId = 0
+                                  where rs.IsActive == true
+                                        && (gm == null || gm.IsActive == true) // If there's no matching Vendor (gm is null), consider it as active
+                                        && rs.CompanyId == companyId
+                                        && rs.UserId == userId
+                                        && (rs.VendorId == 0 || rs.VendorId == gm.VendorId) // Include rows where VendorId is 0 or matches
+                                  select new
+                                  {
+                                      rs.StaffId,
+                                      rs.StaffName,
+                                      rs.StaffRole,
+                                      rs.PhoneNo,
+                                      rs.Salary,
+                                      rs.VendorId,
+                                      VendorName = gm != null ? gm.VendorName : "No Vendor"
+                                  }).ToListAsync();
+
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "Staff not found", Data = Array.Empty<object>() });
+                }
+                return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddStaffMaster")]
+        public async Task<IActionResult> AddStaffMaster([FromBody] StaffManagementMasterDTO sm)
+        {
+            if (sm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<StaffManagementMaster>(sm);
+                SetMastersDefault(cm, companyId, userId);
+
+                var validator = new StaffValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+                _context.StaffManagementMaster.Add(cm);
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Staff created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetStaffById/{Id}")]
+        public async Task<IActionResult> GetStaffById(int id)
+        {
+            try
+            {
+                var data = await _context.StaffManagementMaster
+                          .Where(x => x.StaffId == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchStaff/{id}")]
+        public async Task<IActionResult> PatchStaff(int id, [FromBody] JsonPatchDocument<StaffManagementMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var sm = await _context.StaffManagementMaster.FindAsync(id);
+
+            if (sm == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(sm, ModelState);
+            var validator = new StaffValidator(_context);
+            var result = await validator.ValidateAsync(sm);
+            if (!result.IsValid)
+            {
+                var errors = result.Errors.Select(x => new
+                {
+                    Error = x.ErrorMessage,
+                    Field = x.PropertyName
+                }).ToList();
+                return Ok(new { Code = 202, Message = errors });
+            }
+            sm.UpdatedDate = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            return Ok(new { Code = 200, Message = "Staff updated successfully" });
+        }
+
+
+
+        //GST MASTER
 
 
 
@@ -1466,32 +1595,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        [HttpGet("GetStaff")]
-        public async Task<IActionResult> GetStaff()
-        {
-            try
-            {
-                var data = await _context.StaffManagementMaster.Where(bm => bm.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return NotFound(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
         
 
         
@@ -1594,24 +1697,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return data != null
                     ? NotFound(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "User fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetStaffById")]
-        public async Task<IActionResult> GetStaffById(int id)
-        {
-            try
-            {
-                var data = await _context.StaffManagementMaster
-                          .Where(x => x.StaffId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
             }
             catch (Exception ex)
             {
@@ -1770,39 +1855,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             return Ok(new { Code = 200, Message = "User updated successfully" });
         }
 
-        [HttpPatch("PatchStaff/{id}")]
-        public async Task<IActionResult> PatchStaff(int id, [FromBody] JsonPatchDocument<StaffManagementMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var staff = await _context.StaffManagementMaster.FindAsync(id);
-
-            if (staff == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(staff, ModelState);
-            staff.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Staff updated successfully" });
-        }
-
         
 
         
@@ -1897,30 +1949,5 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
-
-        [HttpPost("AddStaff")]
-        public async Task<IActionResult> AddStaff([FromBody] StaffManagementMasterDTO staff)
-        {
-            if (staff == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<StaffManagementMaster>(staff);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.StaffManagementMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Staff created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }        
     }
 }
