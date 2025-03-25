@@ -25,6 +25,7 @@ namespace hotel_api.Configurations
             CreateMap<SubGroupMasterDTO, SubGroupMaster>().ReverseMap();
             CreateMap<VendorServiceMasterDTO, VendorServiceMaster>().ReverseMap();
             CreateMap<GstMasterDTO, GstMaster>().ReverseMap();
+            CreateMap<CommissionMasterDTO, CommissionMaster>().ReverseMap();
         }
     }
 }

@@ -30,6 +30,7 @@ namespace RepositoryModels.Repository
         public DbSet<UserDetails> UserDetails { get; set; }
         public DbSet<GstMaster> GstMaster { get; set; }
         public DbSet<VendorServiceMaster> VendorServiceMaster { get; set; }
+        public DbSet<CommissionMaster> CommissionMaster { get; set; }
 
         public DbSet<UserPropertyMapping> UserPropertyMapping { get; set; }
 
