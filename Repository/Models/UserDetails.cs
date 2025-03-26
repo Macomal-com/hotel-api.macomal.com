@@ -1,4 +1,7 @@
-﻿using System;
+﻿using FluentValidation;
+using Microsoft.EntityFrameworkCore;
+using RepositoryModels.Repository;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
@@ -39,5 +42,59 @@ namespace Repository.Models
         public string Other5 { get; set; } = string.Empty;
 
         
+    }
+
+    public class UserDetailsDTO
+    {
+        [Key]
+        public int UserId { get; set; }
+        public string UserName { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string Roles { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string EmailId { get; set; } = string.Empty;
+        public string PhoneNo { get; set; } = string.Empty;
+    }
+    public class UserValidator : AbstractValidator<UserDetails>
+    {
+        private readonly DbContextSql _context;
+        public UserValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x.UserName)
+                .NotNull().WithMessage("User Name is required")
+                .NotEmpty().WithMessage("User Name is required");
+            RuleFor(x => x.Password)
+                .NotNull().WithMessage("Password is required")
+                .NotEmpty().WithMessage("Password is required");
+            RuleFor(x => x.Roles)
+                .NotNull().WithMessage("Role is required")
+                .NotEmpty().WithMessage("Role is required");
+            RuleFor(x => x.Name)
+                .NotNull().WithMessage("Name is required")
+                .NotEmpty().WithMessage("Name is required");
+            RuleFor(x => x.EmailId)
+                .NotNull().WithMessage("EmailId is required")
+                .NotEmpty().WithMessage("EmailId is required");
+            RuleFor(x => x)
+                .MustAsync(IsUniqueUserName)
+                .When(x => x.UserId == 0)
+                .WithMessage("UserName already exists");
+
+            RuleFor(x => x)
+                .MustAsync(IsUniqueUpdateUserName)
+                .When(x => x.UserId > 0)
+                .WithMessage("UserName already exists");
+        }
+        private async Task<bool> IsUniqueUserName(UserDetails ud, CancellationToken cancellationToken)
+        {
+            return !await _context.UserDetails.AnyAsync(x => x.UserName == ud.UserName && x.IsActive == true && x.CompanyId == ud.CompanyId, cancellationToken);
+        }
+
+
+        private async Task<bool> IsUniqueUpdateUserName(UserDetails ud, CancellationToken cancellationToken)
+        {
+            return !await _context.UserDetails.AnyAsync(x => x.UserName == ud.UserName && x.UserId != ud.UserId && x.IsActive == true && x.CompanyId == ud.CompanyId, cancellationToken);
+        }
     }
 }

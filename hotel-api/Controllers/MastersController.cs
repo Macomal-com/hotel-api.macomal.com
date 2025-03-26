@@ -1736,6 +1736,150 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
         }
 
+        //USER CREATION
+        [HttpGet("GetUserMaster")]
+        public async Task<IActionResult> GetUserMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.UserDetails.Where(bm => bm.IsActive == true).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetUserById/{id}")]
+        public async Task<IActionResult> GetUserById(int id)
+        {
+            try
+            {
+                var data = await _context.UserDetails
+                          .Where(x => x.IsActive == true && x.UserId == id).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddUserMaster")]
+        public async Task<IActionResult> AddUserMaster([FromBody] UserDetailsDTO gm)
+        {
+            if (gm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string dbName = Convert.ToString(HttpContext.Request.Headers["Database"]);
+
+                var cm = _mapper.Map<UserDetails>(gm);
+                cm.CreatedDate = DateTime.Now;
+                cm.ModifyDate = DateTime.Now;
+                cm.IsActive = true;
+                cm.CompanyId = companyId;
+                var validator = new UserValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+                cm.DBName = dbName;
+                cm.BranchId = 0;
+                cm.CreatedDate = DateTime.Now;
+                cm.ModifyDate = DateTime.Now;
+                cm.CreatedBy = 0;
+                cm.City = 0;
+                cm.Other1 = 0;
+                cm.Other2 = 0;
+                await _context.UserDetails.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "User created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchUserMaster/{id}")]
+        public async Task<IActionResult> PatchUserMaster(int id, [FromBody] JsonPatchDocument<UserDetails> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.UserDetails.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new UserValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.ModifyDate = DateTime.Now;
+                if (!ModelState.IsValid)
+                {
+                    var errorMessages = ModelState
+                                        .Where(x => x.Value.Errors.Any())
+                                        .SelectMany(x => x.Value.Errors)
+                                        .Select(x => x.ErrorMessage)
+                                        .ToList();
+                    return Ok(new { Code = 500, Message = errorMessages });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "User updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
 
 
 
@@ -2098,24 +2242,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return data != null
                     ? NotFound(new { Code = 404, Message = "Room Rate not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Room Rate fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetUserById")]
-            public async Task<IActionResult> GetUserById(int id)
-        {
-            try
-            {
-                var data = await _context.UserCreation
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "User fetched successfully", Data = data });
             }
             catch (Exception ex)
             {

@@ -18,7 +18,7 @@ namespace hotel_api.Configurations
             CreateMap<RoomRateMasterDTO, RoomRateMaster>().ReverseMap();
             CreateMap<ServicableMasterDTO, ServicableMaster>().ReverseMap();
             CreateMap<VendorMasterDTO, VendorMaster>().ReverseMap();
-            CreateMap<UserCreationDTO, UserCreation>().ReverseMap();
+            CreateMap<UserDetailsDTO, UserDetails>().ReverseMap();
             CreateMap<StaffManagementMasterDTO, StaffManagementMaster>().ReverseMap();
             CreateMap<PaymentModeDTO, PaymentMode>().ReverseMap();
             CreateMap<GroupMasterDTO, GroupMaster>().ReverseMap();
