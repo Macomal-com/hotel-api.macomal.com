@@ -38,11 +38,6 @@ namespace hotel_api.Controllers
         }
 
 
-
-        //-----------------------------
-        //GET APIS
-        //-----------------------------
-
         //CLUSTER APIS
         [HttpGet("GetClusterMaster")]
         public async Task<IActionResult> GetClusterMaster()
@@ -2041,42 +2036,146 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 return Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data });
             }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
             catch (Exception ex)
             {                 
-                // _logger.LogError($"Error: {ex.Message}");
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
 
         [HttpPost("AddCompanyDetails")]
-        public async Task<IActionResult> AddCompanyDetails([FromBody] CompanyDetailsDTO companyDetails)
+        public async Task<IActionResult> AddCompanyDetails([FromForm] CompanyDetailsDTO companyDetails, IFormFile[] files)
         {
             if (companyDetails == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
 
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                    int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                    var cm = _mapper.Map<CompanyDetails>(companyDetails);
+                    SetClusterDefaults(cm, companyId, userId);
+
+                    _context.CompanyDetails.Add(cm);
+                    await _context.SaveChangesAsync();
+
+                    var savedObject = await _context.CompanyDetails
+                                                     .FirstOrDefaultAsync(c => c.CompanyName == cm.CompanyName);
+
+                    if (files == null || files.Length == 0)
+                    {
+                        return BadRequest("No files uploaded.");
+                    }
+
+                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+
+                    if (!Directory.Exists(uploadPath))
+                    {
+                        Directory.CreateDirectory(uploadPath);
+                    }
+
+                    var propertyImages = new List<PropertyImages>();
+
+                    foreach (var file in files)
+                    {
+                        var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                        var filePath = Path.Combine(uploadPath, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        var propertyImage = new PropertyImages
+                        {
+                            PropertyId = savedObject.PropertyId,
+                            FilePath = fileName
+                        };
+                        propertyImages.Add(propertyImage);
+                    }
+
+                    _context.PropertyImages.AddRange(propertyImages);
+
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    return Ok(new { Code = 200, Message = "Company created successfully" });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                }
+            }
+        }
+
+        [HttpGet("GetImagesById/{id}")]
+        public async Task<IActionResult> GetImagesById(int id)
+        {
             try
             {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var data = await _context.PropertyImages.Where(bm => bm.PropertyId == id).ToListAsync();
 
-                var cm = _mapper.Map<CompanyDetails>(companyDetails);
-                SetClusterDefaults(cm, companyId, userId);
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "No Images Found", Data = Array.Empty<object>() });
+                }
 
-                _context.CompanyDetails.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Company created successfully" });
+                return Ok(new { Code = 200, Message = "Images fetched successfully", Data = data });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+
+        //[HttpPost("uploadFiles")]
+        //public async Task<IActionResult> UploadFiles(IFormFile[] files)
+        //{
+        //    if (files == null || files.Length == 0)
+        //    {
+        //        return BadRequest("No files uploaded.");
+        //    }
+
+        //    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+
+        //    if (!Directory.Exists(uploadPath))
+        //    {
+        //        Directory.CreateDirectory(uploadPath);
+        //    }
+
+        //    var propertyImages = new List<PropertyImages>();
+
+        //    foreach (var file in files)
+        //    {
+        //        var filePath = Path.Combine(uploadPath, file.FileName);
+
+        //        using (var stream = new FileStream(filePath, FileMode.Create))
+        //        {
+        //            await file.CopyToAsync(stream);
+        //        }
+
+        //        var propertyImage = new PropertyImages
+        //        {
+        //            PropertyId = id,
+        //            FilePath = filePath
+        //        };
+        //        propertyImages.Add(propertyImage);
+        //    }
+        //    _context.PropertyImages.AddRange(propertyImages);
+        //    await _context.SaveChangesAsync();
+
+        //    return Ok(new { message = "Files uploaded successfully." });
+        //}
+
+
+
+
 
         [HttpGet("GetOwnerMaster")]
         public async Task<IActionResult> GetOwnerMaster()
@@ -2184,11 +2283,10 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        
 
-        
 
-        
+
+
 
         [HttpGet("GetFloorById")]
         public async Task<IActionResult> GetFloorById(int id)
