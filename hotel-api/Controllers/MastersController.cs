@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Repository.Models;
 using RepositoryModels.Repository;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.Design;
 using System.Data;
+using System.Xml.XPath;
 
 namespace hotel_api.Controllers
 {
@@ -2016,12 +2018,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         }
 
 
-
-
-
-
-
-
+        //PROPERTY MASTER
         [HttpGet("GetCompanyDetails")]
         public async Task<IActionResult> GetCompanyDetails()
         {
@@ -2037,7 +2034,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data });
             }
             catch (Exception ex)
-            {                 
+            {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
@@ -2133,45 +2130,260 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
+        [HttpGet("GetCompanyById/{id}")]
+        public async Task<IActionResult> GetCompanyById(int id)
+        {
+            try
+            {
+                var data = await _context.CompanyDetails
+                          .Where(x => x.PropertyId == id && x.IsActive).FirstOrDefaultAsync();
 
-        //[HttpPost("uploadFiles")]
-        //public async Task<IActionResult> UploadFiles(IFormFile[] files)
-        //{
-        //    if (files == null || files.Length == 0)
-        //    {
-        //        return BadRequest("No files uploaded.");
-        //    }
+                return data != null
+                    ? Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data })
+                    : NotFound(new { Code = 404, Message = "Company not found", Data = Array.Empty<object>() });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
-        //    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+        [HttpPatch("PatchCompanyMaster/{id}")]
+        public async Task<IActionResult> PatchCompanyMaster(int id, [FromForm] string patchDoc, IFormFile[]? files, IFormFile? logo)
+        {
+            if (patchDoc == "")
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
 
-        //    if (!Directory.Exists(uploadPath))
-        //    {
-        //        Directory.CreateDirectory(uploadPath);
-        //    }
+            }
+            var patchDocument = JsonConvert.DeserializeObject<JsonPatchDocument<CompanyDetails>>(patchDoc);
+            using (var transaction = await _context.Database.BeginTransactionAsync())
+            {
+                try
+                {
+                    var company = await _context.CompanyDetails.Where(x => x.IsActive && x.PropertyId == id).FirstOrDefaultAsync();
+                    if (company == null)
+                    {
+                        return Ok(new { Code = 404, Message = "Data Not Found" });
+                    }
+                    patchDocument?.ApplyTo(company, ModelState);
+                    if (logo != null)
+                    {
+                        var uploadLogoPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads/logo");
+                        if (!Directory.Exists(uploadLogoPath))
+                        {
+                            Directory.CreateDirectory(uploadLogoPath);
+                        }
+                        var fileName = $"{Guid.NewGuid()}_{logo.FileName}";
+                        var filePath = Path.Combine(uploadLogoPath, fileName);
+                        using var stream = new FileStream(filePath, FileMode.Create);
+                        await logo.CopyToAsync(stream);
+                        company.PropertyLogo = fileName.ToString();
+                    }
+                    company.UpdatedDate = DateTime.Now.ToString();
+                    if (!ModelState.IsValid)
+                    {
+                        var errorMessages = ModelState
+                                            .Where(x => x.Value.Errors.Any())
+                                            .SelectMany(x => x.Value.Errors)
+                                            .Select(x => x.ErrorMessage)
+                                            .ToList();
+                        return Ok(new { Code = 500, Message = errorMessages });
+                    }
 
-        //    var propertyImages = new List<PropertyImages>();
+                    await _context.SaveChangesAsync();
+                    
+                    if (files == null || files.Length == 0)
+                    {
+                        return Ok(new { Code = 200, Message = "Company details updated successfully" });
+                    }
 
-        //    foreach (var file in files)
-        //    {
-        //        var filePath = Path.Combine(uploadPath, file.FileName);
+                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 
-        //        using (var stream = new FileStream(filePath, FileMode.Create))
-        //        {
-        //            await file.CopyToAsync(stream);
-        //        }
+                    if (!Directory.Exists(uploadPath))
+                    {
+                        Directory.CreateDirectory(uploadPath);
+                    }
 
-        //        var propertyImage = new PropertyImages
-        //        {
-        //            PropertyId = id,
-        //            FilePath = filePath
-        //        };
-        //        propertyImages.Add(propertyImage);
-        //    }
-        //    _context.PropertyImages.AddRange(propertyImages);
-        //    await _context.SaveChangesAsync();
+                    var propertyImages = new List<PropertyImages>();
 
-        //    return Ok(new { message = "Files uploaded successfully." });
-        //}
+                    foreach (var file in files)
+                    {
+                        var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                        var filePath = Path.Combine(uploadPath, fileName);
+
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await file.CopyToAsync(stream);
+                        }
+
+                        var propertyImage = new PropertyImages
+                        {
+                            PropertyId = id,
+                            FilePath = fileName
+                        };
+                        propertyImages.Add(propertyImage);
+                    }
+
+                    _context.PropertyImages.AddRange(propertyImages);
+
+                    await _context.SaveChangesAsync();
+
+                    await transaction.CommitAsync();
+
+                    return Ok(new { Code = 200, Message = "Company created successfully" });
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+
+                    return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                }
+            }            
+        }
+
+
+
+
+        [HttpGet("GetHourMaster")]
+        public async Task<IActionResult> GetHourMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.HourMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetHourById/{id}")]
+        public async Task<IActionResult> GetHourById(int id)
+        {
+            try
+            {
+                var data = await _context.HourMaster
+                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddHourMaster")]
+        public async Task<IActionResult> AddHourMaster([FromBody] HourMasterDTO gm)
+        {
+            if (gm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<HourMaster>(gm);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new HourValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+
+
+                await _context.HourMaster.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Hour created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchHourMaster/{id}")]
+        public async Task<IActionResult> PatchHourMaster(int id, [FromBody] JsonPatchDocument<HourMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.HourMaster.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new HourValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.UpdatedDate = DateTime.Now;
+                if (!ModelState.IsValid)
+                {
+                    var errorMessages = ModelState
+                                        .Where(x => x.Value.Errors.Any())
+                                        .SelectMany(x => x.Value.Errors)
+                                        .Select(x => x.ErrorMessage)
+                                        .ToList();
+                    return Ok(new { Code = 500, Message = errorMessages });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Hour updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+
+
+
+
 
 
 
@@ -2265,23 +2477,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         //GET BY ID APIS
         //-----------------------------
 
-        [HttpGet("GetCompanyById")]
-        public async Task<IActionResult> GetCompanyById(int id)
-        {
-            try
-            {
-                var data = await _context.CompanyDetails
-                          .Where(x => x.PropertyId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data })
-                    : NotFound(new { Code = 404, Message = "Company not found", Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
 
 
@@ -2357,39 +2553,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
         
 
-        [HttpPatch("PatchCompanyMaster/{id}")]
-        public async Task<IActionResult> PatchCompanyMaster(int id, [FromBody] JsonPatchDocument<CompanyDetails> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var company = await _context.CompanyDetails.Where(x => x.IsActive && x.PropertyId == id).FirstOrDefaultAsync();
-
-
-            if (company == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(company, ModelState);
-            company.UpdatedDate = DateTime.Now.ToString();
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Company details updated successfully" });
-        }
+        
 
        
 

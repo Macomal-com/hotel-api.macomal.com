@@ -107,9 +107,9 @@ namespace Repository.Models
         public string Banquet_db { get; set; } = string.Empty;
         public int Other1 { get; set; }
         public int Other2 { get; set; }
-        public string Other3 { get; set; } = string.Empty;
-        public string Other4 { get; set; } = string.Empty;
-        public string Other5 { get; set; } = string.Empty;
+        public string IsCheckOutApplicable { get; set; } = string.Empty;
+        public string CheckOutFormat { get; set; } = string.Empty;
+        public string IsRoomRateEditable { get; set; } = string.Empty;
         
         [NotMapped]
         public IFormFile? watermarkfile { get; set; }
@@ -133,7 +133,8 @@ namespace Repository.Models
         public string Gstin { get; set; } = string.Empty;
         public int ClusterId { get; set; }
         public int OwnerId { get; set; }
-        
-
+        public string IsCheckOutApplicable { get; set; } = string.Empty;
+        public string CheckOutFormat { get; set; } = string.Empty;
+        public string IsRoomRateEditable { get; set; } = string.Empty;
     }
 }
