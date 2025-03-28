@@ -2053,7 +2053,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                     int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                     var cm = _mapper.Map<CompanyDetails>(companyDetails);
-                    SetClusterDefaults(cm, companyId, userId);
+                    SetMastersDefault(cm, companyId, userId);
 
                     _context.CompanyDetails.Add(cm);
                     await _context.SaveChangesAsync();
@@ -2180,7 +2180,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                         await logo.CopyToAsync(stream);
                         company.PropertyLogo = fileName.ToString();
                     }
-                    company.UpdatedDate = DateTime.Now.ToString();
+                    company.UpdatedDate = DateTime.Now;
                     if (!ModelState.IsValid)
                     {
                         var errorMessages = ModelState
@@ -2192,43 +2192,41 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                     }
 
                     await _context.SaveChangesAsync();
-                    
-                    if (files == null || files.Length == 0)
+
+                    if (files != null || files.Length != 0)
                     {
-                        return Ok(new { Code = 200, Message = "Company details updated successfully" });
-                    }
+                        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 
-                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-
-                    if (!Directory.Exists(uploadPath))
-                    {
-                        Directory.CreateDirectory(uploadPath);
-                    }
-
-                    var propertyImages = new List<PropertyImages>();
-
-                    foreach (var file in files)
-                    {
-                        var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                        var filePath = Path.Combine(uploadPath, fileName);
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        if (!Directory.Exists(uploadPath))
                         {
-                            await file.CopyToAsync(stream);
+                            Directory.CreateDirectory(uploadPath);
                         }
 
-                        var propertyImage = new PropertyImages
+                        var propertyImages = new List<PropertyImages>();
+
+                        foreach (var file in files)
                         {
-                            PropertyId = id,
-                            FilePath = fileName
-                        };
-                        propertyImages.Add(propertyImage);
+                            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                            var filePath = Path.Combine(uploadPath, fileName);
+
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            var propertyImage = new PropertyImages
+                            {
+                                PropertyId = id,
+                                FilePath = fileName
+                            };
+                            propertyImages.Add(propertyImage);
+                        }
+
+                        _context.PropertyImages.AddRange(propertyImages);
+
+                        await _context.SaveChangesAsync();
                     }
-
-                    _context.PropertyImages.AddRange(propertyImages);
-
-                    await _context.SaveChangesAsync();
-
+                    
                     await transaction.CommitAsync();
 
                     return Ok(new { Code = 200, Message = "Company created successfully" });

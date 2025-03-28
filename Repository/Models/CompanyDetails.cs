@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Repository.Models
 {
-    public class CompanyDetails : ICommonParams
+    public class CompanyDetails : ICommonProperties
     {
         [Key]
         public int PropertyId { get; set; }
@@ -37,8 +37,8 @@ namespace Repository.Models
         public string WaterDueDate { get; set; } = string.Empty;
         public string WifiDueDate { get; set; } = string.Empty;
         public bool IsActive { get; set; }
-        public string CreatedDate { get; set; } = string.Empty;
-        public string UpdatedDate { get; set; } = string.Empty;
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
 
         public int CompanyId { get; set; }
