@@ -10,7 +10,7 @@
         public static string Standard = "Standard";
         public static string Weekend = "Weekend";
         public static string Custom = "Custom";
-
+        public static string Hour = "Hour";
         
     }
 }

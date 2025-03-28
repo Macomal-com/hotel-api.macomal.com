@@ -452,7 +452,7 @@ namespace hotel_api.Controllers
                 foreach(var item in roomRateList)
                 {
                     //for standard
-                    if(item.RateType == Constants.Constants.Standard)
+                    if(item.RateType == Constants.Constants.Standard || item.RateType == Constants.Constants.Hour)
                     {
                         //check any standard rate for given roomtype
                         var isStandardRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.IsActive == true);
@@ -470,6 +470,7 @@ namespace hotel_api.Controllers
                             roomRateMaster.UserId = userId;
                             roomRateMaster.CompanyId = companyId;
                             roomRateMaster.GstTaxType = item.GstTaxType;
+                            roomRateMaster.HourId = item.HourId;
                             await _context.RoomRateMaster.AddAsync(roomRateMaster);
                             await _context.SaveChangesAsync();
                         }
@@ -480,6 +481,7 @@ namespace hotel_api.Controllers
                             isStandardRateExists.Discount = item.Discount;
                             isStandardRateExists.UpdatedDate = DateTime.Now;
                             isStandardRateExists.GstTaxType = item.GstTaxType;
+                            isStandardRateExists.HourId = item.HourId;
                             _context.RoomRateMaster.Update(isStandardRateExists);
                             await _context.SaveChangesAsync();
                         }
@@ -598,7 +600,7 @@ namespace hotel_api.Controllers
 
                 
                     //for standard
-                    if (roomRate.RateType == Constants.Constants.Standard )
+                    if (roomRate.RateType == Constants.Constants.Standard || roomRate.RateType == Constants.Constants.Hour)
                     {
                         //check any standard rate for given roomtype
                         var isStandardRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.Id == id && x.IsActive == true);
@@ -613,6 +615,7 @@ namespace hotel_api.Controllers
                             isStandardRateExists.Discount = roomRate.Discount;
                             isStandardRateExists.UpdatedDate = DateTime.Now;
                             isStandardRateExists.GstTaxType = roomRate.GstTaxType;
+                        isStandardRateExists.HourId = roomRate.HourId;
                             _context.RoomRateMaster.Update(isStandardRateExists);
                             await _context.SaveChangesAsync();
                         }
@@ -711,6 +714,7 @@ namespace hotel_api.Controllers
                 var roomRates = await (from cat in _context.RoomCategoryMaster
                                        join rate in _context.RoomRateMaster on cat.Id equals rate.RoomTypeId into roomrate
                                        from rrates in roomrate.DefaultIfEmpty()
+                                       join hour in _context.HourMaster on rrates.HourId equals hour.Id
                                        where cat.IsActive == true && rrates.IsActive == true
                                        select new
                                        {
@@ -720,7 +724,9 @@ namespace hotel_api.Controllers
                                            RoomRate = rrates.RoomRate,
                                            Gst = rrates.Gst,
                                            Discount = rrates.Discount,
-                                           GstTaxType = rrates.GstTaxType ?? ""
+                                           GstTaxType = rrates.GstTaxType ?? "",
+                                           Hour = hour.Hour 
+                                           
                                        }).ToListAsync();
 
                 return Ok(new { Code = 200, Message = "Room rated fetched successfully", data = roomRates });
@@ -786,6 +792,7 @@ namespace hotel_api.Controllers
                 {
                     var rates = await (from rate in _context.RoomRateMaster
                                        join cat in _context.RoomCategoryMaster on rate.RoomTypeId equals cat.Id
+                                       join hour in _context.HourMaster on rate.HourId equals hour.Id
                                        where rate.IsActive == true && rate.Id == id
                                        select new
                                        {
@@ -795,7 +802,9 @@ namespace hotel_api.Controllers
                                            RoomRate = rate.RoomRate,
                                            Gst = rate.Gst,
                                            GstTaxType = rate.GstTaxType,
-                                           Discount = rate.Discount
+                                           Discount = rate.Discount, 
+                                           HourId = hour.Id,
+                                           Hour = hour.Hour
                                        }).FirstOrDefaultAsync();
                     
                     if (rates == null)

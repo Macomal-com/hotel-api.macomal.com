@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -23,6 +24,7 @@ namespace Repository.Models
         public int UserId { get; set; }
         public int CompanyId { get; set; }
         public string GstTaxType { get; set; }
+        public int HourId { get; set; }
     }
 
     public class RoomRateDateWise : ICommonProperties
@@ -57,7 +59,7 @@ namespace Repository.Models
         public string RateType { get; set; } = string.Empty;
         public int WeekendDay { get; set; } 
         public string GstTaxType { get; set; } = string.Empty;
-
+        public int HourId { get; set; }
     }
 
     public class RoomRateValidator : AbstractValidator<RoomRateMasterDTO>
@@ -100,6 +102,11 @@ namespace Repository.Models
                 .NotNull().WithMessage("Weekend Day is required")
                 .NotEmpty().WithMessage("Weekend Day is required")
                 .When(x => x.RateType == "Weekend");
+
+            RuleFor(x => x.HourId)
+                .NotNull().WithMessage("Hour is required")
+                .NotEmpty().WithMessage("Hour is required")
+                .When(x => x.RateType == "Hour");
         }
     }
 }
