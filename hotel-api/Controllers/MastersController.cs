@@ -65,7 +65,7 @@ namespace hotel_api.Controllers
                           .Where(x => x.ClusterId == id && x.IsActive == true).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Cluster not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Cluster not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Cluster details fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -187,7 +187,7 @@ namespace hotel_api.Controllers
                           .Where(x => x.LandlordId == id && x.IsActive == true).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Landlord not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Landlord not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Landlord fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -332,7 +332,7 @@ namespace hotel_api.Controllers
 
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Building not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Building not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Building fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -609,7 +609,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Group fetched successfully", Data = data });
@@ -630,7 +630,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Group fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -747,7 +747,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Bed Types not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Bed Types not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Bed Types fetched successfully", Data = data });
@@ -767,7 +767,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.BedTypeId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Bed Type not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Bed Type not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Bed Type fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -925,7 +925,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.SubGroupId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Sub Group fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1051,7 +1051,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.ServiceId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Service not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Service not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Services fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1173,7 +1173,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.VendorId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Vendor fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1230,7 +1230,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
@@ -1250,7 +1250,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.PaymentId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Payment Mode fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1415,7 +1415,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.StaffId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1473,7 +1473,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
@@ -1494,7 +1494,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1610,7 +1610,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
@@ -1631,7 +1631,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1746,7 +1746,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
@@ -1767,7 +1767,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.IsActive == true && x.UserId == id).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1894,7 +1894,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Vendor Service fetched successfully", Data = data });
@@ -1915,7 +1915,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Vendor Service fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -2028,7 +2028,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Company details not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Company details not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data });
@@ -2140,7 +2140,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 return data != null
                     ? Ok(new { Code = 200, Message = "Company details fetched successfully", Data = data })
-                    : NotFound(new { Code = 404, Message = "Company not found", Data = Array.Empty<object>() });
+                    : Ok(new { Code = 404, Message = "Company not found", Data = Array.Empty<object>() });
             }
             catch (Exception ex)
             {
@@ -2255,7 +2255,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
@@ -2276,7 +2276,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data == null
-                    ? NotFound(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -2398,7 +2398,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Owners not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Owners not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Owners fetched successfully", Data = data });
@@ -2424,7 +2424,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "Room Rates not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Room Rates not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Room Rates fetched successfully", Data = data });
@@ -2450,7 +2450,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (data.Count == 0)
                 {
-                    return NotFound(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Users fetched successfully", Data = data });
@@ -2491,7 +2491,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.FloorId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data != null
-                    ? NotFound(new { Code = 404, Message = "Floor not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Floor not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Floor fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -2511,7 +2511,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                           .Where(x => x.OwnerId == id && x.IsActive).FirstOrDefaultAsync();
 
                 return data != null
-                    ? NotFound(new { Code = 404, Message = "Owner not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Owner not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Owner fetched successfully", Data = data });
             }
             catch (Exception ex)
