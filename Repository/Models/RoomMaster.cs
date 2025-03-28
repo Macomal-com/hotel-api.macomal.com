@@ -35,6 +35,7 @@ namespace Repository.Models
         public int RoomNo { get; set; }
         public int RoomTypeId { get; set; }
         public string Description { get; set; } = String.Empty;
+        public object RoomRate { get; internal set; }
     }
 
     public class RoomMasterValidator : AbstractValidator<RoomMaster>

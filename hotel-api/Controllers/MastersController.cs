@@ -2525,26 +2525,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
       
 
        
-        [HttpGet("GetRoomRateById")]
-        public async Task<IActionResult> GetRoomRateById(int id)
-        {
-            try
-            {
-                var data = await _context.RoomRateMaster
-                          .Where(x => x.RoomRateId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? NotFound(new { Code = 404, Message = "Room Rate not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Room Rate fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-       
-
+      
         
 
         //-----------------------------
@@ -2596,38 +2577,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
        
         
-        [HttpPatch("PatchRoomRateMaster/{id}")]
-        public async Task<IActionResult> PatchRoomRateMaster(int id, [FromBody] JsonPatchDocument<RoomRateMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var room = await _context.RoomRateMaster.FindAsync(id);
-
-            if (room == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(room, ModelState);
-            room.UpdatedDate = DateTime.Now.ToString();
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Room Rate updated successfully" });
-        }
+       
 
         [HttpPatch("PatchUser/{id}")]
         public async Task<IActionResult> PatchUser(int id, [FromBody] JsonPatchDocument<UserCreation> patchDocument)
@@ -2707,30 +2657,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
         
         
-        [HttpPost("AddRoomRateMaster")]
-        public async Task<IActionResult> AddRoomRateMaster([FromBody] RoomRateMasterDTO room)
-        {
-            if (room == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<RoomRateMaster>(room);
-                SetClusterDefaults(cm, companyId, userId);
-
-                _context.RoomRateMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Room Rate created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+      
 
         [HttpPost("AddUser")]
         public async Task<IActionResult> AddUser([FromBody] UserCreationDTO user)

@@ -421,6 +421,475 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpPost("AddRoomRateMaster")]
+        public async Task<IActionResult> AddRoomRateMaster([FromBody] List<RoomRateMasterDTO> roomRateList)
+        {
+            var transaction = _context.Database.BeginTransaction();
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                if(roomRateList == null || roomRateList.Count == 0)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid Data" });
+                }
+                foreach(var item in roomRateList)
+                {
+                    var validator = new RoomRateValidator(_context);
+                    var result = validator.Validate(item);
+                    if (!result.IsValid)
+                    {
+                        var error = result.Errors.Select(x => new
+                        {
+                            Field = x.PropertyName,
+                            Error = x.ErrorMessage
+                        }).ToList();
+
+                        return Ok(new { Code = 400, Message = error });
+                    }
+                }
+
+                foreach(var item in roomRateList)
+                {
+                    //for standard
+                    if(item.RateType == Constants.Constants.Standard)
+                    {
+                        //check any standard rate for given roomtype
+                        var isStandardRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.IsActive == true);
+                        if(isStandardRateExists == null)
+                        {
+
+                            var roomRateMaster = new RoomRateMaster();
+                            roomRateMaster.RoomTypeId = item.RoomTypeId;
+                            roomRateMaster.RoomRate = item.RoomRate;
+                            roomRateMaster.Gst = item.Gst;
+                            roomRateMaster.Discount = item.Discount;
+                            roomRateMaster.IsActive = true;
+                            roomRateMaster.CreatedDate = DateTime.Now;
+                            roomRateMaster.UpdatedDate = DateTime.Now;
+                            roomRateMaster.UserId = userId;
+                            roomRateMaster.CompanyId = companyId;
+                            roomRateMaster.GstTaxType = item.GstTaxType;
+                            await _context.RoomRateMaster.AddAsync(roomRateMaster);
+                            await _context.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            isStandardRateExists.RoomRate = item.RoomRate;
+                            isStandardRateExists.Gst = item.Gst;
+                            isStandardRateExists.Discount = item.Discount;
+                            isStandardRateExists.UpdatedDate = DateTime.Now;
+                            isStandardRateExists.GstTaxType = item.GstTaxType;
+                            _context.RoomRateMaster.Update(isStandardRateExists);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else if(item.RateType == Constants.Constants.Custom)
+                    {
+                        var isCustomRateExists = await _context.RoomRateDateWise.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.FromDate == item.FromDate && x.ToDate == item.ToDate && x.IsActive == true && x.RateType == Constants.Constants.Custom);
+                        if (isCustomRateExists == null)
+                        {
+                            var roomrateDateWise = new RoomRateDateWise();
+                            roomrateDateWise.RoomTypeId = item.RoomTypeId;
+                            roomrateDateWise.RoomRate = item.RoomRate;
+                            roomrateDateWise.Gst = item.Gst;
+                            roomrateDateWise.Discount = item.Discount;
+                            roomrateDateWise.FromDate = item.FromDate ?? Constants.Constants.DefaultDate;
+                            roomrateDateWise.ToDate = item.ToDate ?? Constants.Constants.DefaultDate;
+                            roomrateDateWise.RateType = Constants.Constants.Custom;
+                            roomrateDateWise.WeekendDay = -1;
+                            roomrateDateWise.IsActive = true;
+                            roomrateDateWise.CreatedDate = DateTime.Now;
+                            roomrateDateWise.UpdatedDate = DateTime.Now;
+                            roomrateDateWise.UserId = userId;
+                            roomrateDateWise.CompanyId = companyId;
+                            roomrateDateWise.GstTaxType = item.GstTaxType;
+                            await _context.RoomRateDateWise.AddAsync(roomrateDateWise);
+                            await _context.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            isCustomRateExists.RoomRate = item.RoomRate;
+                            isCustomRateExists.Gst = item.Gst;
+                            isCustomRateExists.Discount = item.Discount;
+                            isCustomRateExists.UpdatedDate = DateTime.Now;
+
+                            isCustomRateExists.GstTaxType = item.GstTaxType;
+                            _context.RoomRateDateWise.Update(isCustomRateExists);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+
+                    else if (item.RateType == Constants.Constants.Weekend)
+                    {
+                        DayOfWeek currentDay = GetDayName(item.WeekendDay);
+                        List<DateTime> dayDates = GetDayDates(item.FromDate ?? Constants.Constants.DefaultDate, item.ToDate ?? Constants.Constants.DefaultDate
+                            , currentDay);
+
+                        foreach(var date in dayDates)
+                        {
+                            var isWeekendRateExists = await _context.RoomRateDateWise.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.FromDate == date && x.ToDate == date && x.IsActive == true && x.RateType == Constants.Constants.Weekend);
+                            if(isWeekendRateExists == null)
+                            {
+                                var roomrateDateWise = new RoomRateDateWise();
+                                roomrateDateWise.RoomTypeId = item.RoomTypeId;
+                                roomrateDateWise.RoomRate = item.RoomRate;
+                                roomrateDateWise.Gst = item.Gst;
+                                roomrateDateWise.Discount = item.Discount;
+                                roomrateDateWise.FromDate = date;
+                                roomrateDateWise.ToDate = date;
+                                roomrateDateWise.RateType = Constants.Constants.Weekend;
+                                roomrateDateWise.WeekendDay = Convert.ToInt16(currentDay);
+                                roomrateDateWise.IsActive = true;
+                                roomrateDateWise.CreatedDate = DateTime.Now;
+                                roomrateDateWise.UpdatedDate = DateTime.Now;
+                                roomrateDateWise.UserId = userId;
+                                roomrateDateWise.CompanyId = companyId;
+                                roomrateDateWise.GstTaxType = item.GstTaxType;
+                                await _context.RoomRateDateWise.AddAsync(roomrateDateWise);
+                                await _context.SaveChangesAsync();
+                            }
+                            else
+                            {
+                                isWeekendRateExists.RoomRate = item.RoomRate;
+                                isWeekendRateExists.Gst = item.Gst;
+                                isWeekendRateExists.Discount = item.Discount;
+                                isWeekendRateExists.UpdatedDate = DateTime.Now;
+                                isWeekendRateExists.GstTaxType = item.GstTaxType;
+                                _context.RoomRateDateWise.Update(isWeekendRateExists);
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                    }
+                }
+                await transaction.CommitAsync();
+                return Ok(new { Code = 200, Message = "Room Rates saved successfully" });
+
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Ok(new { Code = 500, Message = ex.Message });
+            }
+        }
+
+        [HttpPut("UpdateRoomRate/{id}")]
+        public async Task<IActionResult> UpdateRoomRate(int id, [FromBody] RoomRateMasterDTO roomRate)
+        {
+            var transaction = _context.Database.BeginTransaction();
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+
+                var validator = new RoomRateValidator(_context);
+                var result = validator.Validate(roomRate);
+                if (!result.IsValid)
+                {
+                    var error = result.Errors.Select(x => new
+                    {
+                        Field = x.PropertyName,
+                        Error = x.ErrorMessage
+                    }).ToList();
+
+                    return Ok(new { Code = 400, Message = error });
+                }
+
+                
+                    //for standard
+                    if (roomRate.RateType == Constants.Constants.Standard )
+                    {
+                        //check any standard rate for given roomtype
+                        var isStandardRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.Id == id && x.IsActive == true);
+                        if (isStandardRateExists == null)
+                        {
+                        return Ok(new { Code = 400, Message = "data not found" });
+                        }
+                        else
+                        {
+                            isStandardRateExists.RoomRate = roomRate.RoomRate;
+                            isStandardRateExists.Gst = roomRate.Gst;
+                            isStandardRateExists.Discount = roomRate.Discount;
+                            isStandardRateExists.UpdatedDate = DateTime.Now;
+                            isStandardRateExists.GstTaxType = roomRate.GstTaxType;
+                            _context.RoomRateMaster.Update(isStandardRateExists);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else if (roomRate.RateType == Constants.Constants.Custom || roomRate.RateType == Constants.Constants.Weekend)
+                    {
+                        var isCustomRateExists = await _context.RoomRateDateWise.FirstOrDefaultAsync(x => x.Id == id && x.IsActive == true);
+                        if (isCustomRateExists == null)
+                        {
+                        return Ok(new { Code = 400, Message = "data not found" });
+                    }
+                        else
+                        {
+                            isCustomRateExists.RoomRate = roomRate.RoomRate;
+                            isCustomRateExists.Gst = roomRate.Gst;
+                            isCustomRateExists.Discount = roomRate.Discount;
+                            isCustomRateExists.UpdatedDate = DateTime.Now;
+
+                            isCustomRateExists.GstTaxType = roomRate.GstTaxType;
+                            _context.RoomRateDateWise.Update(isCustomRateExists);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+
+                    
+                await transaction.CommitAsync();
+                return Ok(new { Code = 200, Message = "Room Rates updated successfully" });
+
+
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Ok(new { Code = 500, Message = ex.Message });
+            }
+        }
+
+        private DayOfWeek GetDayName(int day)
+        {
+            switch (day)
+            {
+                case 1:
+                    return DayOfWeek.Sunday;
+                case 2:
+                    return DayOfWeek.Monday;
+                case 3:
+                    return DayOfWeek.Tuesday;
+                case 4:
+                    return DayOfWeek.Wednesday;
+                case 5:
+                    return DayOfWeek.Thursday;
+                case 6:
+                    return DayOfWeek.Friday;
+                case 7:
+                    return DayOfWeek.Saturday;
+                default:
+                    return DayOfWeek.Sunday;
+
+            }
+
+        }
+
+        private  List<DateTime> GetDayDates(DateTime startDate, DateTime endDate, DayOfWeek weekDay)
+        {
+            if (startDate == Constants.Constants.DefaultDate || endDate == Constants.Constants.DefaultDate)
+            {
+                return new List<DateTime>();
+            }
+            List<DateTime> dates = new List<DateTime>();
+            // Find the first Monday in the range
+            DateTime currentDate = startDate;
+
+            while (currentDate.DayOfWeek != weekDay)
+            {
+                currentDate = currentDate.AddDays(1);
+                if (currentDate > endDate)
+                {
+                    break;
+                }
+            }
+
+            // Add all Mondays within the range
+            while (currentDate <= endDate)
+            {
+                dates.Add(currentDate);
+                currentDate = currentDate.AddDays(7); // Move to next Monday
+            }
+
+            return dates;
+        }
+        [HttpGet("GetRoomRates")]
+        public async Task<IActionResult> GetRoomRates()
+        {
+            try
+            {
+                var roomRates = await (from cat in _context.RoomCategoryMaster
+                                       join rate in _context.RoomRateMaster on cat.Id equals rate.RoomTypeId into roomrate
+                                       from rrates in roomrate.DefaultIfEmpty()
+                                       where cat.IsActive == true && rrates.IsActive == true
+                                       select new
+                                       {
+                                           Id= rrates.Id,
+                                           RoomTypeId = cat.Id,
+                                           RoomType = cat.Type,
+                                           RoomRate = rrates.RoomRate,
+                                           Gst = rrates.Gst,
+                                           Discount = rrates.Discount,
+                                           GstTaxType = rrates.GstTaxType ?? ""
+                                       }).ToListAsync();
+
+                return Ok(new { Code = 200, Message = "Room rated fetched successfully", data = roomRates });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetRoomRatesDateWise/{id}")]
+        public async Task<IActionResult> GetRoomRatesDateWise(int id)
+        {
+            try
+            {
+                if(id == 0)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                var isRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.Id == id);
+                if(isRateExists == null)
+                {
+                    return Ok(new { Code = 400, Message = "Data not found" });
+                }
+                var rates = await _context.RoomRateDateWise
+    .Where(x => x.IsActive && x.RoomTypeId == isRateExists.RoomTypeId)
+    .Select(x => new 
+    {
+        Id = x.Id,
+        RoomTypeId = x.RoomTypeId,
+        RoomRate = x.RoomRate,
+        Gst = x.Gst,
+        Discount = x.Discount,
+        FromDate = x.FromDate.ToString("dd-MM-yyyy"),
+        ToDate = x.ToDate.ToString("dd-MM-yyyy"),
+        RateType = x.RateType,
+        WeekendDay = x.WeekendDay,
+        CreatedDate = x.CreatedDate,
+        UpdatedDate = x.UpdatedDate,
+        GstTaxType = x.GstTaxType
+    })
+    .ToListAsync();
+
+                return Ok(new { Code = 200, Message = "Room rated fetched successfully", data = rates });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+        [HttpGet("GetRoomRatesById/{id}")]
+        public async Task<IActionResult> GetRoomRatesById(int id, string rateType = "")
+        {
+            try
+            {
+                if (id == 0)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                if(rateType == "All")
+                {
+                    var rates = await (from rate in _context.RoomRateMaster
+                                       join cat in _context.RoomCategoryMaster on rate.RoomTypeId equals cat.Id
+                                       where rate.IsActive == true && rate.Id == id
+                                       select new
+                                       {
+                                           Id = rate.Id,
+                                           RoomType = cat.Type,
+                                           RoomTypeId = rate.RoomTypeId,
+                                           RoomRate = rate.RoomRate,
+                                           Gst = rate.Gst,
+                                           GstTaxType = rate.GstTaxType,
+                                           Discount = rate.Discount
+                                       }).FirstOrDefaultAsync();
+                    
+                    if (rates == null)
+                    {
+                        return Ok(new { Code = 400, Message = "Data not found" });
+                    }
+                    return Ok(new { Code = 200, Message = "Room rated fetched successfully", data = rates });
+                }
+                else
+                {
+                    var rates = await (from rate in _context.RoomRateDateWise
+                                       join cat in _context.RoomCategoryMaster on rate.RoomTypeId equals cat.Id
+                                       where rate.IsActive == true && rate.Id == id
+                                       select new
+                                       {
+                                           Id = rate.Id,
+                                           RoomType = cat.Type,
+                                           RoomTypeId = rate.RoomTypeId,
+                                           RoomRate = rate.RoomRate,
+                                           Gst = rate.Gst,
+                                           GstTaxType = rate.GstTaxType,
+                                           Discount = rate.Discount,
+                                           FromDate = rate.FromDate.ToString("yyyy-MM-dd"),
+                                           ToDate = rate.ToDate.ToString("yyyy-MM-dd"),
+                                           RateType = rate.RateType,
+                                           WeekendDay = rate.WeekendDay + 1
+                                       }).FirstOrDefaultAsync();
+
+                    if (rates == null)
+                    {
+                        return Ok(new { Code = 400, Message = "Data not found" });
+                    }
+                    return Ok(new { Code = 200, Message = "Room rated fetched successfully", data = rates });
+                }
+                    
+
+                
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+        [HttpDelete("DeleteRoomRate/{id}")]
+        public async Task<IActionResult> DeleteRoomRatesById(int id, string rateType = "")
+        {
+            var transaction = _context.Database.BeginTransaction();
+            try
+            {
+                if(rateType == "All")
+                {
+                    var isRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.Id == id);
+                    if(isRateExists == null)
+                    {
+                        return Ok(new { Code = 400, Message = "Data not found" });
+                    }
+                    else
+                    {
+                        var roomRates = await _context.RoomRateDateWise.Where(x => x.RoomTypeId == isRateExists.RoomTypeId && x.IsActive == true).ToListAsync();
+
+                        foreach(var item in roomRates)
+                        {
+                            item.IsActive = false;
+                            _context.RoomRateDateWise.Update(item);
+                           
+                        }
+                        isRateExists.IsActive = false;
+                        _context.RoomRateMaster.Update(isRateExists);
+                        await _context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                    }
+                }
+                else
+                {
+                    var roomRates = await _context.RoomRateDateWise.FirstOrDefaultAsync(x => x.Id == id && x.IsActive == true);
+                    if (roomRates == null)
+                    {
+                        return Ok(new { Code = 400, Message = "Data not found" });
+                    }
+                    roomRates.IsActive = false;
+                    _context.RoomRateDateWise.Update(roomRates);
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                return Ok(new { Code = 200, Message = "Room rate deleted siccessfully" });
+            }
+            catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
     }
 }

@@ -35,7 +35,7 @@ namespace RepositoryModels.Repository
         public DbSet<HourMaster> HourMaster { get; set; }
 
         public DbSet<UserPropertyMapping> UserPropertyMapping { get; set; }
-
+        public DbSet<RoomRateDateWise> RoomRateDateWise { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
