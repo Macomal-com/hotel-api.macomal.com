@@ -900,5 +900,171 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        [HttpGet("GetDocumentNo")]
+        public async Task<IActionResult> GetDocumentNo(string type)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
+
+                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == type &&x.FinancialYear == financialYear);
+                if (getbookingno == null || getbookingno.Suffix == null)
+                {
+                    return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
+                }
+                getbookingno.Suffix = getbookingno.Prefix + "/" + getbookingno.Prefix1 + "/" + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
+
+                return Ok(new { Code = 200, message = "Document Number Recieved Successfully.", data = getbookingno });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, message = Constants.Constants.ErrorMessage});
+            }
+        }
+
+        [HttpGet("GetDocumentMasterList")]
+        public async Task<IActionResult> GetDocumentMasterList()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);                
+                string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
+
+                var documents = await _context.DocumentMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.FinancialYear == financialYear).ToListAsync();
+
+                return Ok(new { Code = 200, Message = "Data found", data = documents });
+
+
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, MEssage = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetDocumentById/{id}")]
+        public async Task<IActionResult> GetDocumentById(int id)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                
+                string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
+
+
+                var documents = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.FinancialYear == financialYear && x.DocId == id);
+
+                return Ok(new { Code = 200, Message = "Data found", data = documents });
+
+
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, MEssage = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddDocumentMaster")]
+        public async Task<IActionResult> AddDocumentMaster([FromBody] DocumentMasterDTO documentMasterDTO)
+        {
+            var currentDate = DateTime.Now;
+            try
+            {
+                if(documentMasterDTO == null)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                var documentMaster = _mapper.Map<DocumentMaster>(documentMasterDTO);
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
+                documentMaster.CompanyId = companyId;
+                documentMaster.FinancialYear = financialYear;
+                documentMaster.CreatedBy = userId;
+                documentMaster.IsActive = true;
+                documentMaster.CreatedDate = currentDate;
+                documentMaster.UpdatedDate = currentDate;
+                documentMaster.LastNumber = 1; 
+                var validator = new DocumentMasterValidator(_context);
+                var result = await validator.ValidateAsync(documentMaster);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, Message = errors });
+                }
+
+                await _context.DocumentMaster.AddAsync(documentMaster);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Document created successfully" });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, MEssage = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchDocumentMaster/{id}")]
+        public async Task<IActionResult> PatchDocumentMaster(int id, [FromBody] JsonPatchDocument<DocumentMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var document = await _context.DocumentMaster.FindAsync(id);
+
+                if (document == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(document, ModelState);
+                if (document.IsActive == true)
+                {
+                    var validator = new DocumentMasterValidator(_context);
+                    var result = await validator.ValidateAsync(document);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, Message = errors });
+                    }
+                }
+
+                document.UpdatedDate = DateTime.Now;
+                if (!ModelState.IsValid)
+                {
+                    var errorMessages = ModelState
+                                        .Where(x => x.Value.Errors.Any())
+                                        .SelectMany(x => x.Value.Errors)
+                                        .Select(x => x.ErrorMessage)
+                                        .ToList();
+                    return Ok(new { Code = 500, Message = errorMessages });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Room updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+    
+        
     }
 }

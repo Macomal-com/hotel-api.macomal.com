@@ -42,6 +42,17 @@ public class AddRequiredHeaderParameter : IOperationFilter
                     Type = "int" // Adjust the type based on your header's type
                 }
             });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
+                Name = "FinancialYear",
+                In = ParameterLocation.Header,
+                Required = false, // Set to true if the header is required
+                Schema = new OpenApiSchema
+                {
+                    Type = "String" // Adjust the type based on your header's type
+                }
+            });
         }
 
         //public void Apply(OpenApiOperation operation, OperationFilterContext context)
