@@ -36,6 +36,7 @@ namespace RepositoryModels.Repository
 
         public DbSet<UserPropertyMapping> UserPropertyMapping { get; set; }
         public DbSet<RoomRateDateWise> RoomRateDateWise { get; set; }
+        public DbSet<PaxMaster> PaxMaster { get; set; }
 
         public DbSet<DocumentMaster> DocumentMaster { get; set; }
         public DbSet<AgentDetails> AgentDetails { get; set; }

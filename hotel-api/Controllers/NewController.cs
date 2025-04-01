@@ -1110,7 +1110,6 @@ namespace hotel_api.Controllers
         [HttpPost("AddAgent")]
         public async Task<IActionResult> AddAgent([FromForm] AgentDetailsDTO agentDetailsDTO, IFormFile? file)
         {
-            var currentDate = DateTime.Now;
             try
             {
                 if(agentDetailsDTO == null)
@@ -1121,11 +1120,7 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
                 
                 var agentDetails = _mapper.Map<AgentDetails>(agentDetailsDTO);
-                agentDetails.CompanyId = companyId;
-                agentDetails.CreatedBy = userId;
-                agentDetails.IsActive = true;
-                agentDetails.CreatedDate = currentDate;
-                agentDetails.UpdatedDate = currentDate;
+                
 
                 var validator = new AgentDetailValidator(_context);
                 var result = await validator.ValidateAsync(agentDetails);
@@ -1136,6 +1131,7 @@ namespace hotel_api.Controllers
                         Error = x.ErrorMessage,
                         Field = x.PropertyName
                     }).ToList();
+                    SetMastersDefault(agentDetails, companyId, userId);
                     return Ok(new { Code = 202, Message = errors });
 
                     
@@ -1180,7 +1176,7 @@ namespace hotel_api.Controllers
                 patchDocument.ApplyTo(agent, ModelState);
                 if (agent.IsActive == true)
                 {
-                    var validator = new DocumentMasterValidator(_context);
+                    var validator = new AgentDetailValidator(_context);
                     var result = await validator.ValidateAsync(agent);
                     if (!result.IsValid)
                     {

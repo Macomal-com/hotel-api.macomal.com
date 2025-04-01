@@ -2242,7 +2242,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
 
 
-
+        //HOUR MASTER
         [HttpGet("GetHourMaster")]
         public async Task<IActionResult> GetHourMaster()
         {
@@ -2379,8 +2379,30 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         }
 
 
+        //PAX MASTER
+        [HttpGet("GetPaxMaster")]
+        public async Task<IActionResult> GetPaxMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
+                var data = await _context.PaxMaster.Where(bm => bm.IsActive).ToListAsync();
 
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
 
 
@@ -2467,15 +2489,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             }
         }
 
-        
-
-        
-
-        //-----------------------------
-        //GET BY ID APIS
-        //-----------------------------
-
-        
 
 
 
@@ -2522,13 +2535,6 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
       
 
-       
-      
-        
-
-        //-----------------------------
-        //PATCH APIS
-        //-----------------------------
 
         
 

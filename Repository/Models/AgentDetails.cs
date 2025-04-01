@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class AgentDetails
+    public class AgentDetails: ICommonProperties
     {
         [Key]
         public int AgentId { get; set; }
@@ -32,7 +32,7 @@ namespace Repository.Models
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
-        public int CreatedBy { get; set; }
+        public int UserId { get; set; }
         public int CompanyId { get; set; }
     }
 
