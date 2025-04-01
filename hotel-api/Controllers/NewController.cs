@@ -1108,7 +1108,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpPost("AddAgent")]
-        public async Task<IActionResult> AddAgent([FromBody] AgentDetailsDTO agentDetailsDTO)
+        public async Task<IActionResult> AddAgent([FromForm] AgentDetailsDTO agentDetailsDTO, IFormFile? file)
         {
             var currentDate = DateTime.Now;
             try
@@ -1140,6 +1140,13 @@ namespace hotel_api.Controllers
 
                     
                 }
+                if(file != null)
+                {
+                    
+                    agentDetails.ContractFile = await Constants.Constants.AddFile(file);
+
+                }
+                
 
                 await _context.AgentDetails.AddAsync(agentDetails);
                 await _context.SaveChangesAsync();
@@ -1150,5 +1157,58 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+
+        [HttpPatch("PatchAgentMaster/{id}")]
+        public async Task<IActionResult> PatchAgentMaster(int id, [FromForm] JsonPatchDocument<AgentDetails> patchDocument, IFormFile? file)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var agent = await _context.AgentDetails.FindAsync(id);
+
+                if (agent == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(agent, ModelState);
+                if (agent.IsActive == true)
+                {
+                    var validator = new DocumentMasterValidator(_context);
+                    var result = await validator.ValidateAsync(agent);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, Message = errors });
+                    }
+                }
+
+                agent.UpdatedDate = DateTime.Now;
+                if (file != null)
+                {
+                    agent.ContractFile = await Constants.Constants.AddFile(file);
+
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Room updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
     }
 }
