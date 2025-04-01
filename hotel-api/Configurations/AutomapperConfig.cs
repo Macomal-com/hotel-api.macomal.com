@@ -28,7 +28,8 @@ namespace hotel_api.Configurations
             CreateMap<CommissionMasterDTO, CommissionMaster>().ReverseMap();
             CreateMap<HourMasterDTO, HourMaster>().ReverseMap();
 
-            CreateMap<DocumentMasterDTO, DocumentMaster>().ReverseMap(); 
+            CreateMap<DocumentMasterDTO, DocumentMaster>().ReverseMap();
+            CreateMap<AgentDetailsDTO, AgentDetails>().ReverseMap();
         }
     }
 }

@@ -1064,7 +1064,91 @@ namespace hotel_api.Controllers
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
-    
-        
+
+
+        [HttpGet("GetAgentList")]
+        public async Task<IActionResult> GetAgentList()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                
+
+                var agents = await _context.AgentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).ToListAsync();
+
+                return Ok(new { Code = 200, Message = "Data found", data = agents });
+
+
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, MEssage = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+        [HttpGet("GetAgentListById/{id}")]
+        public async Task<IActionResult> GetAgentListById(int id)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+
+
+                var agents = await _context.AgentDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.AgentId == id);
+
+                return Ok(new { Code = 200, Message = "Data found", data = agents });
+
+
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, MEssage = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddAgent")]
+        public async Task<IActionResult> AddAgent([FromBody] AgentDetailsDTO agentDetailsDTO)
+        {
+            var currentDate = DateTime.Now;
+            try
+            {
+                if(agentDetailsDTO == null)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                
+                var agentDetails = _mapper.Map<AgentDetails>(agentDetailsDTO);
+                agentDetails.CompanyId = companyId;
+                agentDetails.CreatedBy = userId;
+                agentDetails.IsActive = true;
+                agentDetails.CreatedDate = currentDate;
+                agentDetails.UpdatedDate = currentDate;
+
+                var validator = new AgentDetailValidator(_context);
+                var result = await validator.ValidateAsync(agentDetails);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, Message = errors });
+
+                    
+                }
+
+                await _context.AgentDetails.AddAsync(agentDetails);
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Agent created successfully" });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }

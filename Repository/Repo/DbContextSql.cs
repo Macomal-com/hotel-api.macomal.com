@@ -38,6 +38,7 @@ namespace RepositoryModels.Repository
         public DbSet<RoomRateDateWise> RoomRateDateWise { get; set; }
 
         public DbSet<DocumentMaster> DocumentMaster { get; set; }
+        public DbSet<AgentDetails> AgentDetails { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
