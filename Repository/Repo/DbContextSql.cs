@@ -39,6 +39,7 @@ namespace RepositoryModels.Repository
         public DbSet<PaxMaster> PaxMaster { get; set; }
 
         public DbSet<DocumentMaster> DocumentMaster { get; set; }
+        public DbSet<ExtraPolicies> ExtraPolicies { get; set; }
         public DbSet<AgentDetails> AgentDetails { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{

@@ -2405,6 +2405,133 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         }
 
 
+        //EXTRA POLICY MASTER
+        [HttpGet("GetExtraPolicyMaster")]
+        public async Task<IActionResult> GetExtraPolicyMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.ExtraPolicies.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetExtraPolicyById/{id}")]
+        public async Task<IActionResult> GetExtraPolicyById(int id)
+        {
+            try
+            {
+                var data = await _context.ExtraPolicies
+                          .Where(x => x.PolicyId == id && x.IsActive).FirstOrDefaultAsync();
+
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddExtraPolicyMaster")]
+        public async Task<IActionResult> AddExtraPolicyMaster([FromBody] ExtraPoliciesDTO gm)
+        {
+            if (gm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<ExtraPolicies>(gm);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new ExtrapolicyValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+
+
+                await _context.ExtraPolicies.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Policy created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchPolicyMaster/{id}")]
+        public async Task<IActionResult> PatchExtraPolicyMaster(int id, [FromBody] JsonPatchDocument<ExtraPolicies> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.ExtraPolicies.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new ExtrapolicyValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Policy updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
 
 
 

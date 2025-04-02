@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using Repository.Models;
 using RepositoryModels.Repository;
 using System.Data;
@@ -1158,16 +1159,16 @@ namespace hotel_api.Controllers
 
 
         [HttpPatch("PatchAgentMaster/{id}")]
-        public async Task<IActionResult> PatchAgentMaster(int id, [FromForm] JsonPatchDocument<AgentDetails> patchDocument, IFormFile? file)
+        public async Task<IActionResult> PatchAgentMaster(int id, [FromForm] string patchDoc, IFormFile? file)
         {
             try
             {
-                if (patchDocument == null)
+                if (patchDoc == null)
                 {
                     return Ok(new { Code = 500, Message = "Invalid Data" });
 
                 }
-
+                var patchDocument = JsonConvert.DeserializeObject<JsonPatchDocument<AgentDetails>>(patchDoc);
                 var agent = await _context.AgentDetails.FindAsync(id);
 
                 if (agent == null)
