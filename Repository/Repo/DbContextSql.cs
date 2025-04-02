@@ -41,6 +41,7 @@ namespace RepositoryModels.Repository
         public DbSet<DocumentMaster> DocumentMaster { get; set; }
         public DbSet<ExtraPolicies> ExtraPolicies { get; set; }
         public DbSet<AgentDetails> AgentDetails { get; set; }
+        public DbSet<RoomAvailability> RoomAvailability { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
