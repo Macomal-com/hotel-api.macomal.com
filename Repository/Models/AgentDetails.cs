@@ -52,7 +52,6 @@ namespace Repository.Models
         public string GstNo { get; set; } = string.Empty;
         public int GstPercentage { get; set; }
         public string GstType { get; set; } = string.Empty;
-        public string ContractFile { get; set; } = string.Empty;
     }
 
     public class AgentDetailValidator : AbstractValidator<AgentDetails>

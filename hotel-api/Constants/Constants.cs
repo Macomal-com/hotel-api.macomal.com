@@ -12,17 +12,17 @@
         public static string Custom = "Custom";
         public static string Hour = "Hour";
 
-        public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg" };
+        public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";
         
         public async static Task<string> AddFile(IFormFile file)
         {
             var fileExtension = Path.GetExtension(file.FileName).ToLower();
-            if (AllowedExtensions.Contains(fileExtension))
+            if (!AllowedExtensions.Contains(fileExtension))
             {
                 return "";
             }
-            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads/ContractFiles");
             if (!Directory.Exists(uploadPath))
             {
                 Directory.CreateDirectory(uploadPath);

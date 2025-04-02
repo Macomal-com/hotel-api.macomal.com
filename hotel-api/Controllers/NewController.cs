@@ -1131,12 +1131,14 @@ namespace hotel_api.Controllers
                         Error = x.ErrorMessage,
                         Field = x.PropertyName
                     }).ToList();
-                    SetMastersDefault(agentDetails, companyId, userId);
+                    
                     return Ok(new { Code = 202, Message = errors });
 
                     
                 }
-                if(file != null)
+
+                SetMastersDefault(agentDetails, companyId, userId);
+                if (file != null)
                 {
                     
                     agentDetails.ContractFile = await Constants.Constants.AddFile(file);
