@@ -18,7 +18,7 @@ namespace hotel_api.Controllers
         private readonly IMapper _mapper = mapper;
 
         [HttpGet("CheckRoomAvailaibility")]
-        public async Task<IActionResult> CheckRoomAvailaibility(string checkInDate, string checkInTime, string checkOutDate, string checkOutTime, string pageName)
+        public async Task<IActionResult> CheckRoomAvailaibility(string checkInDate, string checkInTime, string checkOutDate, string checkOutTime, string pageName = "")
         {
             try
             {
@@ -37,7 +37,7 @@ namespace hotel_api.Controllers
                                             RoomCategory = category.Type,
                                             RoomStatus = "Clean"
                                         }).ToListAsync();
-                    return Ok(new { Code = 200, message = "Room retrieved successfully.", data = result });
+                    return Ok(new { Code = 200, message = "Room retrieved successfully.", data = result , AvailableRooms  = result.Count});
                 }
                 else
                 {

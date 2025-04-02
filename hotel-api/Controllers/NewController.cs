@@ -1201,7 +1201,7 @@ namespace hotel_api.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { Code = 200, Message = "Room updated successfully" });
+                return Ok(new { Code = 200, Message = "Agent updated successfully" });
             }
             catch (Exception ex)
             {
