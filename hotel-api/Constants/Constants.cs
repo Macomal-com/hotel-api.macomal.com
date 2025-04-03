@@ -19,6 +19,15 @@
         public static string NightFormat = "Night";
         public static string Hour24Format = "24 Hour";
 
+        public static string MultipleGst = "Multiple";
+        public static string SingleGst = "Single";
+
+        public static string WithGst = "With Gst";
+        public static string WithoutGst = "Without Gst";
+
+        public static string Inclusive = "Inclusive";
+        public static string Exclusive = "Exclusive";
+
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";
         

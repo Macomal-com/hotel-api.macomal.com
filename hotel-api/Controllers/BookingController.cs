@@ -1,8 +1,11 @@
 ﻿using AutoMapper;
+using hotel_api.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Repository.DTO;
+using Repository.Models;
 using RepositoryModels.Repository;
 using System.ComponentModel.Design;
 using System.Data;
@@ -150,38 +153,183 @@ namespace hotel_api.Controllers
             }
         }
 
-        //[HttpGet("ReservationRoomRate")]
-        //public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate, int hourId = 0, string checkOutFormat, int agentId)
-        //{
-        //    try
-        //    {
-        //        int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-        //        if (roomTypeId == 0 || checkOutFormat == "")
-        //        {
-        //            return Ok(new { Code = 400, Message = "Invalid data" });
-        //        }
+        [HttpGet("ReservationRoomRate")]
+        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate,  string checkOutFormat, int noOfRooms, int noOfNights, string applicableService,string gstType, int hourId = 0)
+        {
+            try
+            {
+                var roomRateResponse = new RoomRateResponse();
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                if (roomTypeId == 0 || checkOutFormat == "")
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
 
-        //        //if checkout format is sameday
-        //        if(checkOutFormat == Constants.Constants.SameDayFormat)
-        //        {
-        //            var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourId).FirstOrDefaultAsync();
-        //            if(roomRates == null)
-        //            {
-        //                return Ok(new { Code = 200, Message = "No Room Rates found" });
-        //            }
-        //            else
-        //            {
+                var gstPercentage = await GetGstPercetage(applicableService);
+                if (gstPercentage == null)
+                {
+                    return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                }
+                //if checkout format is sameday
+                if (checkOutFormat == Constants.Constants.SameDayFormat)
+                {
+                    var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourId).FirstOrDefaultAsync();
+                    if (roomRates == null)
+                    {
+                        return Ok(new { Code = 200, Message = "No Room Rates found" });
+                    }
+                    else
+                    {
+                        roomRateResponse.BookingAmount = roomRates.RoomRate;
+                    }
+                }
+                else if(checkOutFormat == Constants.Constants.Hour24Format || checkOutFormat == Constants.Constants.NightFormat)
+                {
 
-        //            }
-        //        }
+                    DateTime currentDate = checkInDate;
+                    while (noOfNights > 0)
+                    {
+                        var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate >= currentDate && x.ToDate <= checkOutDate)).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
+                        if(customRoomRates == null)
+                        {
+                            var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId).FirstOrDefaultAsync();
+                            if (roomRates == null)
+                            {
+                                return Ok(new { Code = 200, Message = "No Room Rates found" });
+                            }
+                            else
+                            {
+                                roomRateResponse.BookedRoomRates.Add(new BookedRoomRate
+                                {
+                                    RoomRate = roomRates.RoomRate,
+                                    BookingDate = currentDate
+                                });
+
+                                roomRateResponse.BookingAmount = roomRateResponse.BookingAmount + roomRates.RoomRate;
+                            }
+                        }
+                        else
+                        {
+                            roomRateResponse.BookedRoomRates.Add(new BookedRoomRate
+                            {
+                                RoomRate = customRoomRates.RoomRate,
+                                BookingDate = currentDate
+                            });
+                            roomRateResponse.BookingAmount = roomRateResponse.BookingAmount + customRoomRates.RoomRate;
+                        }
+                        noOfNights--;
+                        currentDate = currentDate.AddDays(1);
+                    }
+                }
                 
+                //calculate gst
+                if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                {
+                    var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, roomRateResponse.AllRoomAmount);
+                    if (gstRangeMaster == null)
+                    {
+                        roomRateResponse.GstPercentage = gstPercentage.TaxPercentage;
+                        (roomRateResponse.BookingAmount, roomRateResponse.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateResponse.GstPercentage, gstType);
+                    }
+                    else
+                    {
+                        roomRateResponse.GstPercentage = gstRangeMaster.TaxPercentage;
+                        (roomRateResponse.BookingAmount, roomRateResponse.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateResponse.GstPercentage, gstType);
+                    }
+                }
+                else if (gstPercentage.GstType == Constants.Constants.SingleGst)
+                {
+                    roomRateResponse.GstPercentage = gstPercentage.TaxPercentage;
+                    (roomRateResponse.BookingAmount, roomRateResponse.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateResponse.GstPercentage, gstType);
+                }
+
+                //total amount
+                roomRateResponse.AllRoomAmount = noOfRooms * roomRateResponse.BookingAmount;
+                roomRateResponse.AllRoomGst = noOfRooms * roomRateResponse.GstAmount;
+                roomRateResponse.TotalRoomAmount = roomRateResponse.AllRoomAmount + roomRateResponse.GstAmount;
+                //calculate agent rates
+                //if (agentId > 0)
+                //{
+                //    var agentDetails = await _context.AgentDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.AgentId == agentId);
+                //    if (agentDetails == null)
+                //    {
+                //        return Ok(new { Code = 500, Message = "No agent found" });
+                //    }
+                //    else
+                //    {
+                //        CalculateAgentCommision(agentDetails, ref roomRateResponse);
+                //    }
+                //}
+                return Ok(new { Code = 500, Message = "Room rate fetched successfully", data = roomRateResponse });
+
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        private async Task<GstMaster> GetGstPercetage(string service)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            var gstPercentage = await _context.GstMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ApplicableServices == service).FirstOrDefaultAsync();
+
+            if(gstPercentage == null)
+            {
+                return null;
+            }
+            else
+            {
+                if(gstPercentage.GstType == Constants.Constants.MultipleGst)
+                {
+                    var ranges = await _context.GstRangeMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.GstId == gstPercentage.Id).ToListAsync();
+
+                    gstPercentage.ranges = ranges;
+
+                    return gstPercentage;
+                }
+                else
+                {
+                    return gstPercentage;
+                }
+            }
+        }
+
+        public GstRangeMaster? GetApplicableGstRange(List<GstRangeMaster> gstRanges, decimal bookingAmount)
+        {
+            return gstRanges.FirstOrDefault(range => bookingAmount >= range.RangeStart && bookingAmount <= range.RangeEnd);
+        }
+
+        public void CalculateAgentCommision(AgentDetails agentDetails, ref RoomRateResponse roomRateResponse)
+        {
+            roomRateResponse.AgentGstType = agentDetails.GstType;
+            if (agentDetails.GstType == Constants.Constants.WithGst)
+            {
+                //commission
+                roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
+                roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.AgentCommissionPercentage);
+                //tcs
+                roomRateResponse.TcsPercentage = agentDetails.Tcs;
+                roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TcsPercentage);
+                //tds
+                roomRateResponse.TdsPercentage = agentDetails.Tds;
+                roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TdsPercentage);
+            }
+            else
+            {
+                //commission
+                roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
+                roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.AgentCommissionPercentage);
+                //tcs
+                roomRateResponse.TcsPercentage = agentDetails.Tcs;
+                roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TcsPercentage);
+                //tds
+                roomRateResponse.TdsPercentage = agentDetails.Tds;
+                roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TdsPercentage);
+            }
+        }
+        
 
 
-        //    }
-        //    catch (Exception)
-        //    {
-        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
-        //    }
-        //}
     }
 }

@@ -2,9 +2,19 @@
 {
     public class Calculation
     {
-        public static decimal CalculateGst(decimal amount, int gst)
+        public static (decimal NetAmount, decimal GstAmount) CalculateGst(decimal amount, decimal gst, string gstType)
         {
-            return (gst / amount) * 100;
+            if(gstType == Constants.Inclusive)
+            {
+                decimal gstAmount = (amount * gst) / (100 + gst);
+                decimal netAmount = amount - gstAmount;
+                return (netAmount, gstAmount);
+            }
+            else 
+            {
+                return (amount,(gst / amount) * 100);
+            }
+                
         }
     }
 }
