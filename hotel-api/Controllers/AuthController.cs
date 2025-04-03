@@ -121,7 +121,14 @@ namespace hotel_api.Controllers
                         {
                             PropertyId = x.PropertyId,
                             PropertyName = x.CompanyName,
-                            PropertyAddress = x.CompanyAddress
+                            PropertyAddress = x.CompanyAddress,
+                            PropertyLogo = x.PropertyLogo,
+                            Gstin = x.Gstin,
+                            CheckInTime = x.CheckInTime,
+                            CheckOutTime = x.CheckOutTime,
+                            CheckOutFormat = x.CheckOutFormat,
+                            IsCheckOutApplicable = x.IsCheckOutApplicable,
+                            IsRoomRateEditable = x.IsRoomRateEditable,
                         }).ToListAsync();
 
                         return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
