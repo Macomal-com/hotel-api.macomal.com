@@ -22,6 +22,7 @@ namespace Repository.DTO
 
         public int NoOfRooms { get; set; }
         public decimal AllRoomAmount { get; set; }
+        public decimal AllRoomGst { get; set; }
         public string AgentGstType { get; set; } = string.Empty;
 
         public List<BookedRoomRate> BookedRoomRates = new List<BookedRoomRate>();

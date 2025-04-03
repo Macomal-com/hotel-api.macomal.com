@@ -300,34 +300,34 @@ namespace hotel_api.Controllers
             return gstRanges.FirstOrDefault(range => bookingAmount >= range.RangeStart && bookingAmount <= range.RangeEnd);
         }
 
-        public void CalculateAgentCommision(AgentDetails agentDetails, ref RoomRateResponse roomRateResponse)
-        {
-            roomRateResponse.AgentGstType = agentDetails.GstType;
-            if (agentDetails.GstType == Constants.Constants.WithGst)
-            {
-                //commission
-                roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
-                roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.AgentCommissionPercentage);
-                //tcs
-                roomRateResponse.TcsPercentage = agentDetails.Tcs;
-                roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TcsPercentage);
-                //tds
-                roomRateResponse.TdsPercentage = agentDetails.Tds;
-                roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TdsPercentage);
-            }
-            else
-            {
-                //commission
-                roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
-                roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.AgentCommissionPercentage);
-                //tcs
-                roomRateResponse.TcsPercentage = agentDetails.Tcs;
-                roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TcsPercentage);
-                //tds
-                roomRateResponse.TdsPercentage = agentDetails.Tds;
-                roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TdsPercentage);
-            }
-        }
+        //public void CalculateAgentCommision(AgentDetails agentDetails, ref RoomRateResponse roomRateResponse, string gstType)
+        //{
+        //    roomRateResponse.AgentGstType = agentDetails.GstType;
+        //    if (agentDetails.GstType == Constants.Constants.WithGst)
+        //    {
+        //        //commission
+        //        roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
+        //        roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.AgentCommissionPercentage);
+        //        //tcs
+        //        roomRateResponse.TcsPercentage = agentDetails.Tcs;
+        //        roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TcsPercentage);
+        //        //tds
+        //        roomRateResponse.TdsPercentage = agentDetails.Tds;
+        //        roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TdsPercentage);
+        //    }
+        //    else
+        //    {
+        //        //commission
+        //        roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
+        //        roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.AgentCommissionPercentage);
+        //        //tcs
+        //        roomRateResponse.TcsPercentage = agentDetails.Tcs;
+        //        roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TcsPercentage);
+        //        //tds
+        //        roomRateResponse.TdsPercentage = agentDetails.Tds;
+        //        roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TdsPercentage);
+        //    }
+        //}
         
 
 
