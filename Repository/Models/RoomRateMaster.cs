@@ -23,11 +23,11 @@ namespace Repository.Models
         public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
-        public string GstTaxType { get; set; }
+        public string GstTaxType { get; set; } = string.Empty;
         public int HourId { get; set; }
         public decimal GstAmount { get; set; }
 
-
+        public int RatePriority { get; set; }
     }
 
     public class RoomRateDateWise : ICommonProperties
@@ -49,6 +49,7 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         public string GstTaxType { get; set; } = string.Empty;
         public decimal GstAmount { get; set; }
+        public int RatePriority { get; set; }
     }
 
     public class RoomRateMasterDTO
@@ -86,10 +87,10 @@ namespace Repository.Models
                 .NotNull().WithMessage("Rate Type is required")
                 .NotEmpty().WithMessage("Rate Type  is required");
 
-            RuleFor(x=>x.GstTaxType)
-               .NotNull().WithMessage("Gst Tax Type is required")
-                .NotEmpty().WithMessage("Gst Tax Type  is required")
-                .When(x=>x.Gst > 0);
+            //RuleFor(x=>x.GstTaxType)
+            //   .NotNull().WithMessage("Gst Tax Type is required")
+            //    .NotEmpty().WithMessage("Gst Tax Type  is required")
+            //    .When(x=>x.Gst > 0);
 
 
             RuleFor(x => x.FromDate)

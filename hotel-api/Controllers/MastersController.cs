@@ -1506,9 +1506,10 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpPost("AddGstMaster")]
         public async Task<IActionResult> AddGstMaster([FromBody] GstMasterDTO gm)
         {
+            
             if (gm == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
+            var transaction = _context.Database.BeginTransactionAsync();
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1526,18 +1527,35 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                         Error = x.ErrorMessage,
                         Field = x.PropertyName
                     }).ToList();
+                    await _context.Database.RollbackTransactionAsync();
                     return Ok(new { Code = 202, message = errors });
+                    
                 }
-
-
 
                 await _context.GstMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
 
+
+                if (cm.ranges.Count > 0)
+                {
+                    foreach(var item in cm.ranges)
+                    {
+                        if(item.TaxPercentage != 0)
+                        {
+                            SetMastersDefault(item, companyId, userId);
+                            item.GstId = cm.Id;
+                            await _context.GstRangeMaster.AddAsync(item);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+
+                await _context.Database.CommitTransactionAsync();
                 return Ok(new { Code = 200, Message = "Gst created successfully" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
+                await _context.Database.RollbackTransactionAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }

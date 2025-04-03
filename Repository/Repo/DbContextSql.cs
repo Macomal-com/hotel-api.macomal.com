@@ -42,6 +42,7 @@ namespace RepositoryModels.Repository
         public DbSet<ExtraPolicies> ExtraPolicies { get; set; }
         public DbSet<AgentDetails> AgentDetails { get; set; }
         public DbSet<RoomAvailability> RoomAvailability { get; set; }
+        public DbSet<GstRangeMaster> GstRangeMaster { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

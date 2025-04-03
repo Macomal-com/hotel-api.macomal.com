@@ -11,6 +11,13 @@
         public static string Weekend = "Weekend";
         public static string Custom = "Custom";
         public static string Hour = "Hour";
+        public static int HighPrority = 1;
+        public static int MediumPrority = 2;
+        public static int LowPrority = 3;
+
+        public static string SameDayFormat = "Same Day";
+        public static string NightFormat = "Night";
+        public static string Hour24Format = "24 Hour";
 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";

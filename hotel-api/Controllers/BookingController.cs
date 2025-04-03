@@ -149,5 +149,39 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        //[HttpGet("ReservationRoomRate")]
+        //public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate, int hourId = 0, string checkOutFormat, int agentId)
+        //{
+        //    try
+        //    {
+        //        int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+        //        if (roomTypeId == 0 || checkOutFormat == "")
+        //        {
+        //            return Ok(new { Code = 400, Message = "Invalid data" });
+        //        }
+
+        //        //if checkout format is sameday
+        //        if(checkOutFormat == Constants.Constants.SameDayFormat)
+        //        {
+        //            var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourId).FirstOrDefaultAsync();
+        //            if(roomRates == null)
+        //            {
+        //                return Ok(new { Code = 200, Message = "No Room Rates found" });
+        //            }
+        //            else
+        //            {
+
+        //            }
+        //        }
+                
+
+
+        //    }
+        //    catch (Exception)
+        //    {
+        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+        //    }
+        //}
     }
 }

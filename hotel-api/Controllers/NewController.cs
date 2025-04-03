@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Repository.Models;
 using RepositoryModels.Repository;
+using System.ComponentModel.Design;
 using System.Data;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
@@ -35,10 +36,11 @@ namespace hotel_api.Controllers
         {
             try
             {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 var data = await (from cat in _context.RoomCategoryMaster
                                   join bed in _context.BedTypeMaster on cat.BedTypeId equals bed.BedTypeId into bedcat
                                   from o in bedcat.DefaultIfEmpty()
-                                  where cat.IsActive == true 
+                                  where cat.IsActive == true  && cat.CompanyId == companyId
                                   select new
                                   {
                                       Id = cat.Id,
@@ -71,10 +73,11 @@ namespace hotel_api.Controllers
         {
             try
             {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 var data = await (from cat in _context.RoomCategoryMaster
                                   join bed in _context.BedTypeMaster on cat.BedTypeId equals bed.BedTypeId into bedcat
-                                  from o in bedcat.DefaultIfEmpty()
-                                  where cat.IsActive == true && cat.Id == id
+                from o in bedcat.DefaultIfEmpty()
+                                  where cat.IsActive == true && cat.Id == id && cat.CompanyId == companyId
                                   select new
                                   {
                                       Id = cat.Id,
@@ -210,13 +213,14 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var data = await (from roommaster in _context.RoomMaster
+                                  
+                                  join property in _context.CompanyDetails on roommaster.PropertyId equals property.PropertyId
+                                  join roomtype in _context.RoomCategoryMaster on roommaster.RoomTypeId equals roomtype.Id
                                   join floor in _context.FloorMaster on roommaster.FloorId equals floor.FloorId into floorRoom
                                   from fr in floorRoom.DefaultIfEmpty()
                                   join building in _context.BuildingMaster on roommaster.BuildingId equals building.BuildingId into buildingRoom
                                   from fb in buildingRoom.DefaultIfEmpty()
-                                  join property in _context.CompanyDetails on roommaster.PropertyId equals property.PropertyId
-                                  join roomtype in _context.RoomCategoryMaster on roommaster.RoomTypeId equals roomtype.Id
-                                  where roommaster.IsActive == true && roommaster.PropertyId == companyId && fr.IsActive == true && fb.IsActive == true && property.IsActive == true && roomtype.IsActive == true
+                                  where roommaster.IsActive == true && roommaster.PropertyId == companyId  && property.IsActive == true && roomtype.IsActive == true
                                   select new
                                   {
                                       RoomId = roommaster.RoomId,
@@ -260,6 +264,7 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var cm = _mapper.Map<RoomMaster>(room);
+                SetMastersDefault(cm, companyId, userId);
                 var validator = new RoomMasterValidator(_context);
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
@@ -272,8 +277,8 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 202, Message = errors });
                 }
 
-                SetMastersDefault(cm, companyId, userId);
-
+                cm.BuildingId = cm.BuildingId == 0 ? null : cm.BuildingId;
+                cm.FloorId = cm.FloorId == 0 ? null : cm.FloorId;
                 await _context.RoomMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
 
@@ -454,7 +459,7 @@ namespace hotel_api.Controllers
                 foreach(var item in roomRateList)
                 {
                     //for standard
-                    if(item.RateType == Constants.Constants.Standard || item.RateType == Constants.Constants.Hour)
+                    if(item.RateType == Constants.Constants.Standard)
                     {
                         //check any standard rate for given roomtype
                         var isStandardRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.IsActive == true && x.CompanyId == companyId);
@@ -474,6 +479,7 @@ namespace hotel_api.Controllers
                             roomRateMaster.GstTaxType = item.GstTaxType;
                             roomRateMaster.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
                             roomRateMaster.HourId = item.HourId;
+                            roomRateMaster.RatePriority = Constants.Constants.LowPrority;
                             await _context.RoomRateMaster.AddAsync(roomRateMaster);
                             await _context.SaveChangesAsync();
                         }
@@ -490,7 +496,43 @@ namespace hotel_api.Controllers
                             await _context.SaveChangesAsync();
                         }
                     }
-                    else if(item.RateType == Constants.Constants.Custom)
+                    else if(item.RateType == Constants.Constants.Hour)
+                    {
+                        var isStandardRateExists = await _context.RoomRateMaster.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.IsActive == true && x.CompanyId == companyId && x.HourId == item.HourId);
+                        if (isStandardRateExists == null)
+                        {
+
+                            var roomRateMaster = new RoomRateMaster();
+                            roomRateMaster.RoomTypeId = item.RoomTypeId;
+                            roomRateMaster.RoomRate = item.RoomRate;
+                            roomRateMaster.Gst = item.Gst;
+                            roomRateMaster.Discount = item.Discount;
+                            roomRateMaster.IsActive = true;
+                            roomRateMaster.CreatedDate = DateTime.Now;
+                            roomRateMaster.UpdatedDate = DateTime.Now;
+                            roomRateMaster.UserId = userId;
+                            roomRateMaster.CompanyId = companyId;
+                            roomRateMaster.GstTaxType = item.GstTaxType;
+                            roomRateMaster.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            roomRateMaster.HourId = item.HourId;
+                            roomRateMaster.RatePriority =  Constants.Constants.LowPrority;
+                            await _context.RoomRateMaster.AddAsync(roomRateMaster);
+                            await _context.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            isStandardRateExists.RoomRate = item.RoomRate;
+                            isStandardRateExists.Gst = item.Gst;
+                            isStandardRateExists.Discount = item.Discount;
+                            isStandardRateExists.UpdatedDate = DateTime.Now;
+                            isStandardRateExists.GstTaxType = item.GstTaxType;
+                            isStandardRateExists.HourId = item.HourId;
+                            isStandardRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            _context.RoomRateMaster.Update(isStandardRateExists);
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                    else if (item.RateType == Constants.Constants.Custom)
                     {
                         var isCustomRateExists = await _context.RoomRateDateWise.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.FromDate == item.FromDate && x.ToDate == item.ToDate && x.IsActive == true && x.RateType == Constants.Constants.Custom && x.CompanyId == companyId);
                         if (isCustomRateExists == null)
@@ -511,6 +553,7 @@ namespace hotel_api.Controllers
                             roomrateDateWise.CompanyId = companyId;
                             roomrateDateWise.GstTaxType = item.GstTaxType;
                             roomrateDateWise.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            roomrateDateWise.RatePriority = Constants.Constants.MediumPrority;
                             await _context.RoomRateDateWise.AddAsync(roomrateDateWise);
                             await _context.SaveChangesAsync();
                         }
@@ -520,7 +563,7 @@ namespace hotel_api.Controllers
                             isCustomRateExists.Gst = item.Gst;
                             isCustomRateExists.Discount = item.Discount;
                             isCustomRateExists.UpdatedDate = DateTime.Now;
-                            isCustomRateExists.GstAmount =  Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            isCustomRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
                             isCustomRateExists.GstTaxType = item.GstTaxType;
                             _context.RoomRateDateWise.Update(isCustomRateExists);
                             await _context.SaveChangesAsync();
@@ -533,10 +576,10 @@ namespace hotel_api.Controllers
                         List<DateTime> dayDates = GetDayDates(item.FromDate ?? Constants.Constants.DefaultDate, item.ToDate ?? Constants.Constants.DefaultDate
                             , currentDay);
 
-                        foreach(var date in dayDates)
+                        foreach (var date in dayDates)
                         {
                             var isWeekendRateExists = await _context.RoomRateDateWise.FirstOrDefaultAsync(x => x.RoomTypeId == item.RoomTypeId && x.FromDate == date && x.ToDate == date && x.IsActive == true && x.RateType == Constants.Constants.Weekend && x.CompanyId == companyId);
-                            if(isWeekendRateExists == null)
+                            if (isWeekendRateExists == null)
                             {
                                 var roomrateDateWise = new RoomRateDateWise();
                                 roomrateDateWise.RoomTypeId = item.RoomTypeId;
@@ -553,7 +596,8 @@ namespace hotel_api.Controllers
                                 roomrateDateWise.UserId = userId;
                                 roomrateDateWise.CompanyId = companyId;
                                 roomrateDateWise.GstTaxType = item.GstTaxType;
-                                roomrateDateWise.GstAmount =  Calculation.CalculateGst(item.RoomRate, item.Gst);
+                                roomrateDateWise.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                                roomrateDateWise.RatePriority = Constants.Constants.HighPrority;
                                 await _context.RoomRateDateWise.AddAsync(roomrateDateWise);
                                 await _context.SaveChangesAsync();
                             }
@@ -564,7 +608,7 @@ namespace hotel_api.Controllers
                                 isWeekendRateExists.Discount = item.Discount;
                                 isWeekendRateExists.UpdatedDate = DateTime.Now;
                                 isWeekendRateExists.GstTaxType = item.GstTaxType;
-                                isWeekendRateExists.GstAmount =  Calculation.CalculateGst(item.RoomRate, item.Gst);
+                                isWeekendRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
                                 _context.RoomRateDateWise.Update(isWeekendRateExists);
                                 await _context.SaveChangesAsync();
                             }
