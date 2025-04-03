@@ -246,7 +246,7 @@ namespace hotel_api.Controllers
                 //total amount
                 roomRateResponse.AllRoomAmount = noOfRooms * roomRateResponse.BookingAmount;
                 roomRateResponse.AllRoomGst = noOfRooms * roomRateResponse.GstAmount;
-                roomRateResponse.TotalRoomAmount = roomRateResponse.AllRoomAmount + roomRateResponse.GstAmount;
+                roomRateResponse.TotalAmount = roomRateResponse.AllRoomAmount + roomRateResponse.GstAmount;
                 //calculate agent rates
                 //if (agentId > 0)
                 //{
