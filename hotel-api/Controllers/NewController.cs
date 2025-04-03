@@ -477,7 +477,7 @@ namespace hotel_api.Controllers
                             roomRateMaster.UserId = userId;
                             roomRateMaster.CompanyId = companyId;
                             roomRateMaster.GstTaxType = item.GstTaxType;
-                            roomRateMaster.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            roomRateMaster.GstAmount = 0;
                             roomRateMaster.HourId = item.HourId;
                             roomRateMaster.RatePriority = Constants.Constants.LowPrority;
                             await _context.RoomRateMaster.AddAsync(roomRateMaster);
@@ -491,7 +491,7 @@ namespace hotel_api.Controllers
                             isStandardRateExists.UpdatedDate = DateTime.Now;
                             isStandardRateExists.GstTaxType = item.GstTaxType;
                             isStandardRateExists.HourId = item.HourId;
-                            isStandardRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            isStandardRateExists.GstAmount = 0;
                             _context.RoomRateMaster.Update(isStandardRateExists);
                             await _context.SaveChangesAsync();
                         }
@@ -513,7 +513,7 @@ namespace hotel_api.Controllers
                             roomRateMaster.UserId = userId;
                             roomRateMaster.CompanyId = companyId;
                             roomRateMaster.GstTaxType = item.GstTaxType;
-                            roomRateMaster.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            roomRateMaster.GstAmount = 0;
                             roomRateMaster.HourId = item.HourId;
                             roomRateMaster.RatePriority =  Constants.Constants.LowPrority;
                             await _context.RoomRateMaster.AddAsync(roomRateMaster);
@@ -527,7 +527,7 @@ namespace hotel_api.Controllers
                             isStandardRateExists.UpdatedDate = DateTime.Now;
                             isStandardRateExists.GstTaxType = item.GstTaxType;
                             isStandardRateExists.HourId = item.HourId;
-                            isStandardRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            isStandardRateExists.GstAmount = 0;
                             _context.RoomRateMaster.Update(isStandardRateExists);
                             await _context.SaveChangesAsync();
                         }
@@ -552,7 +552,7 @@ namespace hotel_api.Controllers
                             roomrateDateWise.UserId = userId;
                             roomrateDateWise.CompanyId = companyId;
                             roomrateDateWise.GstTaxType = item.GstTaxType;
-                            roomrateDateWise.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            roomrateDateWise.GstAmount = 0;
                             roomrateDateWise.RatePriority = Constants.Constants.MediumPrority;
                             await _context.RoomRateDateWise.AddAsync(roomrateDateWise);
                             await _context.SaveChangesAsync();
@@ -563,7 +563,7 @@ namespace hotel_api.Controllers
                             isCustomRateExists.Gst = item.Gst;
                             isCustomRateExists.Discount = item.Discount;
                             isCustomRateExists.UpdatedDate = DateTime.Now;
-                            isCustomRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                            isCustomRateExists.GstAmount = 0;
                             isCustomRateExists.GstTaxType = item.GstTaxType;
                             _context.RoomRateDateWise.Update(isCustomRateExists);
                             await _context.SaveChangesAsync();
@@ -596,7 +596,7 @@ namespace hotel_api.Controllers
                                 roomrateDateWise.UserId = userId;
                                 roomrateDateWise.CompanyId = companyId;
                                 roomrateDateWise.GstTaxType = item.GstTaxType;
-                                roomrateDateWise.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                                roomrateDateWise.GstAmount = 0;
                                 roomrateDateWise.RatePriority = Constants.Constants.HighPrority;
                                 await _context.RoomRateDateWise.AddAsync(roomrateDateWise);
                                 await _context.SaveChangesAsync();
@@ -608,7 +608,7 @@ namespace hotel_api.Controllers
                                 isWeekendRateExists.Discount = item.Discount;
                                 isWeekendRateExists.UpdatedDate = DateTime.Now;
                                 isWeekendRateExists.GstTaxType = item.GstTaxType;
-                                isWeekendRateExists.GstAmount = Calculation.CalculateGst(item.RoomRate, item.Gst);
+                                isWeekendRateExists.GstAmount = 0;
                                 _context.RoomRateDateWise.Update(isWeekendRateExists);
                                 await _context.SaveChangesAsync();
                             }
