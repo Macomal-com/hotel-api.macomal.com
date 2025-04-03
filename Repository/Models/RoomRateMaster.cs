@@ -25,6 +25,9 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         public string GstTaxType { get; set; }
         public int HourId { get; set; }
+        public decimal GstAmount { get; set; }
+
+
     }
 
     public class RoomRateDateWise : ICommonProperties
@@ -45,6 +48,7 @@ namespace Repository.Models
         public int UserId { get; set; }
         public int CompanyId { get; set; }
         public string GstTaxType { get; set; } = string.Empty;
+        public decimal GstAmount { get; set; }
     }
 
     public class RoomRateMasterDTO
