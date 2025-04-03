@@ -110,7 +110,8 @@ namespace Repository.Models
         public string IsCheckOutApplicable { get; set; } = string.Empty;
         public string CheckOutFormat { get; set; } = string.Empty;
         public string IsRoomRateEditable { get; set; } = string.Empty;
-        
+        public string GstType { get; set; } = string.Empty;
+
         [NotMapped]
         public IFormFile? watermarkfile { get; set; }
         
@@ -136,5 +137,6 @@ namespace Repository.Models
         public string IsCheckOutApplicable { get; set; } = string.Empty;
         public string CheckOutFormat { get; set; } = string.Empty;
         public string IsRoomRateEditable { get; set; } = string.Empty;
+        public string GstType { get; set; } = string.Empty;
     }
 }

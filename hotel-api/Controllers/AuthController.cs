@@ -129,6 +129,7 @@ namespace hotel_api.Controllers
                             CheckOutFormat = x.CheckOutFormat,
                             IsCheckOutApplicable = x.IsCheckOutApplicable,
                             IsRoomRateEditable = x.IsRoomRateEditable,
+                            GstType = x.GstType,
                         }).ToListAsync();
 
                         return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -151,7 +152,8 @@ namespace hotel_api.Controllers
                                                             CheckOutTime = prop.CheckOutTime,
                                                             CheckOutFormat = prop.CheckOutFormat,
                                                             IsCheckOutApplicable = prop.IsCheckOutApplicable,
-                                                            IsRoomRateEditable= prop.IsRoomRateEditable, 
+                                                            IsRoomRateEditable= prop.IsRoomRateEditable,
+                                                            GstType = prop.GstType,
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -173,6 +175,7 @@ namespace hotel_api.Controllers
                                                             CheckOutFormat = prop.CheckOutFormat,
                                                             IsCheckOutApplicable = prop.IsCheckOutApplicable,
                                                             IsRoomRateEditable = prop.IsRoomRateEditable,
+                                                            GstType = prop.GstType,
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
