@@ -712,22 +712,24 @@ namespace hotel_api.Controllers
         {
             try
             {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 var roomRates = await (from cat in _context.RoomCategoryMaster
                                        join rate in _context.RoomRateMaster on cat.Id equals rate.RoomTypeId into roomrate
                                        from rrates in roomrate.DefaultIfEmpty()
-                                       join hour in _context.HourMaster on rrates.HourId equals hour.Id
-                                       where cat.IsActive == true && rrates.IsActive == true
+                                       join hour in _context.HourMaster on rrates.HourId equals hour.Id into hourrate
+                                       from hours in hourrate.DefaultIfEmpty()
+                                       where cat.IsActive == true && rrates.IsActive == true && cat.CompanyId == companyId
                                        select new
                                        {
-                                           Id= rrates.Id,
+                                           Id = rrates.Id,
                                            RoomTypeId = cat.Id,
                                            RoomType = cat.Type,
                                            RoomRate = rrates.RoomRate,
                                            Gst = rrates.Gst,
                                            Discount = rrates.Discount,
                                            GstTaxType = rrates.GstTaxType ?? "",
-                                           Hour = hour.Hour 
-                                           
+                                           Hour = hours == null ? "" : hours.Hour.ToString()
+
                                        }).ToListAsync();
 
                 return Ok(new { Code = 200, Message = "Room rated fetched successfully", data = roomRates });
