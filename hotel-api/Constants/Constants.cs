@@ -17,7 +17,7 @@
 
         public static string SameDayFormat = "Same Day";
         public static string NightFormat = "Night";
-        public static string Hour24Format = "24 Hour";
+        public static string Hour24Format = "24 Hours";
 
         public static string MultipleGst = "Multiple";
         public static string SingleGst = "Single";
