@@ -1553,7 +1553,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 await _context.Database.CommitTransactionAsync();
                 return Ok(new { Code = 200, Message = "Gst created successfully" });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await _context.Database.RollbackTransactionAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });

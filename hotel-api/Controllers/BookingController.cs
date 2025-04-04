@@ -154,7 +154,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("ReservationRoomRate")]
-        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate,  string checkOutFormat, int noOfRooms, int noOfNights, string applicableService,string gstType, int hourId = 0)
+        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate,  string checkOutFormat, int noOfRooms, int noOfNights, string gstType, int hourId = 0)
         {
             try
             {
@@ -165,10 +165,10 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = "Invalid data" });
                 }
 
-                var gstPercentage = await GetGstPercetage(applicableService);
+                var gstPercentage = await GetGstPercetage(Constants.Constants.Reservation);
                 if (gstPercentage == null)
                 {
-                    return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                    return Ok(new { Code = 500, Message = "Gst percentage not found for reservation" });
                 }
                 //if checkout format is sameday
                 if (checkOutFormat == Constants.Constants.SameDayFormat)
@@ -247,19 +247,7 @@ namespace hotel_api.Controllers
                 roomRateResponse.AllRoomAmount = noOfRooms * roomRateResponse.BookingAmount;
                 roomRateResponse.AllRoomGst = noOfRooms * roomRateResponse.GstAmount;
                 roomRateResponse.TotalAmount = roomRateResponse.AllRoomAmount + roomRateResponse.GstAmount;
-                //calculate agent rates
-                //if (agentId > 0)
-                //{
-                //    var agentDetails = await _context.AgentDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.AgentId == agentId);
-                //    if (agentDetails == null)
-                //    {
-                //        return Ok(new { Code = 500, Message = "No agent found" });
-                //    }
-                //    else
-                //    {
-                //        CalculateAgentCommision(agentDetails, ref roomRateResponse);
-                //    }
-                //}
+                
                 return Ok(new { Code = 500, Message = "Room rate fetched successfully", data = roomRateResponse });
 
             }
@@ -300,35 +288,62 @@ namespace hotel_api.Controllers
             return gstRanges.FirstOrDefault(range => bookingAmount >= range.RangeStart && bookingAmount <= range.RangeEnd);
         }
 
-        //public void CalculateAgentCommision(AgentDetails agentDetails, ref RoomRateResponse roomRateResponse, string gstType)
-        //{
-        //    roomRateResponse.AgentGstType = agentDetails.GstType;
-        //    if (agentDetails.GstType == Constants.Constants.WithGst)
-        //    {
-        //        //commission
-        //        roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
-        //        roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.AgentCommissionPercentage);
-        //        //tcs
-        //        roomRateResponse.TcsPercentage = agentDetails.Tcs;
-        //        roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TcsPercentage);
-        //        //tds
-        //        roomRateResponse.TdsPercentage = agentDetails.Tds;
-        //        roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.TotalRoomAmount, roomRateResponse.TdsPercentage);
-        //    }
-        //    else
-        //    {
-        //        //commission
-        //        roomRateResponse.AgentCommissionPercentage = agentDetails.Commission;
-        //        roomRateResponse.AgentCommisionAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.AgentCommissionPercentage);
-        //        //tcs
-        //        roomRateResponse.TcsPercentage = agentDetails.Tcs;
-        //        roomRateResponse.TcsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TcsPercentage);
-        //        //tds
-        //        roomRateResponse.TdsPercentage = agentDetails.Tds;
-        //        roomRateResponse.TdsAmount = Calculation.CalculateGst(roomRateResponse.AllRoomAmount, roomRateResponse.TdsPercentage);
-        //    }
-        //}
-        
+        [HttpGet("CalculateAgentCommision")]
+        public async Task<IActionResult> CalculateAgentCommision(int agentId, decimal bookingAmount, decimal totalAmountWithGst)
+        {
+            try
+            {
+                var agentCommissionResponse = new AgentCommissionResponse();
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+
+                if (agentId == 0)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                var agentDetails = await _context.AgentDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.AgentId == agentId);
+                if (agentDetails == null)
+                {
+                    return Ok(new { Code = 500, Message = "No agent found" });
+                }
+                agentCommissionResponse.AgentGstType = agentDetails.GstType;
+                agentCommissionResponse.AgentCommissionPercentage = agentDetails.Commission;
+                agentCommissionResponse.TdsPercentage = agentDetails.Tds;
+                agentCommissionResponse.TcsPercentage = agentDetails.Tcs;
+                if (agentDetails.GstType == Constants.Constants.WithGst)
+                {
+                    //commmision                    
+                    agentCommissionResponse.AgentCommisionAmount = Calculation.CalculatePercentage(totalAmountWithGst, agentCommissionResponse.AgentCommissionPercentage);
+
+                    //tcs
+                    agentCommissionResponse.TdsAmount = Calculation.CalculatePercentage(totalAmountWithGst, agentCommissionResponse.TdsPercentage);
+
+                    //tds
+                    agentCommissionResponse.TcsAmount = Calculation.CalculatePercentage(totalAmountWithGst, agentCommissionResponse.TcsPercentage);
+                }
+                else
+                {
+                    //commmision                    
+                    agentCommissionResponse.AgentCommisionAmount = Calculation.CalculatePercentage(bookingAmount, agentCommissionResponse.AgentCommissionPercentage);
+
+                    //tcs
+                    agentCommissionResponse.TdsAmount = Calculation.CalculatePercentage(bookingAmount, agentCommissionResponse.TdsPercentage);
+
+                    //tds
+                    agentCommissionResponse.TcsAmount = Calculation.CalculatePercentage(bookingAmount, agentCommissionResponse.TcsPercentage);
+                }
+                return Ok(new { Code = 500, Message = "Agent rate fetched successfully", data = agentCommissionResponse });
+
+
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+
+        }
+
+
 
 
     }

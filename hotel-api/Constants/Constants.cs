@@ -28,6 +28,8 @@
         public static string Inclusive = "Inclusive";
         public static string Exclusive = "Exclusive";
 
+        public static string Reservation = "Reservation";
+
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";
         

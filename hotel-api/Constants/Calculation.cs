@@ -16,5 +16,10 @@
             }
                 
         }
+
+        public static decimal CalculatePercentage(decimal amount, decimal percentage)
+        {
+            return (amount * percentage) / 100;
+        }
     }
 }
