@@ -11,6 +11,7 @@ using Repository.Models;
 using RepositoryModels.Repository;
 using System.ComponentModel.Design;
 using System.Data;
+using System.Reflection.Metadata;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace hotel_api.Controllers
@@ -985,7 +986,17 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);                
                 string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
 
-                var documents = await _context.DocumentMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.FinancialYear == financialYear).ToListAsync();
+                var documents = await _context.DocumentMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.FinancialYear == financialYear).Select(x => new
+                {
+                    x.DocId,
+                    x.Type,
+                    x.Prefix, 
+                    x.Prefix1,
+                    x.Prefix2,
+                    x.Suffix,
+                    x.Separator,
+                    DocumentNo = x.Prefix + x.Separator + x.Prefix1 + x.Separator + x.Prefix2 + x.Suffix + x.Number + x.LastNumber
+            }).ToListAsync();
 
                 return Ok(new { Code = 200, Message = "Data found", data = documents });
 
@@ -1040,6 +1051,7 @@ namespace hotel_api.Controllers
                 documentMaster.CreatedDate = currentDate;
                 documentMaster.UpdatedDate = currentDate;
                 documentMaster.LastNumber = 1; 
+                
                 var validator = new DocumentMasterValidator(_context);
                 var result = await validator.ValidateAsync(documentMaster);
                 if (!result.IsValid)
@@ -1082,6 +1094,7 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(document, ModelState);
+
                 if (document.IsActive == true)
                 {
                     var validator = new DocumentMasterValidator(_context);
@@ -1096,21 +1109,15 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 202, Message = errors });
                     }
                 }
-
+                document.Prefix1 = string.IsNullOrEmpty(document.Prefix1) || string.IsNullOrWhiteSpace(document.Prefix1) ? "0" : document.Prefix1;
+                document.Prefix2 = string.IsNullOrEmpty(document.Prefix2) || string.IsNullOrWhiteSpace(document.Prefix2) ? "0" : document.Prefix2;
+                document.Suffix = string.IsNullOrEmpty(document.Suffix) || string.IsNullOrWhiteSpace(document.Suffix) ? "0" : document.Suffix;
                 document.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
+                
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { Code = 200, Message = "Room updated successfully" });
+                return Ok(new { Code = 200, Message = "Document updated successfully" });
             }
             catch (Exception ex)
             {

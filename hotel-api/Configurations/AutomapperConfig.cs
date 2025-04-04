@@ -29,7 +29,14 @@ namespace hotel_api.Configurations
             CreateMap<HourMasterDTO, HourMaster>().ReverseMap();
             CreateMap<ExtraPoliciesDTO, ExtraPolicies>().ReverseMap();
 
-            CreateMap<DocumentMasterDTO, DocumentMaster>().ReverseMap();
+            CreateMap<DocumentMasterDTO, DocumentMaster>()
+                .ForMember(dest => dest.Prefix1, opt => opt.MapFrom(src =>
+                            string.IsNullOrWhiteSpace(src.Prefix1) ? "0" : src.Prefix1))
+                .ForMember(dest => dest.Prefix2, opt => opt.MapFrom(src =>
+                            string.IsNullOrWhiteSpace(src.Prefix2) ? "0" : src.Prefix2))
+                .ForMember(dest => dest.Suffix, opt => opt.MapFrom(src =>
+                            string.IsNullOrWhiteSpace(src.Suffix) ? "0" : src.Suffix))
+                .ReverseMap();
             CreateMap<AgentDetailsDTO, AgentDetails>().ReverseMap();
         }
     }

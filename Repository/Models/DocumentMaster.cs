@@ -68,12 +68,12 @@ namespace Repository.Models
             RuleFor(x => x)
                 .MustAsync(UniquePrefix)
                 .When(x => x.DocId == 0)
-                .WithMessage("Prefix already defined for this type");
+                .WithMessage("Document already defined for this type");
 
             RuleFor(x => x)
                 .MustAsync(UniquePrefixUpdate)
                 .When(x => x.DocId > 0)
-                .WithMessage("Prefix already defined for this type");
+                .WithMessage("Document already defined for this type");
 
         }
 
