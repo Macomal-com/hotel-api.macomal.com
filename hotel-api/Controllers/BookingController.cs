@@ -110,6 +110,7 @@ namespace hotel_api.Controllers
 
                 var agentDetails = await _context.AgentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x=> new
                 {
+                    AgentId = x.AgentId,
                     AgentName = x.AgentName,
                     AgentType = x.AgentType,
                     Commission = x.Commission,
@@ -325,7 +326,7 @@ namespace hotel_api.Controllers
                     //tds
                     agentCommissionResponse.TcsAmount = Calculation.CalculatePercentage(bookingAmount, agentCommissionResponse.TcsPercentage);
                 }
-                return Ok(new { Code = 500, Message = "Agent rate fetched successfully", data = agentCommissionResponse });
+                return Ok(new { Code = 200, Message = "Agent rate fetched successfully", data = agentCommissionResponse });
 
 
             }
