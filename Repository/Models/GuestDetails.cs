@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,7 @@ namespace Repository.Models
 {
     public class GuestDetails : ICommonProperties
     {
+        [Key]
         public int GuestID { get; set; }
         public string GuestName { get; set; } = string.Empty;
         public string Nationality { get; set; } = string.Empty;

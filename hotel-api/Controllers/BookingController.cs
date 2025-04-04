@@ -32,7 +32,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("CheckRoomAvailaibility")]
-        public async Task<IActionResult> CheckRoomAvailaibility(DateTime checkInDate, string checkInTime, string checkOutDate, DateTime checkOutTime, string pageName = "", int roomTypeId = 0)
+        public async Task<IActionResult> CheckRoomAvailaibility(DateTime checkInDate, string checkInTime, DateTime checkOutDate, string checkOutTime, string pageName = "", int roomTypeId = 0)
         {
             try
             {
@@ -616,7 +616,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);`
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.Type == BookingType && x.CompanyId == companyId && x.IsActive == true);
                 if (getbookingno == null)
                 {
