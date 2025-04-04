@@ -8,18 +8,23 @@
             {
                 decimal gstAmount = (amount * gst) / (100 + gst);
                 decimal netAmount = amount - gstAmount;
-                return (netAmount, gstAmount);
+                return (RoundOffDecimal(netAmount), RoundOffDecimal(gstAmount));
             }
             else 
             {
-                return (amount,(gst / amount) * 100);
+                return (RoundOffDecimal(amount), RoundOffDecimal((amount * gst) / 100));
             }
                 
         }
 
         public static decimal CalculatePercentage(decimal amount, decimal percentage)
         {
-            return (amount * percentage) / 100;
+            return RoundOffDecimal((amount * percentage) / 100);
+        }
+
+        public static decimal RoundOffDecimal(decimal value)
+        {
+            return Math.Round(value, 2);
         }
     }
 }

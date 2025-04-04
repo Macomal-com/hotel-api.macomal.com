@@ -180,7 +180,7 @@ namespace hotel_api.Controllers
                     }
                     else
                     {
-                        roomRateResponse.BookingAmount = roomRates.RoomRate;
+                        roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRates.RoomRate);
                     }
                 }
                 else if(checkOutFormat == Constants.Constants.Hour24Format || checkOutFormat == Constants.Constants.NightFormat)
@@ -201,21 +201,21 @@ namespace hotel_api.Controllers
                             {
                                 roomRateResponse.BookedRoomRates.Add(new BookedRoomRate
                                 {
-                                    RoomRate = roomRates.RoomRate,
+                                    RoomRate = Calculation.RoundOffDecimal(roomRates.RoomRate),
                                     BookingDate = currentDate
                                 });
 
-                                roomRateResponse.BookingAmount = roomRateResponse.BookingAmount + roomRates.RoomRate;
+                                roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + roomRates.RoomRate);
                             }
                         }
                         else
                         {
                             roomRateResponse.BookedRoomRates.Add(new BookedRoomRate
                             {
-                                RoomRate = customRoomRates.RoomRate,
+                                RoomRate = Calculation.RoundOffDecimal(customRoomRates.RoomRate),
                                 BookingDate = currentDate
                             });
-                            roomRateResponse.BookingAmount = roomRateResponse.BookingAmount + customRoomRates.RoomRate;
+                            roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + customRoomRates.RoomRate);
                         }
                         noOfNights--;
                         currentDate = currentDate.AddDays(1);
@@ -244,11 +244,11 @@ namespace hotel_api.Controllers
                 }
 
                 //total amount
-                roomRateResponse.AllRoomAmount = noOfRooms * roomRateResponse.BookingAmount;
-                roomRateResponse.AllRoomGst = noOfRooms * roomRateResponse.GstAmount;
-                roomRateResponse.TotalAmount = roomRateResponse.AllRoomAmount + roomRateResponse.GstAmount;
+                roomRateResponse.AllRoomAmount = Calculation.RoundOffDecimal(noOfRooms * roomRateResponse.BookingAmount);
+                roomRateResponse.AllRoomGst = Calculation.RoundOffDecimal(noOfRooms * roomRateResponse.GstAmount);
+                roomRateResponse.TotalAmount = Calculation.RoundOffDecimal(roomRateResponse.AllRoomAmount + roomRateResponse.GstAmount);
                 
-                return Ok(new { Code = 500, Message = "Room rate fetched successfully", data = roomRateResponse });
+                return Ok(new { Code = 200, Message = "Room rate fetched successfully", data = roomRateResponse });
 
             }
             catch (Exception)
