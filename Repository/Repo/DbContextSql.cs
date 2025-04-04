@@ -43,6 +43,11 @@ namespace RepositoryModels.Repository
         public DbSet<AgentDetails> AgentDetails { get; set; }
         public DbSet<RoomAvailability> RoomAvailability { get; set; }
         public DbSet<GstRangeMaster> GstRangeMaster { get; set; }
+
+        public DbSet<GuestDetails> GuestDetails { get; set; }
+
+        public DbSet<BookingDetail> BookingDetail { get; set; }
+        public DbSet<PaymentDetails> PaymentDetails { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

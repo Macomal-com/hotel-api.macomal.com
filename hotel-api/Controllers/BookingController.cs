@@ -6,9 +6,11 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Repository.DTO;
 using Repository.Models;
+using Repository.RequestDTO;
 using RepositoryModels.Repository;
 using System.ComponentModel.Design;
 using System.Data;
+using System.Globalization;
 using System.Runtime.InteropServices.JavaScript;
 
 namespace hotel_api.Controllers
@@ -20,8 +22,17 @@ namespace hotel_api.Controllers
         private readonly DbContextSql _context = context;
         private readonly IMapper _mapper = mapper;
 
+        private static void SetMastersDefault(ICommonProperties model, int companyid, int userId, DateTime currentDate)
+        {
+            model.CreatedDate = currentDate;
+            model.UpdatedDate = currentDate;
+            model.IsActive = true;
+            model.CompanyId = companyid;
+            model.UserId = userId;
+        }
+
         [HttpGet("CheckRoomAvailaibility")]
-        public async Task<IActionResult> CheckRoomAvailaibility(string checkInDate, string checkInTime, string checkOutDate, string checkOutTime, string pageName = "")
+        public async Task<IActionResult> CheckRoomAvailaibility(DateTime checkInDate, string checkInTime, string checkOutDate, DateTime checkOutTime, string pageName = "", int roomTypeId = 0)
         {
             try
             {
@@ -44,27 +55,10 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    var dataSet = new DataSet();
-                    using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                    DataSet dataSet = await GetRoomAvailability(checkInDate, checkInTime, checkOutDate, checkOutTime, pageName, roomTypeId);
+                    if(dataSet == null)
                     {
-                        using (var command = new SqlCommand("check_room_availaibility", connection))
-                        {
-                            command.CommandTimeout = 120;
-                            command.CommandType = CommandType.StoredProcedure;
-                            command.Parameters.AddWithValue("@userCheckInDate", checkInDate);
-                            command.Parameters.AddWithValue("@userCheckOutDate", checkOutDate);
-                            command.Parameters.AddWithValue("@userCheckInTime", checkInTime);
-                            command.Parameters.AddWithValue("@userCheckOutTime", checkOutTime);
-                            command.Parameters.AddWithValue("@companyId", companyId);
-                            command.Parameters.AddWithValue("@pageName", pageName);
-                            await connection.OpenAsync();
-
-                            using (var adapter = new SqlDataAdapter(command))
-                            {
-                                adapter.Fill(dataSet);
-                            }
-                            await connection.CloseAsync();
-                        }
+                        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                     }
                     var rows = new List<Dictionary<string, object>>();
                     var AvailableRooms = new Dictionary<string, object>();
@@ -343,8 +337,300 @@ namespace hotel_api.Controllers
 
         }
 
+        private async Task<DataSet> GetRoomAvailability(DateTime checkInDate, string checkInTime, DateTime checkOutDate, string checkOutTime, string pageName = "", int roomTypeId = 0, int roomId = 0)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            DataSet dataSet = null;
+            try
+            {
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    using (var command = new SqlCommand("check_room_availaibility", connection))
+                    {
+                        command.CommandTimeout = 120;
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@userCheckInDate", checkInDate);
+                        command.Parameters.AddWithValue("@userCheckOutDate", checkOutDate);
+                        command.Parameters.AddWithValue("@userCheckInTime", checkInTime);
+                        command.Parameters.AddWithValue("@userCheckOutTime", checkOutTime);
+                        command.Parameters.AddWithValue("@companyId", companyId);
+                        command.Parameters.AddWithValue("@pageName", pageName);
+                        command.Parameters.AddWithValue("@roomTypeId", roomTypeId);
+                        command.Parameters.AddWithValue("@roomId", roomId);
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            dataSet = new DataSet();
+                            adapter.Fill(dataSet);
+                        }
+                        await connection.CloseAsync();
+                    }
+                }
+                return dataSet;
+            }
+            catch (Exception)
+            {
+                return dataSet;
+            }
+        }
 
 
+        [HttpPost]
+        public async Task<IActionResult> SaveReservation([FromForm] ReservationRequest request, IFormFile? GuestImage, string reservationNo)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            var currentDate = DateTime.Now;
+            try
+            {
+                if (request == null || request.GuestDetails == null || request.BookingDetails == null || request.BookingDetails.Count == 0 || request.PaymentDetails == null)
+                {
+                    return Ok(new { code = 400, message = "Invalid data.", data = new object { } });
+                }
+                if (string.IsNullOrWhiteSpace(request.GuestDetails.GuestName) || string.IsNullOrWhiteSpace(request.GuestDetails.PhoneNumber))
+                {
+                    return Ok(new { code = 400, message = "Guest name and phone number is required.", data = new object { } });
+
+                }
+
+                //CHECK ROOM ALREADY BOOKING OR NOT
+                foreach (var item in request.BookingDetails)
+                {
+                    //room not assigned
+                    if(item.RoomsList.Count == 0)
+                    {
+                        DataSet dataSet = await GetRoomAvailability(item.CheckInDate, item.CheckInTime, item.CheckOutDate, item.CheckOutTime, "cleanroom", item.RoomTypeId, 0);
+                        if(dataSet == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                        }
+                        else
+                        {
+                            //Get available rooms on this category
+                            int AvailableRooms = 0;
+                            var dataTable2 = dataSet.Tables[1];
+                            foreach (DataRow row in dataTable2.Rows)
+                            {
+                                
+                                foreach (DataColumn col in dataTable2.Columns)
+                                {
+                                    AvailableRooms = Convert.ToInt32(row[col]);
+                                }
+                                
+                            }
+
+                            if(AvailableRooms < item.NoOfRooms)
+                            {
+                                return Ok(new { Code = 400, Message = "Required No of rooms are not available for " + item.RoomCategoryName });
+                            }                          
+                        }
+                    }
+                    else
+                    {
+                        foreach(var room in item.RoomsList)
+                        {
+                            DataSet dataSet = await GetRoomAvailability(item.CheckInDate, item.CheckInTime, item.CheckOutDate, item.CheckOutTime, "checkbyroomid", item.RoomTypeId, item.RoomId);
+                            if (dataSet == null)
+                            {
+                                await transaction.RollbackAsync();
+                                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                            }
+                            else
+                            {
+                                //Check room is available or not
+                                var rows = new List<Dictionary<string, object>>();
+                                
+                                var dataTable = dataSet.Tables[0];
+                                foreach (DataRow row in dataTable.Rows)
+                                {
+                                    var dict = new Dictionary<string, object>();
+                                    foreach (DataColumn col in dataTable.Columns)
+                                    {
+                                        dict[col.ColumnName] = row[col];
+                                    }
+                                    rows.Add(dict);
+                                }
+                                if (rows.Count == 0)
+                                {
+                                    return Ok(new { Code = 400, Message = "Room not found" });
+                                }
+                                else
+                                {
+                                    if (rows[0]["RoomStatus"].ToString() != Constants.Constants.Clean)
+                                    {
+                                        return Ok(new { code = 400, message = "Room " + rows[0]["RoomNo"] + " is already reserved with Reservation No " + rows[0]["ReservationNo"], data = new object { } });
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+
+
+                }
+
+
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+
+                //Insert Guest Details
+                var guest = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestID == request.GuestDetails.GuestID);
+                
+                if (guest == null)
+                {
+                    SetMastersDefault(request.GuestDetails, companyId, userId, currentDate);
+                    if (GuestImage != null)
+                    {
+                        request.GuestDetails.GuestImage = await Constants.Constants.AddFile(GuestImage);
+                    }
+                    await _context.GuestDetails.AddAsync(request.GuestDetails);
+                    await _context.SaveChangesAsync();
+                }
+                else
+                {
+                    guest.GuestName = request.GuestDetails.GuestName;
+                    guest.Nationality = request.GuestDetails.Nationality;
+                    guest.StateName = request.GuestDetails.StateName;
+                    guest.Address = request.GuestDetails.Address;
+                    guest.City = request.GuestDetails.City;
+                    guest.PhoneNumber = request.GuestDetails.PhoneNumber;
+                    guest.Email = request.GuestDetails.Email;
+                    if (GuestImage != null)
+                    {
+                        guest.GuestImage = await Constants.Constants.AddFile(GuestImage);
+                    }
+                    guest.Other1 = request.GuestDetails.Other1;
+                    guest.Other2 = request.GuestDetails.Other2;
+                    guest.UpdatedDate = currentDate;
+                    _context.GuestDetails.Update(guest);
+                    await _context.SaveChangesAsync();
+                }
+
+                //save booking
+                int roomCount = 1;
+                foreach(var item in request.BookingDetails)
+                {
+                    //not assigned room
+                    if(item.RoomsList.Count == 0)
+                    {
+                        for(int i = 1; i <= item.NoOfRooms; i++)
+                        {
+                            var bookingDetail = item;
+                            bookingDetail.RoomId = 0;
+                            bookingDetail.RoomCount = roomCount;
+                            bookingDetail.PrimaryGuestId = request.GuestDetails.GuestID;
+                            bookingDetail.GuestId = request.GuestDetails.GuestID;
+                            bookingDetail.CheckInDateTime = DateTime.ParseExact(bookingDetail.CheckInDate + " " + bookingDetail.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+                            bookingDetail.CheckOutDateTime = DateTime.ParseExact(bookingDetail.CheckOutDate + " " + bookingDetail.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+                            SetMastersDefault(bookingDetail, companyId, userId, currentDate);
+                            await _context.BookingDetail.AddAsync(bookingDetail);
+                            await _context.SaveChangesAsync();
+                            roomCount++;
+
+                            RoomAvailability roomAvailability = new RoomAvailability();
+                            SetMastersDefault(roomAvailability, companyId, userId, currentDate);
+                            roomAvailability.CheckInDate = bookingDetail.CheckInDate;
+                            roomAvailability.CheckOutDate = bookingDetail.CheckOutDate;
+                            roomAvailability.CheckInTime = bookingDetail.CheckInTime;
+                            roomAvailability.CheckOutTime = bookingDetail.CheckOutTime;
+                            roomAvailability.CheckInDateTime = bookingDetail.CheckInDateTime;
+                            roomAvailability.CheckOutDateTime = bookingDetail.CheckOutDateTime;
+                            roomAvailability.ReservationNo = bookingDetail.ReservationNo;
+                            roomAvailability.BookingId = bookingDetail.BookingId;
+                            roomAvailability.RoomId = bookingDetail.RoomId;
+                            roomAvailability.RoomStatus = bookingDetail.Status;
+                            roomAvailability.RoomTypeId = bookingDetail.RoomTypeId;
+                            await _context.RoomAvailability.AddAsync(roomAvailability);
+                            await _context.SaveChangesAsync();
+
+
+                        }
+                    }
+                    else
+                    {
+                        foreach(var room in item.RoomsList)
+                        {
+                            var bookingDetail = item;
+                            bookingDetail.RoomId = room.RoomId;
+                            bookingDetail.RoomCount = roomCount;
+                            bookingDetail.PrimaryGuestId = request.GuestDetails.GuestID;
+                            bookingDetail.GuestId = request.GuestDetails.GuestID;
+                            SetMastersDefault(bookingDetail, companyId, userId, currentDate);
+                            await _context.BookingDetail.AddAsync(bookingDetail);
+                            await _context.SaveChangesAsync();
+
+                            RoomAvailability roomAvailability = new RoomAvailability();
+                            SetMastersDefault(roomAvailability, companyId, userId, currentDate);
+                            roomAvailability.CheckInDate = bookingDetail.CheckInDate;
+                            roomAvailability.CheckOutDate = bookingDetail.CheckOutDate;
+                            roomAvailability.CheckInTime = bookingDetail.CheckInTime;
+                            roomAvailability.CheckOutTime = bookingDetail.CheckOutTime;
+                            roomAvailability.CheckInDateTime = bookingDetail.CheckInDateTime;
+                            roomAvailability.CheckOutDateTime = bookingDetail.CheckOutDateTime;
+                            roomAvailability.ReservationNo = bookingDetail.ReservationNo;
+                            roomAvailability.BookingId = bookingDetail.BookingId;
+                            roomAvailability.RoomId = bookingDetail.RoomId;
+                            roomAvailability.RoomStatus = bookingDetail.Status;
+                            roomAvailability.RoomTypeId = bookingDetail.RoomTypeId;
+                            await _context.RoomAvailability.AddAsync(roomAvailability);
+                            await _context.SaveChangesAsync();
+
+                            roomCount++;
+                        }
+                    }
+                }
+                
+                //payment
+                if(request.PaymentDetails.PaymentAmount > 0)
+                {
+                    SetMastersDefault(request.PaymentDetails, companyId, userId, currentDate);
+                    request.PaymentDetails.BookingId = 0;
+                    request.PaymentDetails.ReservationNo = reservationNo;
+                    request.PaymentDetails.PaymentFormat = Constants.Constants.ReservationWisePayment;       
+                    await _context.PaymentDetails.AddAsync(request.PaymentDetails);
+                    await _context.SaveChangesAsync();
+                }
+
+                var response = await UpdateDocumentNo(Constants.Constants.Reservation);
+                if(response == null)
+                {
+                    return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                }
+
+                await transaction.CommitAsync();
+                return Ok(new { Code = 200, Message = "Reservation created successfully" });
+
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        
+        private async Task<string> UpdateDocumentNo(string BookingType)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);`
+                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.Type == BookingType && x.CompanyId == companyId && x.IsActive == true);
+                if (getbookingno == null)
+                {
+                    return null;
+                }
+                getbookingno.LastNumber = getbookingno.LastNumber + 1;
+                await _context.SaveChangesAsync();
+                return "success";
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
 
     }
 }
