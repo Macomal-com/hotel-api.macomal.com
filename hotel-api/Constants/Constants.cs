@@ -35,6 +35,7 @@
 
         //rooms status
         public static string Clean = "Clean";
+        public static string CheckIn = "CheckIn";
 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";

@@ -10,15 +10,15 @@ namespace Repository.DTO
     public class RoomRateResponse
     {
 
-        public decimal BookingAmount { get; set; } //room rate
-        public decimal GstPercentage { get; set; } //gst %
-        public decimal TotalAmount { get; set; } // all gst + all rooms amount
-        public decimal GstAmount { get; set; } //gst amount
-        
+        public decimal BookingAmount { get; set; } //all days room rate
+        public decimal TotalBookingAmount { get; set; } // all gst + all rooms amount
+        public decimal GstAmount { get; set; } //all days gst amount
+        public int NoOfNights { get; set; }
         public int NoOfRooms { get; set; } 
-        public decimal AllRoomAmount { get; set; } //no of rooms * total room amounty
-        public decimal AllRoomGst { get; set; } //no of rooms * gstamount
-        
+        public decimal AllRoomsAmount { get; set; } //no of rooms * total room amounty
+        public decimal AllRoomsGst { get; set; } //no of rooms * gstamount
+
+        public decimal TotalRoomsAmount { get; set; } // (no of rooms * total room amount) + (no of rooms * gst amount)
 
         public List<BookedRoomRate> BookedRoomRates = new List<BookedRoomRate>();
 

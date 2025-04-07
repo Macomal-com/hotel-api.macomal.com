@@ -38,6 +38,14 @@ namespace hotel_api.Configurations
                             string.IsNullOrWhiteSpace(src.Suffix) ? "0" : src.Suffix))
                 .ReverseMap();
             CreateMap<AgentDetailsDTO, AgentDetails>().ReverseMap();
+
+            CreateMap<GuestDetailsDTO, GuestDetails>().ReverseMap();
+
+            CreateMap<BookingDetailDTO, BookingDetail>().ReverseMap();
+
+            CreateMap<PaymentDetailsDTO, PaymentDetails>().ReverseMap();
+
+            CreateMap<ReservationDetailsDTO, ReservationDetails>().ReverseMap();
         }
     }
 }

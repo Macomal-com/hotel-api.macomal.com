@@ -11,7 +11,7 @@ namespace Repository.Models
     {
 
         [Key]
-        public int PaymentID { get; set; }
+        public int PaymentId { get; set; }
         public int BookingId { get; set; }
         public string ReservationNo { get; set; } = string.Empty;
         public DateTime PaymentDate { get; set; }
@@ -36,6 +36,20 @@ namespace Repository.Models
         public DateTime UpdatedDate { get; set; }
 
         public int CompanyId { get; set; }
+    }
+
+    public class PaymentDetailsDTO
+    {
+
+        public DateTime PaymentDate { get; set; }
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string TransactionId { get; set; } = string.Empty;
+        public string PaymentStatus { get; set; } = string.Empty;
+        public string PaymentType { get; set; } = string.Empty;
+        public string BankName { get; set; } = string.Empty;
+        public string PaymentReferenceNo { get; set; } = string.Empty;
+        public decimal PaymentAmount { get; set; }
+        public string PaymentFormat { get; set; } = string.Empty;
     }
 
 }

@@ -945,7 +945,7 @@ namespace hotel_api.Controllers
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
                 }
-                return Ok(new { Code = 200, Message = "Room rate deleted siccessfully" });
+                return Ok(new { Code = 200, Message = "Room rate deleted successfully" });
             }
             catch(Exception ex)
             {
