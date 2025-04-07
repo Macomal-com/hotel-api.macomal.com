@@ -419,14 +419,14 @@ namespace hotel_api.Controllers
         }
 
 
-        [HttpPost]
-        public async Task<IActionResult> SaveReservation([FromForm] ReservationRequest request, IFormFile? GuestImage, string reservationNo)
+        [HttpPost("SaveReservation")]
+        public async Task<IActionResult> SaveReservation([FromBody] ReservationRequest request)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             var currentDate = DateTime.Now;
             try
             {
-                if (request == null || request.GuestDetailsDTO == null || request.BookingDetailsDTO == null || request.BookingDetailsDTO.Count == 0 || request.PaymentDetailsDTO == null || request.ReservationDetailsDTO == null)
+                if (request == null || request.GuestDetailsDTO == null || request.BookingDetailsDTO == null || request.BookingDetailsDTO.Count == 0 || request.PaymentDetailsDTO == null || request.ReservationDetailsDTO == null || request.AgentPaymentDetailsDTO ==null)
                 {
                     return Ok(new { code = 400, message = "Invalid data.", data = new object { } });
                 }
@@ -523,21 +523,20 @@ namespace hotel_api.Controllers
                 {
                     guest = _mapper.Map<GuestDetails>(request.GuestDetailsDTO);
                     SetMastersDefault(guest, companyId, userId, currentDate);
-                    if (GuestImage != null)
-                    {
-                        request.GuestDetailsDTO.GuestImage = await Constants.Constants.AddFile(GuestImage);
-                    }
+                    //if (GuestImage != null)
+                    //{
+                    //    request.GuestDetailsDTO.GuestImage = await Constants.Constants.AddFile(GuestImage);
+                    //}
                     await _context.GuestDetails.AddAsync(guest);
                     await _context.SaveChangesAsync();
                 }
                 else
                 {
-                    guest = _mapper.Map<GuestDetails>(request.GuestDetailsDTO);
-                    
-                    if (GuestImage != null)
-                    {
-                        guest.GuestImage = await Constants.Constants.AddFile(GuestImage);
-                    }
+                    guest = _mapper.Map<GuestDetails>(request.GuestDetailsDTO);                    
+                    //if (GuestImage != null)
+                    //{
+                    //    guest.GuestImage = await Constants.Constants.AddFile(GuestImage);
+                    //}
                     
                     guest.UpdatedDate = currentDate;
                     _context.GuestDetails.Update(guest);
@@ -550,7 +549,33 @@ namespace hotel_api.Controllers
                 SetMastersDefault(reservationDetails, companyId, userId, currentDate);
                 if(reservationDetails.AgentId > 0)
                 {
+                    var gstPercentage = await GetGstPercetage(Constants.Constants.Agent);
+                    if(gstPercentage == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 500, Message = "Gst percentage not found for agent" });                        
+                    }
+                    else
+                    {
+                        if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                        {
+                            var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, (Calculation.RoundOffDecimal(reservationDetails.AgentServiceCharge)));
+                            if (gstRangeMaster == null)
+                            {
+                                reservationDetails.AgentServiceGstPercentage = gstPercentage.TaxPercentage;
+                            }
+                            else
+                            {
+                                reservationDetails.AgentServiceGstPercentage = gstRangeMaster.TaxPercentage;
+                            }
+                        }
+                        else
+                        {
+                            reservationDetails.AgentServiceGstPercentage = gstPercentage.TaxPercentage;
+                        }
 
+                        (reservationDetails.AgentServiceCharge, reservationDetails.AgentTotalServiceCharge) = Calculation.CalculateGst(Calculation.RoundOffDecimal(reservationDetails.AgentServiceCharge), reservationDetails.AgentServiceGstPercentage, reservationDetails.AgentServiceGstType);
+                    }
                 }
 
                 await _context.ReservationDetails.AddAsync(reservationDetails);
@@ -566,8 +591,8 @@ namespace hotel_api.Controllers
                         SetMastersDefault(bookingDetails, companyId, userId, currentDate);
 
                         bookingDetails.GuestId = guest.GuestId;
-                        bookingDetails.CheckInDateTime = DateTime.ParseExact(bookingDetails.CheckInDate + " " + bookingDetails.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-                        bookingDetails.CheckOutDateTime = DateTime.ParseExact(bookingDetails.CheckOutDate + " " + bookingDetails.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+                        bookingDetails.CheckInDateTime = DateTime.ParseExact((bookingDetails.CheckInDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+                        bookingDetails.CheckOutDateTime = DateTime.ParseExact((bookingDetails.CheckOutDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
                         bookingDetails.Status = request.ReservationDetailsDTO.IsCheckIn == true ? Constants.Constants.CheckIn : bookingDetails.Status;
                         bookingDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
                         bookingDetails.BookingDate = currentDate;
@@ -614,6 +639,18 @@ namespace hotel_api.Controllers
 
 
                 }
+
+               //paid to agent
+                if(request.AgentPaymentDetailsDTO.PaymentAmount > 0)
+                {
+                    var paymentDetails = _mapper.Map<PaymentDetails>(request.AgentPaymentDetailsDTO);
+                    SetMastersDefault(paymentDetails, companyId, userId, currentDate);
+                    paymentDetails.BookingId = 0;
+                    paymentDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
+
+                    await _context.PaymentDetails.AddAsync(paymentDetails);
+                    await _context.SaveChangesAsync();
+                }
                 
                 //payment
                 if(request.PaymentDetailsDTO.PaymentAmount > 0)
@@ -637,7 +674,7 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 200, Message = "Reservation created successfully" });
 
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });

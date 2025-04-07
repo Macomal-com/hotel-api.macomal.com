@@ -28,7 +28,9 @@
         public static string Inclusive = "Inclusive";
         public static string Exclusive = "Exclusive";
 
+        //gst masters
         public static string Reservation = "Reservation";
+        public static string Agent = "Agent";
 
         //Payment format
         public static string ReservationWisePayment = "Reservation";

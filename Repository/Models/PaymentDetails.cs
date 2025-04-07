@@ -16,7 +16,7 @@ namespace Repository.Models
         public string ReservationNo { get; set; } = string.Empty;
         public DateTime PaymentDate { get; set; }
         public string PaymentMethod { get; set; } = string.Empty;
-        public string TransactionID { get; set; } = string.Empty;
+        public string TransactionId { get; set; } = string.Empty;
         public string PaymentStatus { get; set; } = string.Empty;
         public string PaymentType { get; set; } = string.Empty;
         public string BankName { get; set; } = string.Empty;
