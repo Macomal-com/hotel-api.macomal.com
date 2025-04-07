@@ -32,6 +32,8 @@ namespace Repository.Models
         public string AgentServiceGstType { get; set; } = string.Empty;
 
         public decimal AgentServiceGstPercentage { get; set; }
+
+        public decimal AgentServiceGstAmount { get; set; }
         public decimal AgentTotalServiceCharge { get; set; }
 
         public string AgentReferenceId { get; set; } = string.Empty;

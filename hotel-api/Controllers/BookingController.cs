@@ -574,7 +574,9 @@ namespace hotel_api.Controllers
                             reservationDetails.AgentServiceGstPercentage = gstPercentage.TaxPercentage;
                         }
 
-                        (reservationDetails.AgentServiceCharge, reservationDetails.AgentTotalServiceCharge) = Calculation.CalculateGst(Calculation.RoundOffDecimal(reservationDetails.AgentServiceCharge), reservationDetails.AgentServiceGstPercentage, reservationDetails.AgentServiceGstType);
+                        (reservationDetails.AgentServiceCharge, reservationDetails.AgentServiceGstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(reservationDetails.AgentServiceCharge), reservationDetails.AgentServiceGstPercentage, reservationDetails.AgentServiceGstType);
+
+                        reservationDetails.AgentTotalServiceCharge = Calculation.RoundOffDecimal(reservationDetails.AgentServiceCharge + reservationDetails.AgentServiceGstAmount);
                     }
                 }
 
