@@ -601,7 +601,7 @@ namespace hotel_api.Controllers
                         bookingDetails.PrimaryGuestId = guest.GuestId;                        
                         bookingDetails.RoomId = room.RoomId;
                         bookingDetails.RoomCount = request.BookingDetailsDTO.Count == 1 && item.AssignedRooms.Count == 1 ? 0 : roomCount;
-
+                        bookingDetails.BookingSource = request.ReservationDetailsDTO.BookingSource;
                         roomCount++;
 
                         await _context.BookingDetail.AddAsync(bookingDetails);

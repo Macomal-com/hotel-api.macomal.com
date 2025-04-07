@@ -56,6 +56,7 @@ namespace Repository.Models
         public decimal BookingAmount { get; set; }
         public decimal GstAmount { get; set; }
         public decimal TotalBookingAmount { get; set; }
+        public string BookingSource { get; set; } = string.Empty;
 
     }
 
@@ -88,5 +89,6 @@ public class BookingDetailDTO
     public decimal BookingAmount { get; set; }
     public decimal GstAmount { get; set; }
     public decimal TotalBookingAmount { get; set; }
+    public string BookingSource { get; set; } = string.Empty;
 
 }
