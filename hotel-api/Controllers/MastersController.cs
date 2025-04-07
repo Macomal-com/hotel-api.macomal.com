@@ -299,8 +299,8 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var data = await (from rs in _context.BuildingMaster
-                                 
-                                  where rs.IsActive == true && rs.PropertyId == companyId 
+
+                                  where rs.IsActive == true && rs.PropertyId == companyId && rs.UserId == userId
                                   select new
                                   {
                                       rs.BuildingId,
@@ -308,7 +308,7 @@ namespace hotel_api.Controllers
                                       rs.BuildingDescription,
                                       rs.NoOfFloors,
                                       rs.NoOfRooms,
-                                     
+
                                   }).ToListAsync();
                 return Ok(new { Code = 200, Message = "Buildings fetched successfully", Data = data });
 
@@ -322,13 +322,14 @@ namespace hotel_api.Controllers
             }
         }
 
-
         [HttpGet("GetBuildingById/{id}")]
         public async Task<IActionResult> GetBuildingById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.BuildingMaster.FirstOrDefaultAsync(x=>x.IsActive == true && x.BuildingId == id);
+                var data = await _context.BuildingMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.BuildingId == id && x.CompanyId == companyId && x.UserId == userId);
 
 
                 return data == null
@@ -382,53 +383,58 @@ namespace hotel_api.Controllers
         [HttpPatch("PatchBuildingMaster/{id}")]
         public async Task<IActionResult> PatchBuildingMaster(int id, [FromBody] JsonPatchDocument<BuildingMaster> patchDocument)
         {
-            try { 
-            if (patchDocument == null)
+            try
             {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var building = await _context.BuildingMaster.FindAsync(id);
-
-            if (building == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(building, ModelState);
-            var validator = new BuildingMasterValidator(_context);
-            var result = await validator.ValidateAsync(building);
-            if (!result.IsValid)
-            {
-                var errors = result.Errors.Select(x => new
+                if (patchDocument == null)
                 {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, Message = errors });
-            }
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
 
-            building.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
+                }
+
+                var building = await _context.BuildingMaster.FindAsync(id);
+
+                if (building == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(building, ModelState);
+                var validator = new BuildingMasterValidator(_context);
+                var result = await validator.ValidateAsync(building);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, Message = errors });
+                }
+
+                building.UpdatedDate = DateTime.Now;
+                if (!ModelState.IsValid)
+                {
+                    var errorMessages = ModelState
+                                        .Where(x => x.Value.Errors.Any())
+                                        .SelectMany(x => x.Value.Errors)
+                                        .Select(x => x.ErrorMessage)
+                                        .ToList();
+                    return Ok(new { Code = 500, Message = errorMessages });
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Building updated successfully" });
+            }
+            catch (Exception ex)
             {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
+
+                return StatusCode(500, new
+                {
+                    Code = 500,
+                    Message = Constants.Constants.ErrorMessage
+                });
             }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Building updated successfully" });
-        }
-            catch(Exception ex){
-            
-return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage
-    });
-    }
         }
 
         //FLOORs
@@ -444,7 +450,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                                   join building in _context.BuildingMaster on floor.BuildingId equals building.BuildingId into floorBuilding
                                   from buildingMas in floorBuilding.DefaultIfEmpty()
                                   join prop in _context.CompanyDetails on floor.PropertyId equals prop.PropertyId
-                                  where floor.IsActive == true && floor.PropertyId == companyId
+                                  where floor.IsActive == true && floor.PropertyId == companyId && floor.UserId == userId
                                   select new
                                   {
                                       FloorId = floor.FloorId,
@@ -456,7 +462,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 return Ok(new { Code = 200, Message = "Floors fetched successfully", Data = data });
             }
-            
+
             catch (Exception ex)
             {
 
@@ -476,7 +482,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                                   join building in _context.BuildingMaster on floor.BuildingId equals building.BuildingId into floorBuilding
                                   from buildingMas in floorBuilding.DefaultIfEmpty()
                                   join prop in _context.CompanyDetails on floor.PropertyId equals prop.PropertyId
-                                  where floor.IsActive == true && floor.PropertyId == companyId && floor.FloorId == id
+                                  where floor.IsActive == true && floor.PropertyId == companyId && floor.UserId == userId && floor.FloorId == id
                                   select new
                                   {
                                       FloorId = floor.FloorId,
@@ -512,8 +518,8 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
             try
             {
-                
-               
+
+
 
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
@@ -605,7 +611,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.GroupMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.GroupMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -614,7 +620,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 return Ok(new { Code = 200, Message = "Group fetched successfully", Data = data });
             }
-           
+
             catch (Exception ex)
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
@@ -624,10 +630,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetGroupById/{id}")]
         public async Task<IActionResult> GetGroupById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.GroupMaster
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() })
@@ -644,7 +652,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         {
             if (group == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-            
+
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -665,7 +673,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                     return Ok(new { Code = 202, message = errors });
                 }
 
-                
+
 
                 await _context.GroupMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
@@ -743,7 +751,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.BedTypeMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.BedTypeMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -761,10 +769,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetBedTypeById/{id}")]
         public async Task<IActionResult> GetBedTypeById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.BedTypeMaster
-                          .Where(x => x.BedTypeId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.BedTypeId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Bed Type not found", Data = Array.Empty<object>() })
@@ -840,7 +850,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 return Ok(new { Code = 202, message = errors });
             }
             bedType.UpdatedDate = DateTime.Now;
-            
+
 
             await _context.SaveChangesAsync();
 
@@ -886,7 +896,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         {
             if (group == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-            
+
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -894,7 +904,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 var cm = _mapper.Map<SubGroupMaster>(group);
                 SetMastersDefault(cm, companyId, userId);
-               
+
                 var validator = new SubGroupValidator(_context);
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
@@ -919,10 +929,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetSubGroupById/{Id}")]
         public async Task<IActionResult> GetSubGroupById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.SubGroupMaster
-                          .Where(x => x.SubGroupId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.SubGroupId == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
@@ -995,7 +1007,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                                       rs.TaxType,
                                       gm.GroupName,
                                       sgm.SubGroupName
-                                  }).ToListAsync();               
+                                  }).ToListAsync();
 
                 return Ok(new { Code = 200, Message = "Servicable Master fetched successfully", Data = data });
             }
@@ -1010,7 +1022,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         {
             if (service == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-            
+
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1045,10 +1057,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetServicableById/{Id}")]
         public async Task<IActionResult> GetServicableById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.ServicableMaster
-                          .Where(x => x.ServiceId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.ServiceId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Service not found", Data = Array.Empty<object>() })
@@ -1167,10 +1181,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetVendorById/{Id}")]
         public async Task<IActionResult> GetVendorById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.VendorMaster
-                          .Where(x => x.VendorId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.VendorId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
@@ -1226,7 +1242,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.PaymentMode.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.PaymentMode.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1244,10 +1260,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetPaymentModeById/{id}")]
         public async Task<IActionResult> GetPaymentModeById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.PaymentMode
-                          .Where(x => x.PaymentId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.PaymentId == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
@@ -1409,10 +1427,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetStaffById/{Id}")]
         public async Task<IActionResult> GetStaffById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.StaffManagementMaster
-                          .Where(x => x.StaffId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.StaffId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
@@ -1469,7 +1489,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.GstMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.GstMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1488,10 +1508,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetGstById/{id}")]
         public async Task<IActionResult> GetGstById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.GstMaster
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -1506,7 +1528,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpPost("AddGstMaster")]
         public async Task<IActionResult> AddGstMaster([FromBody] GstMasterDTO gm)
         {
-            
+
             if (gm == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
             var transaction = _context.Database.BeginTransactionAsync();
@@ -1529,7 +1551,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                     }).ToList();
                     await _context.Database.RollbackTransactionAsync();
                     return Ok(new { Code = 202, message = errors });
-                    
+
                 }
 
                 await _context.GstMaster.AddAsync(cm);
@@ -1538,9 +1560,9 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                 if (cm.ranges.Count > 0)
                 {
-                    foreach(var item in cm.ranges)
+                    foreach (var item in cm.ranges)
                     {
-                        if(item.TaxPercentage != 0)
+                        if (item.TaxPercentage != 0)
                         {
                             SetMastersDefault(item, companyId, userId);
                             item.GstId = cm.Id;
@@ -1624,7 +1646,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.CommissionMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.CommissionMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1643,10 +1665,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetCommissionById/{id}")]
         public async Task<IActionResult> GetCommissionById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.CommissionMaster
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -1760,7 +1784,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.UserDetails.Where(bm => bm.IsActive == true).ToListAsync();
+                var data = await _context.UserDetails.Where(bm => bm.IsActive == true && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1779,10 +1803,11 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetUserById/{id}")]
         public async Task<IActionResult> GetUserById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             try
             {
                 var data = await _context.UserDetails
-                          .Where(x => x.IsActive == true && x.UserId == id).FirstOrDefaultAsync();
+                          .Where(x => x.IsActive == true && x.UserId == id && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -1908,7 +1933,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.VendorServiceMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.VendorServiceMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1927,10 +1952,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetVendorServiceById/{id}")]
         public async Task<IActionResult> GetVendorServiceById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.VendorServiceMaster
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() })
@@ -2244,7 +2271,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                         await _context.SaveChangesAsync();
                     }
-                    
+
                     await transaction.CommitAsync();
 
                     return Ok(new { Code = 200, Message = "Company created successfully" });
@@ -2255,7 +2282,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
 
                     return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
-            }            
+            }
         }
 
 
@@ -2269,7 +2296,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.HourMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.HourMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -2288,10 +2315,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetHourById/{id}")]
         public async Task<IActionResult> GetHourById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.HourMaster
-                          .Where(x => x.Id == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2432,7 +2461,7 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.ExtraPolicies.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.ExtraPolicies.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -2451,10 +2480,12 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         [HttpGet("GetExtraPolicyById/{id}")]
         public async Task<IActionResult> GetExtraPolicyById(int id)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
                 var data = await _context.ExtraPolicies
-                          .Where(x => x.PolicyId == id && x.IsActive).FirstOrDefaultAsync();
+                          .Where(x => x.PolicyId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2551,281 +2582,44 @@ return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMess
         }
 
 
+        //GUEST APIS
+        [HttpGet("GetGuestDetails")]
+        public async Task<IActionResult> GetGuestDetails()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
+                var data = await _context.GuestDetails.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
 
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
 
-        [HttpGet("GetOwnerMaster")]
-        public async Task<IActionResult> GetOwnerMaster()
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetGuestDetailsById/{id}")]
+        public async Task<IActionResult> GetGuestDetailsById(int id)
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.OwnerMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.GuestDetails
+                          .Where(x => x.GuestId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
 
-                if (data.Count == 0)
-                {
-                    return Ok(new { Code = 404, Message = "Owners not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Owners fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetRoomRateMaster")]
-        public async Task<IActionResult> GetRoomRateMaster()
-        {
-            try
-            {
-                var data = await _context.RoomRateMaster.Where(bm => bm.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return Ok(new { Code = 404, Message = "Room Rates not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Room Rates fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        [HttpGet("GetUser")]
-        public async Task<IActionResult> GetUser()
-        {
-            try
-            {
-                var data = await _context.UserCreation.Where(uc=>uc.IsActive).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return Ok(new { Code = 404, Message = "User not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Users fetched successfully", Data = data });
-            }
-            catch (SqlException sqlEx)
-            {
-                // _logger.LogError($"SQL Error: {sqlEx.Message}");
-                return StatusCode(500, new { Code = 500, sqlEx.Message, Data = Array.Empty<object>() });
-            }
-            catch (Exception ex)
-            {
-                // _logger.LogError($"Error: {ex.Message}");
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-
-
-
-
-
-
-        [HttpGet("GetFloorById")]
-        public async Task<IActionResult> GetFloorById(int id)
-        {
-            try
-            {
-                var data = await _context.FloorMaster
-                          .Where(x => x.FloorId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? Ok(new { Code = 404, Message = "Floor not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Floor fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        
-
-        [HttpGet("GetOwnerById")]
-        public async Task<IActionResult> GetOwnerById(int id)
-        {
-            try
-            {
-                var data = await _context.OwnerMaster
-                          .Where(x => x.OwnerId == id && x.IsActive).FirstOrDefaultAsync();
-
-                return data != null
-                    ? Ok(new { Code = 404, Message = "Owner not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Owner fetched successfully", Data = data });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-      
-
-
-        
-
-        
-
-       
-
-        
-
-     
-
-        [HttpPatch("PatchOwnerMaster/{id}")]
-        public async Task<IActionResult> PatchOwnerMaster(int id, [FromBody] JsonPatchDocument<OwnerMaster> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var owner = await _context.OwnerMaster.FindAsync(id);
-
-            if (owner == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(owner, ModelState);
-            owner.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Owner updated successfully" });
-        }
-
-       
-        
-       
-
-        [HttpPatch("PatchUser/{id}")]
-        public async Task<IActionResult> PatchUser(int id, [FromBody] JsonPatchDocument<UserCreation> patchDocument)
-        {
-            if (patchDocument == null)
-            {
-                return Ok(new { Code = 500, Message = "Invalid Data" });
-
-            }
-
-            var vendor = await _context.UserCreation.FindAsync(id);
-
-            if (vendor == null)
-            {
-                return Ok(new { Code = 404, Message = "Data Not Found" });
-            }
-
-            patchDocument.ApplyTo(vendor, ModelState);
-            vendor.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
-            }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "User updated successfully" });
-        }
-
-        
-
-        
-
-        //-----------------------------
-        //POST APIS
-        //-----------------------------
-
-        
-
-       
-
-        
-
-       
-
-        
-        
-        [HttpPost("AddOwnerMaster")]
-        public async Task<IActionResult> AddOwnerMaster([FromBody] OwnerMasterDTO owner)
-        {
-            if (owner == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<OwnerMaster>(owner);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.OwnerMaster.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Owner created successfully" });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
-
-        
-        
-      
-
-        [HttpPost("AddUser")]
-        public async Task<IActionResult> AddUser([FromBody] UserCreationDTO user)
-        {
-            if (user == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var cm = _mapper.Map<UserCreation>(user);
-                SetMastersDefault(cm, companyId, userId);
-
-                _context.UserCreation.Add(cm);
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "User created successfully" });
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
             }
             catch (Exception ex)
             {
