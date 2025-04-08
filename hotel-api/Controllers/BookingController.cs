@@ -595,6 +595,9 @@ namespace hotel_api.Controllers
                         bookingDetails.GuestId = guest.GuestId;
                         bookingDetails.CheckInDateTime = DateTime.ParseExact((bookingDetails.CheckInDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
                         bookingDetails.CheckOutDateTime = DateTime.ParseExact((bookingDetails.CheckOutDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+                        bookingDetails.ReservationDate = bookingDetails.CheckInDate;
+                        bookingDetails.ReservationTime = bookingDetails.CheckInTime;
+                        bookingDetails.ReservationDateTime = bookingDetails.CheckInDateTime;
                         bookingDetails.Status = request.ReservationDetailsDTO.IsCheckIn == true ? Constants.Constants.CheckIn : bookingDetails.Status;
                         bookingDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
                         bookingDetails.BookingDate = currentDate;
@@ -719,6 +722,7 @@ namespace hotel_api.Controllers
                     var bookings = await (from booking in _context.BookingDetail
                                           join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
                                           join r in _context.RoomMaster on booking.RoomId equals r.RoomId into rooms
+                                          from room in rooms.DefaultIfEmpty()
                                           where booking.CompanyId == companyId && booking.IsActive == true && guest.CompanyId == companyId && room.CompanyId == companyId && booking.Status == status
                                           select new
                                           {

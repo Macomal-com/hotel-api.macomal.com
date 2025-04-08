@@ -58,6 +58,10 @@ namespace Repository.Models
         public decimal TotalBookingAmount { get; set; }
         public string BookingSource { get; set; } = string.Empty;
 
+        public DateTime ReservationDate { get; set; }
+        public string ReservationTime { get; set; } = string.Empty;
+        public DateTime ReservationDateTime { get; set; }
+
     }
 
 
