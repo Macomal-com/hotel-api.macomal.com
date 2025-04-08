@@ -17,7 +17,7 @@ namespace Repository.Models
         public int? FloorId { get; set; }
         public int? BuildingId { get; set; }
         public int PropertyId { get; set; }
-        public int RoomNo { get; set; }
+        public string RoomNo { get; set; } = string.Empty;
         public int RoomTypeId { get; set; }
         public string Description { get; set; } = String.Empty;
         public bool IsActive { get; set; }
@@ -32,7 +32,7 @@ namespace Repository.Models
         public int FloorId { get; set; }
         public int BuildingId { get; set; }
         public int PropertyId { get; set; }
-        public int RoomNo { get; set; }
+        public string RoomNo { get; set; } = string.Empty;
         public int RoomTypeId { get; set; }
         public string Description { get; set; } = String.Empty;
         

@@ -74,4 +74,7 @@ namespace Repository.Models
 
         public bool IsCheckIn { get; set; }
     }
+
+  
+
 }

@@ -704,5 +704,73 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        [HttpGet("GetGuestList")]
+        public async Task<IActionResult> GetGuestList(string status = "")
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                if (string.IsNullOrEmpty(status))
+                {
+                    return Ok(new { Code = 200, Message = "Data fetch successfully", data = new List<object>() });
+                }
+                else {
+                    var bookings = await (from booking in _context.BookingDetail
+                                          join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
+                                          join r in _context.RoomMaster on booking.RoomId equals r.RoomId into rooms
+                                          where booking.CompanyId == companyId && booking.IsActive == true && guest.CompanyId == companyId && room.CompanyId == companyId && booking.Status == status
+                                          select new
+                                          {
+                                              ReservationNo = booking.ReservationNo,
+                                              GuestId = booking.GuestId,
+                                              GuestName = guest.GuestName,
+                                              RoomId = booking.RoomId,
+                                              RoomNo = room != null ? room.RoomNo : "",
+                                              ReservationName = (room != null
+                                                 ? $"{room.RoomNo} : {booking.ReservationNo}-${booking.RoomCount} : {guest.GuestName}"
+                                                 : $"{booking.ReservationNo}-${booking.RoomCount} : {guest.GuestName}")
+                                          }).ToListAsync();
+                    return Ok(new { Code = 200, Message = "Data fetch successfully", data = bookings });
+                }
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+        [HttpGet("GetBookings")]
+        public async Task<IActionResult> GetBookings(string reservationNo, int guestId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(reservationNo))
+                {
+                    return Ok(new { Code = 500, Message = "Invalid data" });
+                }
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                //Get reservation details
+                var reservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
+                if(reservationDetails == null)
+                {
+                    return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
+                }
+
+                //boookingdetails
+                var bookingdetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).Select(x => new
+                {
+
+                }).ToListAsync();
+
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }
