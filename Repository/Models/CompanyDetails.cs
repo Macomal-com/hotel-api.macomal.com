@@ -114,7 +114,7 @@ namespace Repository.Models
 
         [NotMapped]
         public IFormFile? watermarkfile { get; set; }
-        
+        public bool ApproveReservation { get; set; }
 
     }
     public class CompanyDetailsDTO
@@ -138,5 +138,6 @@ namespace Repository.Models
         public string CheckOutFormat { get; set; } = string.Empty;
         public string IsRoomRateEditable { get; set; } = string.Empty;
         public string GstType { get; set; } = string.Empty;
+        public bool ApproveReservation { get; set; }
     }
 }
