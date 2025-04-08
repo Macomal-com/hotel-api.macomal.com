@@ -499,7 +499,7 @@ namespace hotel_api.Controllers
                             }
                             else
                             {
-                                if (rows[0]["RoomStatus"].ToString() != Constants.Constants.Clean)
+                                if (rows[0]["roomStatus"].ToString() != Constants.Constants.Clean)
                                 {
                                     return Ok(new { code = 400, message = "Room " + rows[0]["RoomNo"] + " is already reserved with Reservation No " + rows[0]["ReservationNo"], data = new object { } });
                                 }

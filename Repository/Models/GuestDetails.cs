@@ -27,6 +27,10 @@ namespace Repository.Models
 
         public int UserId { get; set; }
         public int CompanyId { get; set; }
+        public int CityId { get; set; }
+        public int StateId { get; set; }
+        public int CountryId { get; set; }
+
 
     }
 
@@ -41,7 +45,9 @@ namespace Repository.Models
         public string PhoneNumber { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string GuestImage { get; set; } = string.Empty;
-
+        public int CityId { get; set; }
+        public int StateId { get; set; }
+        public int CountryId { get; set; }
     }
 
 }
