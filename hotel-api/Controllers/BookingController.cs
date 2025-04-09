@@ -810,7 +810,7 @@ namespace hotel_api.Controllers
                         await connection.CloseAsync();
                     }
                 }
-                return Ok(new { Code = 200, Message = "Reservation Updated Successfully", data = dataSet });
+                return Ok(new { Code = 200, Message = "Reservation Fetched Successfully", data = dataSet });
             }
             catch (Exception)
             {
@@ -837,7 +837,11 @@ namespace hotel_api.Controllers
                 var booking = await _context.BookingDetail
                     .Where(x => x.ReservationNo == reservation.ReservationNo)
                     .ToListAsync();
-
+                if (booking == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
                 if (status == Constants.Constants.Confirmed)
                 {
                     foreach (var item in booking)
@@ -876,7 +880,11 @@ namespace hotel_api.Controllers
                         var paymentDetails = await _context.PaymentDetails
                             .Where(x => x.BookingId == item.BookingId)
                             .ToListAsync();
-
+                        if (paymentDetails == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 404, Message = "Data Not Found" });
+                        }
                         foreach (var pd in paymentDetails)
                         {
                             pd.IsActive = false;
