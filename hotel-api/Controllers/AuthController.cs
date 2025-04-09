@@ -130,6 +130,7 @@ namespace hotel_api.Controllers
                             IsCheckOutApplicable = x.IsCheckOutApplicable,
                             IsRoomRateEditable = x.IsRoomRateEditable,
                             GstType = x.GstType,
+                            ApproveReservation = x.ApproveReservation,
                         }).ToListAsync();
 
                         return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });

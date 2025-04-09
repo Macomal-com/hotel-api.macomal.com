@@ -39,6 +39,7 @@
         public static string Clean = "Clean";
         public static string CheckIn = "CheckIn";
         public static string Confirmed = "Confirmed";
+        public static string Rejected = "Rejected";
         public static string Pending = "Pending";
 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };

@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure.Core;
 using hotel_api.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -721,9 +722,12 @@ namespace hotel_api.Controllers
                 else {
                     var bookings = await (from booking in _context.BookingDetail
                                           join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
-                                          join r in _context.RoomMaster on booking.RoomId equals r.RoomId into rooms
-                                          from room in rooms.DefaultIfEmpty()
-                                          where booking.CompanyId == companyId && booking.IsActive == true && guest.CompanyId == companyId && room.CompanyId == companyId && booking.Status == status
+                                          join r in _context.RoomMaster on new { booking.RoomId, CompanyId = companyId }
+                 equals new { RoomId = r.RoomId, r.CompanyId } into rooms
+                                         from room in rooms.DefaultIfEmpty()
+                                          where booking.CompanyId == companyId && booking.IsActive == true && guest.CompanyId == companyId 
+                                         
+                                          && booking.Status == status
                                           select new
                                           {
                                               ReservationNo = booking.ReservationNo,
@@ -731,10 +735,15 @@ namespace hotel_api.Controllers
                                               GuestName = guest.GuestName,
                                               RoomId = booking.RoomId,
                                               RoomNo = room != null ? room.RoomNo : "",
-                                              ReservationName = (room != null
-                                                 ? $"{room.RoomNo} : {booking.ReservationNo}-${booking.RoomCount} : {guest.GuestName}"
-                                                 : $"{booking.ReservationNo}-${booking.RoomCount} : {guest.GuestName}")
+                                              ReservationName = room != null
+                                            ? $"{room.RoomNo} : {booking.ReservationNo}" +
+                                              (booking.RoomCount > 0 ? $"-{booking.RoomCount}" : "") +
+                                              $" : {guest.GuestName}"
+                                            : $"{booking.ReservationNo}" +
+                                              (booking.RoomCount > 0 ? $"-{booking.RoomCount}" : "") +
+                                              $" : {guest.GuestName}"
                                           }).ToListAsync();
+
                     return Ok(new { Code = 200, Message = "Data fetch successfully", data = bookings });
                 }
             }
@@ -773,6 +782,116 @@ namespace hotel_api.Controllers
             }
             catch (Exception)
             {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetPendingReservations")]
+        public async Task<IActionResult> GetPendingReservations()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            DataSet? dataSet = null;
+            try
+            {
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    using (var command = new SqlCommand("PendingReservations", connection))
+                    {
+                        command.CommandTimeout = 120;
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@companyId", companyId);
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            dataSet = new DataSet();
+                            adapter.Fill(dataSet);
+                        }
+                        await connection.CloseAsync();
+                    }
+                }
+                return Ok(new { Code = 200, Message = "Reservation Updated Successfully", data = dataSet });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("ApproveReservation")]
+        public async Task<IActionResult> ApproveReservation(string status, int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var reservation = await _context.ReservationDetails.FindAsync(id);
+                if (reservation == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                var booking = await _context.BookingDetail
+                    .Where(x => x.ReservationNo == reservation.ReservationNo)
+                    .ToListAsync();
+
+                if (status == Constants.Constants.Confirmed)
+                {
+                    foreach (var item in booking)
+                    {
+                        item.Status = Constants.Constants.Confirmed;
+                    }
+                }
+                else if (status == Constants.Constants.Rejected)
+                {
+                    reservation.IsActive = false;
+
+                    foreach (var item in booking)
+                    {
+                        item.Status = Constants.Constants.Rejected;
+                        item.IsActive = false;
+
+                        var roomAvailability = await _context.RoomAvailability.FindAsync(item.BookingId);
+                        if (roomAvailability == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 404, Message = "Data Not Found" });
+                        }
+
+                        _context.RoomAvailability.Remove(roomAvailability);
+
+                        var bookedRoomRate = await _context.BookedRoomRate
+                            .Where(x => x.BookingId == item.BookingId)
+                            .ToListAsync();
+                        if (bookedRoomRate == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 404, Message = "Data Not Found" });
+                        }
+                        _context.BookedRoomRate.RemoveRange(bookedRoomRate);
+
+                        var paymentDetails = await _context.PaymentDetails
+                            .Where(x => x.BookingId == item.BookingId)
+                            .ToListAsync();
+
+                        foreach (var pd in paymentDetails)
+                        {
+                            pd.IsActive = false;
+                        }
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, Message = "Reservation Updated Successfully" });
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
