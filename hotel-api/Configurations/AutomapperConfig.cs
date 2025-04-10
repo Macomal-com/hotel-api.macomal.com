@@ -1,8 +1,9 @@
 ﻿using AutoMapper;
+using Microsoft.EntityFrameworkCore;
 using Repository.Models;
 namespace hotel_api.Configurations
 {
-    public class AutomapperConfig: Profile
+    public class AutomapperConfig : Profile
     {
         public AutomapperConfig()
         {
@@ -41,11 +42,18 @@ namespace hotel_api.Configurations
 
             CreateMap<GuestDetailsDTO, GuestDetails>().ReverseMap();
 
-            CreateMap<BookingDetailDTO, BookingDetail>().ReverseMap();
+            CreateMap<BookingDetailDTO, BookingDetail>()
+                .ReverseMap();
 
             CreateMap<PaymentDetailsDTO, PaymentDetails>().ReverseMap();
 
             CreateMap<ReservationDetailsDTO, ReservationDetails>().ReverseMap();
+
+
+            CreateMap<BookingDetail, BookingDetailCheckInDTO>()
+            .ForMember(dest => dest.BookedRoomRates, opt => opt.Ignore()) // Ignore here, populate manually
+            .ForMember(dest => dest.GuestDetails, opt => opt.Ignore());    // Same
+
         }
     }
 }

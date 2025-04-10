@@ -780,9 +780,24 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
                 }
 
-                checkInResponse.BookingDetailCheckInDTO = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).Select(x => _mapper.Map<BookingDetailCheckInDTO>(x)).ToListAsync();
+                var roomRates = await _context.BookedRoomRate.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
+
+                checkInResponse.BookingDetailCheckInDTO = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).Select(x => 
+                           _mapper.Map<BookingDetailCheckInDTO>(x)
+                
+                ).ToListAsync();
+
+                foreach(var item in checkInResponse.BookingDetailCheckInDTO)
+                {
+                    item.BookedRoomRates = roomRates.Where(x => x.BookingId == item.BookingId).ToList();
+                    item.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestId == item.GuestId) ?? new GuestDetails();
+                }
+
+                //payment details
+                checkInResponse.PaymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
+                
               
-                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                return Ok(new { Code =200, Message = "Data fetched successfully" , data = checkInResponse});
             }
             catch (Exception)
             {
