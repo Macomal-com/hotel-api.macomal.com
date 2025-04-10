@@ -759,25 +759,29 @@ namespace hotel_api.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(reservationNo))
+                var checkInResponse = new CheckInResponse();
+                if (string.IsNullOrEmpty(reservationNo) || guestId == 0)
                 {
                     return Ok(new { Code = 500, Message = "Invalid data" });
                 }
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
                 //Get reservation details
-                var reservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
-                if(reservationDetails == null)
+                checkInResponse.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
+                if(checkInResponse.ReservationDetails == null)
                 {
                     return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
                 }
 
-                //boookingdetails
-                var bookingdetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).Select(x => new
+                checkInResponse.GuestDetails = await _context.GuestDetails.Where(x => x.CompanyId == companyId && x.IsActive && x.GuestId == guestId).FirstOrDefaultAsync();
+                if(checkInResponse.GuestDetails == null)
                 {
+                    return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
+                }
 
-                }).ToListAsync();
-
+                checkInResponse.BookingDetailCheckInDTO = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).Select(x => _mapper.Map<BookingDetailCheckInDTO>(x)).ToListAsync();
+              
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
             catch (Exception)
