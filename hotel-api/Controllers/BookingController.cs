@@ -786,7 +786,7 @@ namespace hotel_api.Controllers
                 var roomRates = await _context.BookedRoomRate.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
 
 
-                var bookings = await (
+                checkInResponse.BookingDetailCheckInDTO = await (
                                         from booking in _context.BookingDetail
                                         join room in _context.RoomMaster
                                             on new { RoomId = booking.RoomId, CompanyId = companyId }
@@ -807,9 +807,9 @@ namespace hotel_api.Controllers
                                             RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
                                             RoomTypeId = booking.RoomTypeId,
                                             RoomCategoryName = category.Type,
-                                            CheckInDate = booking.CheckInDate,
+                                            CheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
                                             CheckInTime = booking.CheckInTime,
-                                            CheckOutDate = booking.CheckOutDate,
+                                            CheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
                                             CheckOutTime = booking.CheckOutTime,
                                             CheckInDateTime = booking.CheckInDateTime,
                                             CheckOutDateTime = booking.CheckOutDateTime,
