@@ -50,7 +50,7 @@ namespace Repository.Models
         public DateTime InvoiceDate { get; set; } = new DateTime(1900, 01, 01);
         public string InvoiceNo { get; set; } = string.Empty;
         public int UserId { get; set; }
-
+        public string GstType { get; set; } = string.Empty;
         public int CompanyId { get; set; }
 
         public decimal BookingAmount { get; set; }

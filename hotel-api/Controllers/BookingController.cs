@@ -785,10 +785,52 @@ namespace hotel_api.Controllers
 
                 var roomRates = await _context.BookedRoomRate.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
 
-                checkInResponse.BookingDetailCheckInDTO = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).Select(x => 
-                           _mapper.Map<BookingDetailCheckInDTO>(x)
-                
-                ).ToListAsync();
+
+                var bookings = await (
+                                        from booking in _context.BookingDetail
+                                        join room in _context.RoomMaster
+                                            on new { RoomId = booking.RoomId, CompanyId = companyId }
+                                            equals new { RoomId = room.RoomId, CompanyId = room.CompanyId } into rooms
+                                        from bookrooms in rooms.DefaultIfEmpty()
+                                        join category in _context.RoomCategoryMaster
+                                            on new { RoomTypeId = booking.RoomTypeId, CompanyId = companyId }
+                                            equals new { RoomTypeId = category.Id, CompanyId = category.CompanyId } 
+                                        
+                                        where booking.IsActive == true
+                                            && booking.CompanyId == companyId
+                                            && booking.ReservationNo == reservationNo
+                                        select new BookingDetailCheckInDTO
+                                        {
+                                            BookingId = booking.BookingId,
+                                            GuestId = booking.GuestId,
+                                            RoomId = booking.RoomId,
+                                            RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
+                                            RoomTypeId = booking.RoomTypeId,
+                                            RoomCategoryName = category.Type,
+                                            CheckInDate = booking.CheckInDate,
+                                            CheckInTime = booking.CheckInTime,
+                                            CheckOutDate = booking.CheckOutDate,
+                                            CheckOutTime = booking.CheckOutTime,
+                                            CheckInDateTime = booking.CheckInDateTime,
+                                            CheckOutDateTime = booking.CheckOutDateTime,
+                                            NoOfNights = booking.NoOfNights,
+                                            NoOfHours = booking.NoOfHours,
+                                            HourId = booking.HourId,
+                                            Status = booking.Status,
+                                            Remarks = booking.Remarks,
+                                            ReservationNo = booking.ReservationNo,
+                                            UserId = booking.UserId,
+                                            CompanyId = booking.CompanyId,
+                                            BookingAmount = booking.BookingAmount,
+                                            GstAmount = booking.GstAmount,
+                                            TotalBookingAmount = booking.TotalBookingAmount,
+                                            BookingSource = booking.BookingSource,
+                                            ReservationDate =booking.ReservationDate,
+                                            ReservationTime = booking.ReservationTime,
+                                            ReservationDateTime = booking.ReservationDateTime
+                                        } // project the entity to map later
+                                    ).ToListAsync();
+
 
                 foreach(var item in checkInResponse.BookingDetailCheckInDTO)
                 {
