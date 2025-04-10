@@ -596,7 +596,7 @@ namespace hotel_api.Controllers
                         var bookingDetails = _mapper.Map<BookingDetail>(item);
                         SetMastersDefault(bookingDetails, companyId, userId, currentDate);
 
-                        bookingDetails.GuestId = guest.GuestId;
+                        
                         bookingDetails.CheckInDateTime = DateTime.ParseExact((bookingDetails.CheckInDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
                         bookingDetails.CheckOutDateTime = DateTime.ParseExact((bookingDetails.CheckOutDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
                         bookingDetails.ReservationDate = bookingDetails.CheckInDate;
@@ -825,7 +825,7 @@ namespace hotel_api.Controllers
                                             GstAmount = booking.GstAmount,
                                             TotalBookingAmount = booking.TotalBookingAmount,
                                             BookingSource = booking.BookingSource,
-                                            ReservationDate =booking.ReservationDate,
+                                            ReservationDate =booking.ReservationDate.ToString("yyyy-MM-dd"),
                                             ReservationTime = booking.ReservationTime,
                                             ReservationDateTime = booking.ReservationDateTime, 
                                             Pax = booking.Pax
@@ -988,33 +988,68 @@ namespace hotel_api.Controllers
         //[HttpPost("UpdateRoomDetail")]
         //public async Task<IActionResult> UpdateRoomDetail([FromBody] List<BookingDetailCheckInDTO> bookingList)
         //{
+
         //    try
         //    {
-        //        if(bookingList.Count == 0)
+        //        int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+        //        int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+        //        using var transaction = await _context.Database.BeginTransactionAsync();
+        //        var currentDate = DateTime.Now;
+        //        if (bookingList.Count == 0)
         //        {
+        //            await transaction.RollbackAsync();
         //            return Ok(new { Code = 400, Message = "No data found" });
-
         //        }
 
-        //        foreach(var item in bookingList)
+        //        foreach (var item in bookingList)
         //        {
+        //            //guest details
+        //            if (item.GuestDetails.GuestId == 0)
+        //            {
+        //                SetMastersDefault(item.GuestDetails, companyId, userId, currentDate);
+        //                await _context.GuestDetails.AddAsync(item.GuestDetails);
+        //                await _context.SaveChangesAsync();
+        //            }
+        //            else
+        //            {
+        //                var guestdetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.GuestId == item.GuestDetails.GuestId);
+        //                if (guestdetails == null)
+        //                {
+        //                    await transaction.RollbackAsync();
+        //                    return Ok(new { Code = 400, Message = "No guest found" });
+        //                }
+        //                else
+        //                {
+        //                    guestdetails.GuestName = item.GuestDetails.GuestName;
+        //                    guestdetails.Nationality = item.GuestDetails.Nationality;
+        //                    guestdetails.IdType = item.GuestDetails.IdType;
+        //                    guestdetails.IdNumber = item.GuestDetails.IdNumber;
+        //                    guestdetails.PhoneNumber = item.GuestDetails.PhoneNumber;
+        //                    guestdetails.Email = item.GuestDetails.Email;
+        //                    _context.GuestDetails.Update(guestdetails);
+        //                    await _context.SaveChangesAsync();
+        //                }
+        //            }
+
+        //            //booked room rate
+        //            var roomRates = await _context.BookedRoomRate.Where(x=>)
+
         //            //create new room
-        //            if(item.BookingId == 0)
+        //            if (item.BookingId == 0)
         //            {
 
         //            }
-
         //            else
         //            {
 
         //            }
         //        }
         //    }
-        //    catch(Exception ex)
+        //    catch (Exception ex)
         //    {
         //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
         //    }
-        //}    
-    
+        //}
+
     }
 }
