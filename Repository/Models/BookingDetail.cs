@@ -129,6 +129,7 @@ namespace Repository.Models
         public DateTime ReservationDate { get; set; }
         public string ReservationTime { get; set; } = string.Empty;
         public DateTime ReservationDateTime { get; set; }
+        public int Pax { get; set; }
 
         public List<BookedRoomRate> BookedRoomRates = new List<BookedRoomRate>();
 

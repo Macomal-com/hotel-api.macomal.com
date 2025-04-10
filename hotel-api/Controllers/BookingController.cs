@@ -827,7 +827,8 @@ namespace hotel_api.Controllers
                                             BookingSource = booking.BookingSource,
                                             ReservationDate =booking.ReservationDate,
                                             ReservationTime = booking.ReservationTime,
-                                            ReservationDateTime = booking.ReservationDateTime
+                                            ReservationDateTime = booking.ReservationDateTime, 
+                                            Pax = booking.Pax
                                         } // project the entity to map later
                                     ).ToListAsync();
 
@@ -983,9 +984,37 @@ namespace hotel_api.Controllers
             }
         }
 
-        
 
-    
+        //[HttpPost("UpdateRoomDetail")]
+        //public async Task<IActionResult> UpdateRoomDetail([FromBody] List<BookingDetailCheckInDTO> bookingList)
+        //{
+        //    try
+        //    {
+        //        if(bookingList.Count == 0)
+        //        {
+        //            return Ok(new { Code = 400, Message = "No data found" });
+
+        //        }
+
+        //        foreach(var item in bookingList)
+        //        {
+        //            //create new room
+        //            if(item.BookingId == 0)
+        //            {
+
+        //            }
+
+        //            else
+        //            {
+
+        //            }
+        //        }
+        //    }
+        //    catch(Exception ex)
+        //    {
+        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+        //    }
+        //}    
     
     }
 }

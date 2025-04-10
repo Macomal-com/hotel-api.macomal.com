@@ -31,7 +31,9 @@ namespace Repository.Models
         public int StateId { get; set; }
         public int CountryId { get; set; }
 
-
+        public string Gender { get; set; } = string.Empty;
+        public string IdType { get; set; } = string.Empty;
+        public string IdNumber { get; set; } = string.Empty;
     }
 
     public class GuestDetailsDTO
