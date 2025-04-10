@@ -548,6 +548,9 @@ namespace hotel_api.Controllers
                 var reservationDetails = _mapper.Map<ReservationDetails>(request.ReservationDetailsDTO);
 
                 SetMastersDefault(reservationDetails, companyId, userId, currentDate);
+
+                (reservationDetails.TotalRoomPayment, reservationDetails.TotalGst, reservationDetails.TotalAmount) = Calculation.CalculateTotalRoomAmount(request.BookingDetailsDTO);
+
                 if(reservationDetails.AgentId > 0)
                 {
                     var gstPercentage = await GetGstPercetage(Constants.Constants.Agent);
@@ -795,8 +798,23 @@ namespace hotel_api.Controllers
 
                 //payment details
                 checkInResponse.PaymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
-                
-              
+
+                //payment summary
+                var paymentSummary = new PaymentSummary();
+                paymentSummary.TotalRoomAmount = checkInResponse.ReservationDetails.TotalRoomPayment;
+                paymentSummary.TotalGstAmount = checkInResponse.ReservationDetails.TotalGst;
+                paymentSummary.TotalAmount = checkInResponse.ReservationDetails.TotalAmount;
+                paymentSummary.AgentPaid = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.AgentPayment).Sum(x => x.PaymentAmount);
+                paymentSummary.AdvanceAmount = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.AdvancePayment).Sum(x => x.PaymentAmount);
+                paymentSummary.ReceivedAmount = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.ReceivedPayment).Sum(x => x.PaymentAmount);
+                var balance = paymentSummary.TotalAmount - (paymentSummary.AgentPaid + paymentSummary.AdvanceAmount + paymentSummary.ReceivedAmount);
+                paymentSummary.BalanceAmount = balance > 0 ? balance : 0;
+                paymentSummary.RefundAmount = balance < 0 ? Math.Abs(balance) : 0;
+
+                checkInResponse.PaymentSummary = paymentSummary;
+
+
+
                 return Ok(new { Code =200, Message = "Data fetched successfully" , data = checkInResponse});
             }
             catch (Exception)
@@ -922,5 +940,10 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        
+
+    
+    
     }
 }

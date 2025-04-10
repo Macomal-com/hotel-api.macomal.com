@@ -1268,5 +1268,10 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        //[HttpPost("UpdateRoomDetails")] 
+        //public async Task<IActionResult> UpdateRoomDetails([FromBody] )
+
+
     }
 }

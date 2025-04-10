@@ -5,20 +5,26 @@
         public static string ErrorMessage = "Someting went wrong. Try Again";
         public static DateTime DefaultDate = new DateTime(1900, 01, 01);
 
+        //user roles
         public static string SuperAdmin = "superadmin";
 
+        //room rates type
         public static string Standard = "Standard";
         public static string Weekend = "Weekend";
         public static string Custom = "Custom";
         public static string Hour = "Hour";
+
+        //room rate priority
         public static int HighPrority = 1;
         public static int MediumPrority = 2;
         public static int LowPrority = 3;
 
+        //Reservation format
         public static string SameDayFormat = "Same Day";
         public static string NightFormat = "Night";
         public static string Hour24Format = "24 Hours";
 
+        //Gst master type
         public static string MultipleGst = "Multiple";
         public static string SingleGst = "Single";
 
@@ -34,6 +40,11 @@
 
         //Payment format
         public static string ReservationWisePayment = "Reservation";
+
+        //payment status
+        public static string AgentPayment = "Agent";
+        public static string AdvancePayment = "Advance";
+        public static string ReceivedPayment = "Received";
 
         //rooms status
         public static string Clean = "Clean";

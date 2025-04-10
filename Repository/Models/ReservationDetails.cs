@@ -45,6 +45,10 @@ namespace Repository.Models
 
         public int UserId { get; set; }
         public int CompanyId { get; set; }
+
+        public decimal TotalRoomPayment { get; set; }
+        public decimal TotalGst { get; set; }
+        public decimal TotalAmount { get; set; }
     }
 
     public class ReservationDetailsDTO
