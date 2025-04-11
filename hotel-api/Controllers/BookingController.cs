@@ -827,6 +827,7 @@ namespace hotel_api.Controllers
                                             UserId = booking.UserId,
                                             CompanyId = booking.CompanyId,
                                             BookingAmount = booking.BookingAmount,
+                                            GstType = booking.GstType,
                                             GstAmount = booking.GstAmount,
                                             TotalBookingAmount = booking.TotalBookingAmount,
                                             BookingSource = booking.BookingSource,
@@ -1028,6 +1029,7 @@ namespace hotel_api.Controllers
                         {
                             guestdetails.GuestName = item.GuestDetails.GuestName;
                             guestdetails.Nationality = item.GuestDetails.Nationality;
+                            guestdetails.CountryId = item.GuestDetails.CountryId;
                             guestdetails.IdType = item.GuestDetails.IdType;
                             guestdetails.IdNumber = item.GuestDetails.IdNumber;
                             guestdetails.PhoneNumber = item.GuestDetails.PhoneNumber;

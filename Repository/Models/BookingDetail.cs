@@ -122,6 +122,7 @@ namespace Repository.Models
         public int CompanyId { get; set; }
 
         public decimal BookingAmount { get; set; }
+        public string GstType { get; set; }
         public decimal GstAmount { get; set; }
         public decimal TotalBookingAmount { get; set; }
         public string BookingSource { get; set; } = string.Empty;
