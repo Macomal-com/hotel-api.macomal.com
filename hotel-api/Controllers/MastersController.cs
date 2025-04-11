@@ -2595,7 +2595,7 @@ namespace hotel_api.Controllers
 
                 if (data.Count == 0)
                 {
-                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 200, Message = "Data not found", Data = Array.Empty<object>() });
                 }
 
                 return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });

@@ -134,6 +134,8 @@ namespace Repository.Models
         public List<BookedRoomRate> BookedRoomRates = new List<BookedRoomRate>();
 
         public GuestDetails GuestDetails = new GuestDetails();
+
+        public bool IsSameGuest { get; set; }
     }
 }
 

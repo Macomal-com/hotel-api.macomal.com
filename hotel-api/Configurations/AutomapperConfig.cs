@@ -52,7 +52,14 @@ namespace hotel_api.Configurations
 
             CreateMap<BookingDetail, BookingDetailCheckInDTO>()
             .ForMember(dest => dest.BookedRoomRates, opt => opt.Ignore()) // Ignore here, populate manually
-            .ForMember(dest => dest.GuestDetails, opt => opt.Ignore());    // Same
+            .ForMember(dest => dest.GuestDetails, opt => opt.Ignore())
+            ;    // Same
+
+
+            CreateMap<BookingDetailCheckInDTO, BookingDetail>()
+                .ForMember(dest => dest.CheckInDate, opt => opt.MapFrom(src => DateTime.Parse(src.CheckInDate)))
+                .ForMember(dest => dest.CheckOutDate, opt => opt.MapFrom(src => DateTime.Parse(src.CheckOutDate)))
+                .ForMember(dest => dest.ReservationDate, opt => opt.MapFrom(src => DateTime.Parse(src.ReservationDate))); 
 
         }
     }
