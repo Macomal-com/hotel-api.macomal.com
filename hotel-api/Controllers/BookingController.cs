@@ -736,7 +736,7 @@ namespace hotel_api.Controllers
                                           select new
                                           {
                                               ReservationNo = booking.ReservationNo,
-                                             
+                                              BookingId = booking.BookingId,
                                               RoomGuestId = bookingguest != null ? bookingguest.GuestId : 0,
                                               GuestId = booking.PrimaryGuestId,
                                               PrimaryGuestName = guest.GuestName,
@@ -835,7 +835,15 @@ namespace hotel_api.Controllers
                                             ReservationTime = booking.ReservationTime,
                                             ReservationDateTime = booking.ReservationDateTime, 
                                             Pax = booking.Pax,
-                                            IsSameGuest = booking.PrimaryGuestId == booking.GuestId ? true : false
+                                            IsSameGuest = booking.PrimaryGuestId == booking.GuestId ? true : false,
+                                            OriginalReservationDateTime = booking.ReservationDateTime,
+                                            OriginalReservationDate = booking.ReservationDate.ToString("yyyy-MM-dd"),
+                                            OriginalReservationTime = booking.ReservationTime,
+                                            OriginalCheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
+                                            OriginalCheckInTime = booking.CheckInTime,
+                                            OriginalCheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
+                                            OriginalCheckOutTime = booking.CheckOutTime,
+                                            
                                         } // project the entity to map later
                                     ).ToListAsync();
 
@@ -1135,6 +1143,7 @@ namespace hotel_api.Controllers
 
                         foreach (var rates in item.BookedRoomRates)
                         {
+                            rates.Id = 0;
                             rates.BookingId = bookingDetails.BookingId;
                             rates.RoomId = bookingDetails.RoomId;
                             rates.ReservationNo = reservationNo;

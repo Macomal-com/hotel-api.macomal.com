@@ -137,6 +137,15 @@ namespace Repository.Models
         public GuestDetails GuestDetails = new GuestDetails();
 
         public bool IsSameGuest { get; set; }
+        public DateTime OriginalReservationDateTime { get; set; } 
+        public string OriginalReservationDate { get; set; } = string.Empty;
+        public string OriginalReservationTime { get; set; } = string.Empty;
+
+        public string OriginalCheckInDate { get; set; } = string.Empty;
+        public string OriginalCheckInTime { get; set; } = string.Empty;
+
+        public string OriginalCheckOutDate { get; set; } = string.Empty;
+        public string OriginalCheckOutTime { get; set; } = string.Empty;
     }
 }
 
