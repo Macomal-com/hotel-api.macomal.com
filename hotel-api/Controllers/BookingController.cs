@@ -855,7 +855,34 @@ namespace hotel_api.Controllers
                 }
 
                 //payment details
-                checkInResponse.PaymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
+                checkInResponse.PaymentDetails = await _context.PaymentDetails.Select(x=> new PaymentDetails 
+                {
+                    PaymentId = x.PaymentId,
+                    BookingId = x.BookingId,
+                    ReservationNo = x.ReservationNo,
+                    PaymentDate = x.PaymentDate,
+                    PaymentMethod = x.PaymentMethod,
+                    TransactionId = x.TransactionId,
+                    PaymentStatus = x.PaymentStatus,
+                    PaymentType = x.PaymentType,
+                    BankName = x.BankName,
+                    PaymentReferenceNo = x.PaymentReferenceNo,
+                    PaidBy = x.PaidBy,
+                    Remarks = x.Remarks,
+                    Other1 = x.Other1,
+                    Other2 = x.Other2,
+                    IsActive = x.IsActive,
+                    IsReceived = x.IsReceived,
+                    RoomId = x.RoomId,
+                    UserId = x.UserId,
+                    PaymentFormat = x.PaymentFormat,
+                    RefundAmount = x.RefundAmount,
+                    PaymentAmount = x.PaymentAmount,
+                    CreatedDate = x.CreatedDate,
+                    UpdatedDate = x.UpdatedDate,
+                    CompanyId = x.CompanyId,
+
+                }).Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
 
                 //payment summary
                 var paymentSummary = new PaymentSummary();
@@ -1198,6 +1225,7 @@ namespace hotel_api.Controllers
                         payment.PaymentFormat = paymentDetails.PaymentFormat;
                         payment.RefundAmount = paymentDetails.RefundAmount;
                         payment.PaymentAmount = paymentDetails.PaymentAmount;
+                        payment.IsActive = paymentDetails.IsActive;
                         payment.UpdatedDate = currentDate;
 
                         _context.PaymentDetails.Update(payment);
@@ -1236,13 +1264,13 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 400, Message = "No rooms found for checkin" });
                 }
-                using var transaction = await _context.Database.BeginTransactionAsync();
+                
                 foreach(var item in rooms)
                 {
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive && x.CompanyId == companyId && x.BookingId == item);
                     if (booking == null)
                     {
-                        await transaction.RollbackAsync();
+                        
                         return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                     }
                     else
@@ -1260,5 +1288,8 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        
+
     }
 }
