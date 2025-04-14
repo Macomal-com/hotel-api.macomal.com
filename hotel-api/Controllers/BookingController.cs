@@ -909,28 +909,41 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("GetPendingReservations")]
-        public async Task<IActionResult> GetPendingReservations()
+        public async Task<IActionResult> GetPendingReservations(string status)
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             DataSet? dataSet = null;
+            string spName = "";
             try
             {
                 using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
                 {
-                    using (var command = new SqlCommand("PendingReservations", connection))
+                    if(status == "Pending")
                     {
-                        command.CommandTimeout = 120;
-                        command.CommandType = CommandType.StoredProcedure;
-                        command.Parameters.AddWithValue("@companyId", companyId);
-                        await connection.OpenAsync();
-
-                        using (var adapter = new SqlDataAdapter(command))
-                        {
-                            dataSet = new DataSet();
-                            adapter.Fill(dataSet);
-                        }
-                        await connection.CloseAsync();
+                        spName = "PendingReservations";
                     }
+                    else if(status == "CheckIn")
+                    {
+                        spName = "CheckedInReservations";
+                    }
+                    else if(status == "PaymentList")
+                    {
+                        spName = "paymentList";
+                    }
+                        using (var command = new SqlCommand(spName, connection))
+                        {
+                            command.CommandTimeout = 120;
+                            command.CommandType = CommandType.StoredProcedure;
+                            command.Parameters.AddWithValue("@companyId", companyId);
+                            await connection.OpenAsync();
+
+                            using (var adapter = new SqlDataAdapter(command))
+                            {
+                                dataSet = new DataSet();
+                                adapter.Fill(dataSet);
+                            }
+                            await connection.CloseAsync();
+                        }
                 }
                 return Ok(new { Code = 200, Message = "Reservation Fetched Successfully", data = dataSet });
             }
