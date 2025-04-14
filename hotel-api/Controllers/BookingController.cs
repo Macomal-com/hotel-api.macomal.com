@@ -1317,6 +1317,59 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 500, Message = "Reservation details not found" });
                 }
+
+                response.BookingDetails = await (from booking in _context.BookingDetail
+                                                 join rooms in _context.RoomMaster on booking.RoomId equals rooms.RoomId
+                                                 join roomType in _context.RoomCategoryMaster on booking.RoomTypeId equals roomType.Id
+                                                 where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == reservationNo && booking.Status == Constants.Constants.CheckIn
+                                                 select new BookingDetail
+                                                 {
+                                                     BookingId = booking.BookingId,
+                                                     GuestId = booking.GuestId,
+                                                     RoomId = booking.RoomId,
+                                                     RoomTypeId = booking.RoomTypeId,
+                                                     CheckInDate = booking.CheckInDate,
+                                                     CheckInTime = booking.CheckInTime,
+                                                     CheckOutDate = booking.CheckOutDate,
+                                                     CheckOutTime = booking.CheckOutTime,
+                                                     CheckInDateTime = booking.CheckInDateTime,
+                                                     CheckOutDateTime = booking.CheckOutDateTime,
+                                                     CheckoutFormat = booking.CheckoutFormat,
+                                                     NoOfNights = booking.NoOfNights,
+                                                     NoOfHours = booking.NoOfHours,
+                                                     HourId = booking.HourId,
+                                                     RoomCount = booking.RoomCount,
+                                                     Pax = booking.Pax,
+                                                     Status = booking.Status,
+                                                     Remarks = booking.Remarks,
+                                                     ReservationNo = booking.ReservationNo,
+                                                     BookingDate = booking.BookingDate,
+                                                     CreatedDate = booking.CreatedDate,
+                                                     UpdatedDate = booking.UpdatedDate,
+                                                     IsActive = booking.IsActive,
+                                                     PrimaryGuestId = booking.PrimaryGuestId,
+                                                     InitialBalanceAmount = booking.InitialBalanceAmount,
+                                                     BalanceAmount = booking.BalanceAmount,
+                                                     AdvanceAmount = booking.AdvanceAmount,
+                                                     ReceivedAmount = booking.ReceivedAmount,
+                                                     AdvanceReceiptNo = booking.AdvanceReceiptNo,
+                                                     RefundAmount = booking.RefundAmount,
+                                                     InvoiceDate = booking.InvoiceDate,
+                                                     InvoiceNo = booking.InvoiceNo,
+                                                     UserId = booking.UserId,
+                                                     GstType = booking.GstType,
+                                                     CompanyId = booking.CompanyId,
+                                                     BookingAmount = booking.BookingAmount,
+                                                     GstAmount = booking.GstAmount,
+                                                     TotalBookingAmount = booking.TotalBookingAmount,
+                                                     BookingSource = booking.BookingSource,
+                                                     ReservationDate = booking.ReservationDate,
+                                                     ReservationTime = booking.ReservationTime,
+                                                     ReservationDateTime = booking.ReservationDateTime,
+                                                     RoomTypeName = roomType.Type,
+                                                     RoomNo = rooms.RoomNo
+                                                 }).ToListAsync();
+
                 response.BookingDetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo && x.Status == Constants.Constants.CheckIn).ToListAsync();
                 if (response.BookingDetails.Count == 0)
                 {
