@@ -62,6 +62,10 @@ namespace Repository.Models
         public string ReservationTime { get; set; } = string.Empty;
         public DateTime ReservationDateTime { get; set; }
 
+        public DateTime InitialCheckOutDate { get; set; }
+        public string InitialCheckOutTime { get; set; } = string.Empty;
+        public DateTime InitialCheckOutDateTime { get; set; }
+
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
 

@@ -546,7 +546,7 @@ namespace hotel_api.Controllers
 
                 //save reservation details
                 var reservationDetails = _mapper.Map<ReservationDetails>(request.ReservationDetailsDTO);
-
+                reservationDetails.PrimaryGuestId = guest.GuestId;
                 SetMastersDefault(reservationDetails, companyId, userId, currentDate);
 
                 (reservationDetails.TotalRoomPayment, reservationDetails.TotalGst, reservationDetails.TotalAmount) = Calculation.CalculateTotalRoomAmount(request.BookingDetailsDTO);
@@ -602,6 +602,9 @@ namespace hotel_api.Controllers
                         bookingDetails.ReservationDate = bookingDetails.CheckInDate;
                         bookingDetails.ReservationTime = bookingDetails.CheckInTime;
                         bookingDetails.ReservationDateTime = bookingDetails.CheckInDateTime;
+                        bookingDetails.InitialCheckOutDate = bookingDetails.CheckOutDate;
+                        bookingDetails.InitialCheckOutTime = bookingDetails.CheckOutTime;
+                        bookingDetails.InitialCheckOutDateTime = bookingDetails.CheckOutDateTime;
                         bookingDetails.Status = request.ReservationDetailsDTO.IsCheckIn == true ? Constants.Constants.CheckIn : bookingDetails.Status;
                         bookingDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
                         bookingDetails.BookingDate = currentDate;
@@ -1109,6 +1112,9 @@ namespace hotel_api.Controllers
                         bookingDetails.ReservationDate = bookingDetails.CheckInDate;
                         bookingDetails.ReservationTime = bookingDetails.CheckInTime;
                         bookingDetails.ReservationDateTime = bookingDetails.CheckInDateTime;
+                        bookingDetails.InitialCheckOutDate = bookingDetails.CheckOutDate;
+                        bookingDetails.InitialCheckOutTime = bookingDetails.CheckOutTime;
+                        bookingDetails.InitialCheckOutDateTime = bookingDetails.CheckOutDateTime;
                         bookingDetails.BookingDate = currentDate;
 
                         await _context.BookingDetail.AddAsync(bookingDetails);
@@ -1226,20 +1232,28 @@ namespace hotel_api.Controllers
                     }
                     else
                     {
-                        payment.PaymentDate = paymentDetails.PaymentDate;
-                        payment.PaymentMethod = paymentDetails.PaymentMethod;
-                        payment.TransactionId = paymentDetails.TransactionId;
-                        payment.PaymentStatus = paymentDetails.PaymentStatus;
-                        payment.PaymentType = paymentDetails.PaymentType;
-                        payment.BankName = paymentDetails.BankName;
-                        payment.PaymentReferenceNo = paymentDetails.PaymentReferenceNo;
-                        payment.PaidBy = paymentDetails.PaidBy;
-                        payment.RoomId = paymentDetails.RoomId;
-                        payment.PaymentFormat = paymentDetails.PaymentFormat;
-                        payment.RefundAmount = paymentDetails.RefundAmount;
-                        payment.PaymentAmount = paymentDetails.PaymentAmount;
-                        payment.IsActive = paymentDetails.IsActive;
-                        payment.UpdatedDate = currentDate;
+                        if(paymentDetails.IsActive == false)
+                        {
+                            payment.IsActive = paymentDetails.IsActive;
+                            
+                        }
+                        else
+                        {
+                            payment.PaymentDate = paymentDetails.PaymentDate;
+                            payment.PaymentMethod = paymentDetails.PaymentMethod;
+                            payment.TransactionId = paymentDetails.TransactionId;
+                            payment.PaymentStatus = paymentDetails.PaymentStatus;
+                            payment.PaymentType = paymentDetails.PaymentType;
+                            payment.BankName = paymentDetails.BankName;
+                            payment.PaymentReferenceNo = paymentDetails.PaymentReferenceNo;
+                            payment.PaidBy = paymentDetails.PaidBy;
+                            payment.RoomId = paymentDetails.RoomId;
+                            payment.PaymentFormat = paymentDetails.PaymentFormat;
+                            payment.RefundAmount = paymentDetails.RefundAmount;
+                            payment.PaymentAmount = paymentDetails.PaymentAmount;
+                            payment.UpdatedDate = currentDate;
+                        }
+                           
 
                         _context.PaymentDetails.Update(payment);
                         await _context.SaveChangesAsync();
@@ -1313,10 +1327,14 @@ namespace hotel_api.Controllers
                 var response = new CheckOutResponse();
                 response.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
 
+              
+
                 if (response.ReservationDetails == null)
                 {
                     return Ok(new { Code = 500, Message = "Reservation details not found" });
                 }
+
+                response.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.GuestId == response.ReservationDetails.PrimaryGuestId);
 
                 response.BookingDetails = await (from booking in _context.BookingDetail
                                                  join rooms in _context.RoomMaster on booking.RoomId equals rooms.RoomId
@@ -1367,7 +1385,10 @@ namespace hotel_api.Controllers
                                                      ReservationTime = booking.ReservationTime,
                                                      ReservationDateTime = booking.ReservationDateTime,
                                                      RoomTypeName = roomType.Type,
-                                                     RoomNo = rooms.RoomNo
+                                                     RoomNo = rooms.RoomNo,
+                                                     InitialCheckOutDate = booking.InitialCheckOutDate,
+                                                     InitialCheckOutTime = booking.InitialCheckOutTime,
+                                                     InitialCheckOutDateTime = booking.InitialCheckOutDateTime
                                                  }).ToListAsync();
 
                 response.BookingDetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo && x.Status == Constants.Constants.CheckIn).ToListAsync();

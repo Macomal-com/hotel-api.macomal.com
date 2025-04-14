@@ -13,5 +13,6 @@ namespace Repository.DTO
         public List<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
       
         public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
+        public GuestDetails? GuestDetails { get; set; }
     }
 }
