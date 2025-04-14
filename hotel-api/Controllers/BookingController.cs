@@ -1169,5 +1169,53 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpPost("UpdatePaymentDetail")]
+        public async Task<IActionResult> UpdatePaymentDetail([FromBody] PaymentDetails paymentDetails)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var currentDate = DateTime.Now;
+                if (paymentDetails.PaymentId > 0) 
+                {
+                    var payment = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.PaymentId == paymentDetails.PaymentId).FirstOrDefaultAsync();
+                    if(payment == null)
+                    {
+                        return Ok(new { Code = 400, Message = "Invalid data" });
+                    }
+                    else
+                    {
+                        payment.PaymentDate = paymentDetails.PaymentDate;
+                        payment.PaymentMethod = paymentDetails.PaymentMethod;
+                        payment.TransactionId = paymentDetails.TransactionId;
+                        payment.PaymentStatus = paymentDetails.PaymentStatus;
+                        payment.PaymentType = paymentDetails.PaymentType;
+                        payment.BankName = paymentDetails.BankName;
+                        payment.PaymentReferenceNo = paymentDetails.PaymentReferenceNo;
+                        payment.PaidBy = paymentDetails.PaidBy;
+                        payment.RoomId = paymentDetails.RoomId;
+                        payment.PaymentFormat = paymentDetails.PaymentFormat;
+                        payment.RefundAmount = paymentDetails.RefundAmount;
+                        payment.PaymentAmount = paymentDetails.PaymentAmount;
+                        payment.UpdatedDate = currentDate;
+
+                        _context.PaymentDetails.Update(payment);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                else
+                {
+                    SetMastersDefault(paymentDetails, companyId, userId, currentDate);
+                    await _context.PaymentDetails.AddAsync(paymentDetails);
+                    await _context.SaveChangesAsync();
+                }
+                return Ok(new { Code = 200, Message = "Payment Updated successfully" });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }
