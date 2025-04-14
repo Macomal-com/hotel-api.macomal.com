@@ -1323,6 +1323,8 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 500, Message = "Bookings not found" });
                 }
 
+                response.PaymentSummary = await CalculateSummary(response.ReservationDetails, response.BookingDetails);
+
                 return Ok(new { Code = 500, Message = "Data fewtch successfully", data = response });
             }
             catch (Exception ex)
@@ -1331,14 +1333,12 @@ namespace hotel_api.Controllers
             }
         }
 
-        private async Task<PaymentSummary> CalculateSummary(ReservationDetails reservationDetails, List<int> bookingId)
+        private async Task<PaymentSummary> CalculateSummary(ReservationDetails reservationDetails, List<BookingDetail> bookings)
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             var summary = new PaymentSummary();
-            var allBookings = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && Constants.Constants.AllRoomStatus.Contains(x.Status)).ToListAsync();
-
-            var bookings = allBookings.Where(x => bookingId.Contains(x.BookingId));
+            
 
             foreach (var item in bookings)
             {
@@ -1370,7 +1370,7 @@ namespace hotel_api.Controllers
 
                     if (pay.PaymentFormat == Constants.Constants.RoomWisePayment)
                     {
-                        if (bookingId.Contains(pay.PaymentId))
+                        if (bookings.Select(x=>x.BookingId).Contains(pay.PaymentId))
                         {
                             summary.ReceivedAmount = summary.ReceivedAmount + pay.PaymentLeft;
                         }
