@@ -1217,5 +1217,43 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+
+        [HttpPost("UpdateRoomsCheckIn")]
+        public async Task<IActionResult> UpdateRoomsCheckIn([FromBody] List<int> rooms)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var currentDate = DateTime.Now;
+                if (rooms.Count == 0)
+                {
+                    return Ok(new { Code = 400, Message = "No rooms found for checkin" });
+                }
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                foreach(var item in rooms)
+                {
+                    var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive && x.CompanyId == companyId && x.BookingId == item);
+                    if (booking == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                    }
+                    else
+                    {
+                        booking.Status = Constants.Constants.CheckIn;
+                        booking.UpdatedDate = currentDate;
+                        _context.BookingDetail.Update(booking);
+                        await _context.SaveChangesAsync();
+                    }
+                }
+                return Ok(new { Code = 200, Message = "Rooms Check-In successfully" });
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }
