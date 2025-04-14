@@ -40,6 +40,8 @@
 
         //Payment format
         public static string ReservationWisePayment = "Reservation";
+        public static string PartPayment = "Part";
+        public static string RoomWisePayment = "Room";
 
         //payment status
         public static string AgentPayment = "Agent";

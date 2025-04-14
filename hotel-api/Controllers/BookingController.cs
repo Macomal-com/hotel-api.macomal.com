@@ -1170,7 +1170,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpPost("UpdatePaymentDetail")]
-        public async Task<IActionResult> UpdatePaymentDetail([FromBody] PaymentDetails paymentDetails)
+        public async Task<IActionResult> UpdatePaymentDetail([FromBody] PaymentDetails paymentDetails, )
         {
             try
             {
@@ -1206,6 +1206,11 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
+                    //if(paymentDetails.RoomsList.Count == 0)
+                    //foreach(var item in paymentDetails.RoomsList)
+                    //{
+                    //    paymentDetails.PaymentFormat = 
+                    //}
                     SetMastersDefault(paymentDetails, companyId, userId, currentDate);
                     await _context.PaymentDetails.AddAsync(paymentDetails);
                     await _context.SaveChangesAsync();

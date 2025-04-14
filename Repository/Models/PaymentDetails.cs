@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -36,8 +37,16 @@ namespace Repository.Models
         public DateTime UpdatedDate { get; set; }
 
         public int CompanyId { get; set; }
+
+        [NotMapped]
+        public List<RoomsList> RoomsList { get; set; } = new List<RoomsList>();
     }
 
+    public class RoomsList
+    {
+        public int BookingId { get; set; }
+        public int RoomId { get;set }
+    }
     public class PaymentDetailsDTO
     {
 
