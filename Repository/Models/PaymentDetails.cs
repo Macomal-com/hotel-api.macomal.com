@@ -35,7 +35,7 @@ namespace Repository.Models
         public decimal PaymentAmount { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
-
+        public decimal PaymentLeft { get; set; }
         public int CompanyId { get; set; }
 
         [NotMapped]

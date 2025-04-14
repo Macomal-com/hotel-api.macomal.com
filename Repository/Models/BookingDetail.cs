@@ -62,6 +62,15 @@ namespace Repository.Models
         public string ReservationTime { get; set; } = string.Empty;
         public DateTime ReservationDateTime { get; set; }
 
+        [NotMapped]
+        public string RoomTypeName { get; set; } = string.Empty;
+
+        [NotMapped]
+        public string RoomNo { get; set; } = string.Empty;
+
+        [NotMapped]
+        public List<BookedRoomRate> BookedRoomRates { get; set; } = new List<BookedRoomRate>();
+
     }
 
     public class BookingDetailDTO

@@ -40,8 +40,8 @@
 
         //Payment format
         public static string ReservationWisePayment = "Reservation";
-        public static string PartPayment = "Part";
-        public static string RoomWisePayment = "Room";
+        public static string PartPayment = "PartPayment";
+        public static string RoomWisePayment = "RoomPayment";
 
         //payment status
         public static string AgentPayment = "Agent";
@@ -54,6 +54,13 @@
         public static string Confirmed = "Confirmed";
         public static string Rejected = "Rejected";
         public static string Pending = "Pending";
+        public static string CheckOut = "CheckOut";
+
+        public static List<string> AllRoomStatus = new List<string> { CheckIn, Confirmed, Pending, CheckOut };
+
+        //invoice format
+        public static string ReservationInvoice = "ReservationInvoice";
+        public static string RoomInvoice = "RoomInvoice";
 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";

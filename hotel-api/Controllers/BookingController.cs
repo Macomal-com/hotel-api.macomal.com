@@ -1302,7 +1302,99 @@ namespace hotel_api.Controllers
             }
         }
 
-        
+
+        [HttpGet("GetCheckoutBookings")]
+        public async Task<IActionResult> GetCheckoutBookings(string reservationNo, string guestId)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var response = new CheckOutResponse();
+                response.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
+
+                if (response.ReservationDetails == null)
+                {
+                    return Ok(new { Code = 500, Message = "Reservation details not found" });
+                }
+                response.BookingDetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo && x.Status == Constants.Constants.CheckIn).ToListAsync();
+                if (response.BookingDetails.Count == 0)
+                {
+                    return Ok(new { Code = 500, Message = "Bookings not found" });
+                }
+
+                return Ok(new { Code = 500, Message = "Data fewtch successfully", data = response });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        private async Task<PaymentSummary> CalculateSummary(ReservationDetails reservationDetails, List<int> bookingId)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            var summary = new PaymentSummary();
+            var allBookings = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && Constants.Constants.AllRoomStatus.Contains(x.Status)).ToListAsync();
+
+            var bookings = allBookings.Where(x => bookingId.Contains(x.BookingId));
+
+            foreach (var item in bookings)
+            {
+                summary.TotalRoomAmount = summary.TotalRoomAmount + item.BookingAmount;
+                summary.TotalGstAmount = summary.TotalGstAmount + item.GstAmount;
+                summary.TotalAmount = summary.TotalAmount + item.TotalBookingAmount;
+            }
+            summary.AgentServiceCharge = reservationDetails.AgentServiceCharge;
+            summary.AgentServiceGst = reservationDetails.AgentServiceGstAmount;
+            summary.AgentServiceTotal = reservationDetails.AgentTotalServiceCharge;
+
+            summary.TotalPayable = summary.TotalAmount + summary.AgentServiceTotal;
+
+            var payments = await _context.PaymentDetails.Where(x => x.IsActive == true && x.IsReceived == false && x.CompanyId == companyId && x.ReservationNo == reservationDetails.ReservationNo).ToListAsync();
+
+            foreach (var pay in payments)
+            {
+                if (pay.PaymentStatus == Constants.Constants.AgentPayment)
+                {
+                    summary.AgentPaid = summary.AgentPaid + pay.PaymentLeft;
+                }
+                else if (pay.PaymentStatus == Constants.Constants.AdvancePayment)
+                {
+                    summary.AdvanceAmount = summary.AdvanceAmount + pay.PaymentLeft;
+                }
+                else
+                {
+                    //status wise payment summary
+
+                    if (pay.PaymentFormat == Constants.Constants.RoomWisePayment)
+                    {
+                        if (bookingId.Contains(pay.PaymentId))
+                        {
+                            summary.ReceivedAmount = summary.ReceivedAmount + pay.PaymentLeft;
+                        }
+                    }
+                    else
+                    {
+                        summary.ReceivedAmount = summary.ReceivedAmount + pay.PaymentLeft;
+                    }
+                }
+            }
+            var balance = (summary.TotalPayable) - (summary.AgentPaid + summary.AdvanceAmount + summary.ReceivedAmount);
+            if (balance > 0)
+            {
+                summary.BalanceAmount = balance;
+            }
+            else
+            {
+                summary.RefundAmount = Math.Abs(balance);
+            }
+
+            //calculate for invoice
+
+            return summary;
+        }
 
     }
 }
