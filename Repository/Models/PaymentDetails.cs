@@ -45,7 +45,7 @@ namespace Repository.Models
     public class RoomsList
     {
         public int BookingId { get; set; }
-        public int RoomId { get;set }
+        public int RoomId { get; set; }
     }
     public class PaymentDetailsDTO
     {

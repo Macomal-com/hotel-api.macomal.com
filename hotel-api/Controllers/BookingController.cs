@@ -1170,7 +1170,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpPost("UpdatePaymentDetail")]
-        public async Task<IActionResult> UpdatePaymentDetail([FromBody] PaymentDetails paymentDetails, )
+        public async Task<IActionResult> UpdatePaymentDetail([FromBody] PaymentDetails paymentDetails)
         {
             try
             {
