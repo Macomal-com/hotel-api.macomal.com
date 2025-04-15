@@ -1415,7 +1415,7 @@ namespace hotel_api.Controllers
                                                      ReservationTime = booking.ReservationTime,
                                                      ReservationDateTime = booking.ReservationDateTime,
                                                      RoomTypeName = roomType.Type,
-                                                     RoomNo = rooms == null ? "test" : rooms.RoomNo,
+                                                     RoomNo = rooms.RoomNo,
                                                      InitialCheckOutDate = booking.InitialCheckOutDate,
                                                      InitialCheckOutTime = booking.InitialCheckOutTime,
                                                      InitialCheckOutDateTime = booking.InitialCheckOutDateTime
@@ -1516,7 +1516,6 @@ namespace hotel_api.Controllers
                 else
                 {
                     //status wise payment summary
-
                     if (pay.PaymentFormat == Constants.Constants.RoomWisePayment)
                     {
                         if (bookings.Select(x=>x.BookingId).Contains(pay.PaymentId))
@@ -1540,14 +1539,39 @@ namespace hotel_api.Controllers
                 summary.RefundAmount = Math.Abs(balance);
             }
 
-           
+            //calculate invoice    
 
             return summary;
         }
 
-        //private async Task<IActionResult> CalculateInvoice()
+        //private async Task<IActionResult> CalculateInvoice(List<BookingDetail> bookings, List<PaymentDetails> payments)
         //{
+        //    //set room payment if room wise payment
+        //    foreach(var booking in bookings)
+        //    {
+        //        foreach(var pay in payments)
+        //        {
+        //            if(pay.RoomId == booking.RoomId && pay.BookingId == booking.BookingId)
+        //            {
+        //                decimal balance = booking.TotalAmount - (booking.AdvanceAmount + booking.ReceivedAmount);
+        //                if(balance > 0)
+        //                {
+        //                    if(balance >= pay.PaymentAmount)
+        //                    {
+        //                        booking.ReceivedAmount = booking.ReceivedAmount + pay.PaymentAmount;
+        //                        pay.IsReceived = true;
+        //                        pay.RefundAmount = 0;
+        //                        pay.PaymentLeft = 0;
 
+        //                    }
+        //                    else
+        //                    {
+
+        //                    }
+        //                }
+        //            }
+        //        }
+        //    }
         //}
     }
 }
