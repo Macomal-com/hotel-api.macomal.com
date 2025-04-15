@@ -14,5 +14,6 @@ namespace Repository.DTO
       
         public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
         public GuestDetails? GuestDetails { get; set; }
+        public string InvoiceNo { get; set; } = string.Empty;
     }
 }

@@ -326,6 +326,7 @@ namespace hotel_api.Controllers
             return gstRanges.FirstOrDefault(range => bookingAmount >= range.RangeStart && bookingAmount <= range.RangeEnd);
         }
 
+
         [HttpGet("CalculateAgentCommision")]
         public async Task<IActionResult> CalculateAgentCommision(int agentId, decimal bookingAmount, decimal totalAmountWithGst)
         {
@@ -642,7 +643,7 @@ namespace hotel_api.Controllers
                             rates.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
                             SetMastersDefault(rates, companyId, userId, currentDate);
 
-                            await _context.BookedRoomRate.AddAsync(rates);
+                            await _context.BookedRoomRates.AddAsync(rates);
                             await _context.SaveChangesAsync();
                         }
 
@@ -791,7 +792,7 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
                 }
 
-                var roomRates = await _context.BookedRoomRate.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
+                var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
 
 
                 checkInResponse.BookingDetailCheckInDTO = await (
@@ -1005,7 +1006,7 @@ namespace hotel_api.Controllers
 
                         _context.RoomAvailability.Remove(roomAvailability);
 
-                        var bookedRoomRate = await _context.BookedRoomRate
+                        var bookedRoomRate = await _context.BookedRoomRates
                             .Where(x => x.BookingId == item.BookingId)
                             .ToListAsync();
                         if (bookedRoomRate == null)
@@ -1013,7 +1014,7 @@ namespace hotel_api.Controllers
                             await transaction.RollbackAsync();
                             return Ok(new { Code = 404, Message = "Data Not Found" });
                         }
-                        _context.BookedRoomRate.RemoveRange(bookedRoomRate);
+                        _context.BookedRoomRates.RemoveRange(bookedRoomRate);
 
                         var paymentDetails = await _context.PaymentDetails
                             .Where(x => x.BookingId == item.BookingId)
@@ -1091,11 +1092,11 @@ namespace hotel_api.Controllers
                     }
 
                     //  booked room rate
-                    var roomRates = await _context.BookedRoomRate.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId).ToListAsync();
+                    var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId).ToListAsync();
 
                     if(roomRates.Count > 0)
                     {
-                        _context.BookedRoomRate.RemoveRange(roomRates);
+                        _context.BookedRoomRates.RemoveRange(roomRates);
                         await _context.SaveChangesAsync();
                     }
 
@@ -1143,7 +1144,7 @@ namespace hotel_api.Controllers
                             rates.ReservationNo = reservationNo;
                             SetMastersDefault(rates, companyId, userId, currentDate);
 
-                            await _context.BookedRoomRate.AddAsync(rates);
+                            await _context.BookedRoomRates.AddAsync(rates);
                             await _context.SaveChangesAsync();
 
                         }
@@ -1195,7 +1196,7 @@ namespace hotel_api.Controllers
                             rates.ReservationNo = reservationNo;
                             SetMastersDefault(rates, companyId, userId, currentDate);
 
-                            await _context.BookedRoomRate.AddAsync(rates);
+                            await _context.BookedRoomRates.AddAsync(rates);
                             await _context.SaveChangesAsync();
 
                         }
@@ -1206,7 +1207,28 @@ namespace hotel_api.Controllers
                     
                 }
 
-                await transaction.CommitAsync();
+                var reservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
+                if(reservationDetails == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 500, Message = "Invalid reservation" });
+                }
+                else
+                {
+                    List<BookingDetailDTO> bookings = await _context.BookingDetail
+                                                        .Where(x => x.IsActive && x.CompanyId == companyId && x.ReservationNo == reservationNo)
+                                                        .Select(x => _mapper.Map<BookingDetailDTO>(x))
+                                                        .ToListAsync();
+
+                    (reservationDetails.TotalRoomPayment, reservationDetails.TotalGst, reservationDetails.TotalAmount) = Calculation.CalculateTotalRoomAmount(bookings);
+
+                    reservationDetails.UpdatedDate = currentDate;
+                    _context.ReservationDetails.Update(reservationDetails);
+
+                    await _context.SaveChangesAsync();
+                }
+
+                    await transaction.CommitAsync();
                 return Ok(new { Code = 200, Message = "Room Updated successfully" });
             }
             catch (Exception ex)
@@ -1324,15 +1346,23 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string financialYear = HttpContext.Request.Headers["FinancialYear"].ToString();
                 var response = new CheckOutResponse();
                 response.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
 
               
-
                 if (response.ReservationDetails == null)
                 {
                     return Ok(new { Code = 500, Message = "Reservation details not found" });
                 }
+
+                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentInvoice && x.FinancialYear == financialYear);
+
+                if (getbookingno == null || getbookingno.Suffix == null)
+                {
+                    return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
+                }
+                response.InvoiceNo = getbookingno.Prefix + getbookingno.Separator + getbookingno.Prefix1 + getbookingno.Separator + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
 
                 response.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.GuestId == response.ReservationDetails.PrimaryGuestId);
 
@@ -1399,7 +1429,52 @@ namespace hotel_api.Controllers
 
                 response.PaymentSummary = await CalculateSummary(response.ReservationDetails, response.BookingDetails);
 
-                return Ok(new { Code = 500, Message = "Data fewtch successfully", data = response });
+                return Ok(new { Code = 200, Message = "Data fetch successfully", data = response });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+        [HttpPost("CalculateRoomRateOnCheckOut")]
+        public async Task<IActionResult> CalculateRoomRateOnCheckOut([FromBody] CalculateRoomRateRequest request)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var response = new CheckOutResponse();
+                if (request.BookingIds.Count == 0)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                var bookings = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && request.BookingIds.Contains(x.BookingId)).ToListAsync();
+
+                var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && request.BookingIds.Contains(x.BookingId)).ToListAsync();
+
+                foreach (var item in bookings)
+                {
+                    item.BookingAmount = 0;
+                    item.GstAmount = 0;
+                    item.TotalBookingAmount = 0;
+                    var eachRoomRate = roomRates.Where(x => x.BookingId == item.BookingId && x.BookingDate < request.EarlyCheckOutDate).OrderBy(x => x.BookingDate).ToList();
+
+                    foreach (var rate in eachRoomRate)
+                    {
+                        item.BookingAmount = item.BookingAmount + rate.RoomRate;
+                        item.GstAmount = item.GstAmount + rate.GstAmount;
+                        item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+                    }
+                }
+                PaymentSummary paymentSummary = await CalculateSummary(request.ReservationDetails, bookings);
+
+                response.BookingDetails = bookings;
+                response.PaymentSummary = paymentSummary;
+
+                return Ok(new { Code = 200, Message = "Rates fetched successfully", data = response });
+
             }
             catch (Exception ex)
             {
@@ -1465,10 +1540,14 @@ namespace hotel_api.Controllers
                 summary.RefundAmount = Math.Abs(balance);
             }
 
-            //calculate for invoice
+           
 
             return summary;
         }
 
+        //private async Task<IActionResult> CalculateInvoice()
+        //{
+
+        //}
     }
 }

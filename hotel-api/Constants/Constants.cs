@@ -56,6 +56,10 @@
         public static string Pending = "Pending";
         public static string CheckOut = "CheckOut";
 
+        //document type
+        public static string DocumentReservation = "Reservation";
+        public static string DocumentInvoice = "Invoice";
+
         public static List<string> AllRoomStatus = new List<string> { CheckIn, Confirmed, Pending, CheckOut };
 
         //invoice format

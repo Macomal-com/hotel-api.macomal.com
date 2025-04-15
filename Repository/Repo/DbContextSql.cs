@@ -49,7 +49,7 @@ namespace RepositoryModels.Repository
         public DbSet<BookingDetail> BookingDetail { get; set; }
         public DbSet<PaymentDetails> PaymentDetails { get; set; }
 
-        public DbSet<BookedRoomRate> BookedRoomRate { get; set; }
+        public DbSet<BookedRoomRate> BookedRoomRates { get; set; }
 
         public DbSet<ReservationDetails> ReservationDetails { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
