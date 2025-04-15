@@ -1448,18 +1448,20 @@ namespace hotel_api.Controllers
                 var response = new CheckOutResponse();
                 if (request.BookingIds.Count == 0)
                 {
-                    return Ok(new { Code = 400, Message = "Invalid data" });
+                    return Ok(new { Code = 400, Message = "Invalid data", data = response });
                 }
                 var bookings = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && request.BookingIds.Contains(x.BookingId)).ToListAsync();
 
                 var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && request.BookingIds.Contains(x.BookingId)).ToListAsync();
 
-                foreach (var item in bookings)
+                foreach (var item in bookings) 
                 {
                     item.BookingAmount = 0;
                     item.GstAmount = 0;
                     item.TotalBookingAmount = 0;
-                    var eachRoomRate = roomRates.Where(x => x.BookingId == item.BookingId && x.BookingDate < request.EarlyCheckOutDate).OrderBy(x => x.BookingDate).ToList();
+                    
+                    var eachRoomRate = roomRates.Where(x => x.BookingId == item.BookingId && x.BookingDate <= request.EarlyCheckOutDate).OrderBy(x => x.BookingDate).ToList();
+                    item.BookedRoomRates = eachRoomRate;
 
                     foreach (var rate in eachRoomRate)
                     {
@@ -1547,31 +1549,75 @@ namespace hotel_api.Controllers
         //private async Task<IActionResult> CalculateInvoice(List<BookingDetail> bookings, List<PaymentDetails> payments)
         //{
         //    //set room payment if room wise payment
-        //    foreach(var booking in bookings)
+        //    foreach (var booking in bookings)
         //    {
-        //        foreach(var pay in payments)
+        //        foreach (var pay in payments)
         //        {
-        //            if(pay.RoomId == booking.RoomId && pay.BookingId == booking.BookingId)
+        //            if (pay.RoomId == booking.RoomId && pay.BookingId == booking.BookingId)
         //            {
+        //                pay.IsReceived = true;
+        //                pay.PaymentLeft = 0;
         //                decimal balance = booking.TotalAmount - (booking.AdvanceAmount + booking.ReceivedAmount);
-        //                if(balance > 0)
+        //                //amount left in room
+        //                if (balance > 0)
         //                {
-        //                    if(balance >= pay.PaymentAmount)
+        //                    if (balance >= pay.PaymentAmount)
         //                    {
-        //                        booking.ReceivedAmount = booking.ReceivedAmount + pay.PaymentAmount;
-        //                        pay.IsReceived = true;
-        //                        pay.RefundAmount = 0;
-        //                        pay.PaymentLeft = 0;
+        //                        booking.ReceivedAmount = booking.ReceivedAmount + pay.PaymentAmount;                                
+        //                        pay.RefundAmount = 0;                               
 
         //                    }
         //                    else
         //                    {
+        //                        booking.ReceivedAmount = booking.ReceivedAmount + balance;
+        //                        pay.RefundAmount = pay.PaymentAmount - balance;
 
         //                    }
         //                }
+        //                else
+        //                {
+        //                    pay.RefundAmount = pay.PaymentAmount;
+        //                }
+                    
         //            }
         //        }
         //    }
+
+        //    //calculate advance
+        //    decimal agentAdvance = 0;
+        //    decimal advanceAmount = 0;
+        //    decimal adjustAmount = 0;
+        //    (agentAdvance,advanceAmount, adjustAmount) = CalculatePayment(payments);
+
+        //    if(agentAdvance > 0)
+        //    {
+        //        decimal equallyDivide = Constants.Calculation.RoundOffDecimal(agentAdvance / bookings.Count);
+        //        List
+        //    }
+
         //}
+
+        private (decimal agentAdvance, decimal advance, decimal adjustedAmount) CalculatePayment(List<PaymentDetails> paymentDetails)
+        {
+            decimal agentAdvance = 0;
+            decimal advance = 0;
+            decimal received = 0;
+            foreach(var pay in paymentDetails)
+            {
+                if(pay.PaymentStatus == Constants.Constants.AdvancePayment && pay.IsReceived == false)
+                {
+                    advance += pay.PaymentLeft;
+                }
+                else if(pay.PaymentStatus == Constants.Constants.ReceivedPayment && pay.IsReceived == false)
+                {
+                    received += pay.PaymentLeft;
+                }
+                else if(pay.PaymentStatus == Constants.Constants.AgentPayment && pay.IsReceived == false)
+                {
+                    agentAdvance += pay.PaymentLeft;
+                }
+            }
+            return (agentAdvance,advance, received);
+        }
     }
 }
