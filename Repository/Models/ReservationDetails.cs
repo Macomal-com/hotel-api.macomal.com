@@ -50,7 +50,7 @@ namespace Repository.Models
         public decimal TotalGst { get; set; }
         public decimal TotalAmount { get; set; }
 
-        public decimal PrimaryGuestId { get; set; }
+        public int PrimaryGuestId { get; set; }
     }
 
     public class ReservationDetailsDTO
