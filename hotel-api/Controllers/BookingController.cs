@@ -1415,13 +1415,13 @@ namespace hotel_api.Controllers
                                                      ReservationTime = booking.ReservationTime,
                                                      ReservationDateTime = booking.ReservationDateTime,
                                                      RoomTypeName = roomType.Type,
-                                                     RoomNo = rooms.RoomNo,
+                                                     RoomNo = rooms == null ? "test" : rooms.RoomNo,
                                                      InitialCheckOutDate = booking.InitialCheckOutDate,
                                                      InitialCheckOutTime = booking.InitialCheckOutTime,
                                                      InitialCheckOutDateTime = booking.InitialCheckOutDateTime
                                                  }).ToListAsync();
 
-                response.BookingDetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo && x.Status == Constants.Constants.CheckIn).ToListAsync();
+               
                 if (response.BookingDetails.Count == 0)
                 {
                     return Ok(new { Code = 500, Message = "Bookings not found" });
