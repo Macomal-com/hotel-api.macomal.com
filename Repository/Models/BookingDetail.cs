@@ -65,6 +65,8 @@ namespace Repository.Models
         public DateTime InitialCheckOutDate { get; set; }
         public string InitialCheckOutTime { get; set; } = string.Empty;
         public DateTime InitialCheckOutDateTime { get; set; }
+        public decimal ServicesAmount { get; set; }
+        public decimal TotalAmount { get; set; }
 
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
