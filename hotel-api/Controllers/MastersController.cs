@@ -659,6 +659,9 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var cm = _mapper.Map<GroupMaster>(group);
+                cm.IGST = cm.GST;
+                cm.SGST = cm.GST / 2;
+                cm.CGST = cm.GST / 2;
                 SetMastersDefault(cm, companyId, userId);
                 var validator = new GroupValidator(_context);
 

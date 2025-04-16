@@ -20,20 +20,20 @@ namespace Repository.DTO
 
     public class PaymentSummary
     {
-        public decimal TotalRoomAmount { get; set; }
-        public decimal TotalGstAmount { get; set; }
-        public decimal TotalAmount { get; set; }
+        public decimal TotalRoomAmount { get; set; } //Room Amount
+        public decimal TotalGstAmount { get; set; } //Room Gst
+        public decimal TotalAmount { get; set; } //Total Room Amount
 
-        public decimal AgentServiceCharge { get; set; }
-        public decimal AgentServiceGst { get; set; }
-        public decimal AgentServiceTotal { get; set; } //agent service charge + agent service gst
-        public decimal TotalPayable { get; set; } //total amount + agent service charge
-        public decimal AgentPaid { get; set; } // paid to agent amount
+        public decimal AgentServiceCharge { get; set; } //Agent Service
+        public decimal AgentServiceGst { get; set; } //Agent GST
+        public decimal AgentServiceTotal { get; set; } //Agent Total Service  //agent service charge + agent service gst
+        public decimal TotalPayable { get; set; } //Total Payable //total amount + agent service charge
+        public decimal AgentPaid { get; set; } //Agent Adjusted // paid to agent amount
         
-        public decimal AdvanceAmount { get; set; }
-        public decimal ReceivedAmount { get; set; }
-        public decimal BalanceAmount { get; set; }
-        public decimal RefundAmount { get; set; }
+        public decimal AdvanceAmount { get; set; } //Advance
+        public decimal ReceivedAmount { get; set; }//Amount Adjusted
+        public decimal BalanceAmount { get; set; }//Balance
+        public decimal RefundAmount { get; set; }//Refund
        
     }
 }

@@ -24,6 +24,10 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         public int Other1 { get; set; }
         public int Other2 { get; set; }
+        public decimal GST { get; set; }
+        public decimal IGST { get; set; }
+        public decimal SGST { get; set; }
+        public decimal CGST { get; set; }
     }
 
     public class GroupMasterDTO
@@ -33,6 +37,10 @@ namespace Repository.Models
         public string Code { get; set; } = String.Empty;
         public string GroupName { get; set; } = String.Empty;
         public string Description { get; set; } = String.Empty;
+        public decimal GST { get; set; }
+        public decimal IGST { get; set; }
+        public decimal SGST { get; set; }
+        public decimal CGST { get; set; }
     }
 
     public class GroupValidator : AbstractValidator<GroupMaster>
