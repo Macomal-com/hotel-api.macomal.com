@@ -64,7 +64,7 @@ namespace hotel_api.Constants
         public static int CalculateNights(DateTime checkIn, DateTime checkOut)
         {
             TimeSpan timeDifference = checkOut - checkIn;
-            return (int)timeDifference.TotalDays;
+            return (int)timeDifference.TotalDays == 0 ? 1 : (int)timeDifference.TotalDays;
         }
     }
 }

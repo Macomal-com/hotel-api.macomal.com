@@ -202,7 +202,7 @@ namespace hotel_api.Controllers
                     while (noOfNights > 0)
                     {
                         var roomRateDate = new BookedRoomRate();
-                        roomRateDate.BookingDate = checkInDate;
+                        roomRateDate.BookingDate = currentDate;
                         roomRateDate.GstType = gstType;
 
                         var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= currentDate && x.ToDate >= currentDate)).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
@@ -605,6 +605,7 @@ namespace hotel_api.Controllers
                         bookingDetails.RoomId = room.RoomId;
                         bookingDetails.RoomCount = request.BookingDetailsDTO.Count == 1 && item.AssignedRooms.Count == 1 ? 0 : roomCount;
                         bookingDetails.BookingSource = request.ReservationDetailsDTO.BookingSource;
+                        bookingDetails.TotalAmount = BookingTotalAmount(bookingDetails);
                         roomCount++;
 
                         await _context.BookingDetail.AddAsync(bookingDetails);
@@ -652,7 +653,7 @@ namespace hotel_api.Controllers
                     Constants.Constants.SetMastersDefault(paymentDetails, companyId, userId, currentDate);
                     paymentDetails.BookingId = 0;
                     paymentDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
-
+                    paymentDetails.PaymentLeft = request.PaymentDetailsDTO.PaymentAmount;
                     await _context.PaymentDetails.AddAsync(paymentDetails);
                     await _context.SaveChangesAsync();
                 }
@@ -664,7 +665,7 @@ namespace hotel_api.Controllers
                     Constants.Constants.SetMastersDefault(paymentDetails, companyId, userId, currentDate);
                     paymentDetails.BookingId = 0;
                     paymentDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
-                          
+                    paymentDetails.PaymentLeft = request.PaymentDetailsDTO.PaymentAmount;
                     await _context.PaymentDetails.AddAsync(paymentDetails);
                     await _context.SaveChangesAsync();
                 }
@@ -1294,6 +1295,7 @@ namespace hotel_api.Controllers
         [HttpPost("UpdateRoomsCheckIn")]
         public async Task<IActionResult> UpdateRoomsCheckIn([FromBody] List<int> rooms)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1301,6 +1303,7 @@ namespace hotel_api.Controllers
                 var currentDate = DateTime.Now;
                 if (rooms.Count == 0)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 400, Message = "No rooms found for checkin" });
                 }
                 
@@ -1309,7 +1312,7 @@ namespace hotel_api.Controllers
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive && x.CompanyId == companyId && x.BookingId == item);
                     if (booking == null)
                     {
-                        
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                     }
                     else
@@ -1318,12 +1321,29 @@ namespace hotel_api.Controllers
                         booking.UpdatedDate = currentDate;
                         _context.BookingDetail.Update(booking);
                         await _context.SaveChangesAsync();
+
+
+
+
+                        var roomAvailability = await _context.RoomAvailability.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId && x.RoomStatus == Constants.Constants.Confirmed);
+                        if (roomAvailability == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = "Room availability not found" });
+                        }
+                        
+                        roomAvailability.RoomStatus = Constants.Constants.CheckIn;
+                        roomAvailability.UpdatedDate = currentDate;
+                        _context.RoomAvailability.Update(roomAvailability);
+                        await _context.SaveChangesAsync();
                     }
+                    await transaction.CommitAsync();
                 }
                 return Ok(new { Code = 200, Message = "Rooms Check-In successfully" });
             }
             catch(Exception ex)
             {
+                await transaction.RollbackAsync();
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
@@ -1412,6 +1432,7 @@ namespace hotel_api.Controllers
                                                      BillTo = "",
                                                      InvoiceNo = response.InvoiceNo,
                                                      InvoiceDate = DateTime.Now,
+                                                     TotalAmount = booking.TotalAmount,
                                                      BookedRoomRates =  _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList()
                                                  }).ToListAsync();
 
@@ -1512,6 +1533,7 @@ namespace hotel_api.Controllers
                     item.BookingAmount = 0;
                     item.GstAmount = 0;
                     item.TotalBookingAmount = 0;
+                    item.TotalAmount = 0;
                     
                     var eachRoomRate = roomRates.Where(x => x.BookingId == item.BookingId && x.BookingDate <= request.EarlyCheckOutDate).OrderBy(x => x.BookingDate).ToList();
                     item.BookedRoomRates = eachRoomRate;
@@ -1521,7 +1543,9 @@ namespace hotel_api.Controllers
                         item.BookingAmount = item.BookingAmount + rate.RoomRate;
                         item.GstAmount = item.GstAmount + rate.GstAmount;
                         item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+                        
                     }
+                    item.TotalAmount = BookingTotalAmount(item);
                 }
                 PaymentSummary paymentSummary = await CalculateSummary(request.ReservationDetails, bookings);
 
@@ -1563,8 +1587,37 @@ namespace hotel_api.Controllers
                 //find payments
                 var payments = await _context.PaymentDetails.Where(x => x.IsActive == true && x.IsReceived == false && x.PaymentLeft > 0 && x.CompanyId == companyId && x.ReservationNo == request.ReservationNo).ToListAsync();
 
-                CalculateInvoice(request.bookingDetails, payments);
                 foreach(var item in request.bookingDetails)
+                {
+                    var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId).ToListAsync();
+                    item.BookingAmount = 0;
+                    item.GstAmount = 0;
+                    item.TotalBookingAmount = 0;
+                    item.TotalAmount = 0;
+
+
+                    foreach (var rate in roomRates)
+                    {
+                        if (rate.BookingDate > item.CheckOutDate)
+                        {
+                            rate.IsActive = false;
+                            rate.UpdatedDate = currentTime;
+                            _context.BookedRoomRates.Update(rate);
+                            await _context.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            item.BookingAmount = item.BookingAmount + rate.RoomRate;
+                            item.GstAmount = item.GstAmount + rate.GstAmount;
+                            item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+                        }
+                        item.TotalAmount = BookingTotalAmount(item);
+
+                    }
+                }
+
+                CalculateInvoice(request.bookingDetails, payments);
+                foreach (var item in request.bookingDetails)
                 {
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId && x.Status == Constants.Constants.CheckIn);
                     if(booking == null)
@@ -1572,12 +1625,16 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "Booking not found" });
                     }
+
+
+                    
+
                     var balance = CalculateBalanceBooking(item);
 
                     booking.CheckOutDate = item.CheckOutDate;
                     booking.CheckOutTime = item.CheckOutTime;
                     booking.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
-                    booking.NoOfNights = item.NoOfNights;
+                    booking.NoOfNights = Constants.Calculation.CalculateNights(booking.ReservationDate, booking.CheckOutDate);
                     booking.Status = Constants.Constants.CheckOut;
                     booking.UpdatedDate = currentTime;
                     booking.InitialBalanceAmount = balance;
@@ -1588,25 +1645,17 @@ namespace hotel_api.Controllers
                     booking.InvoiceNo = item.InvoiceNo;
                     booking.InvoiceDate = item.InvoiceDate;
                     booking.InvoiceName = item.InvoiceName;
-                    booking.BillTo = item.BillTo;
                     booking.BookingAmount = item.BookingAmount;
                     booking.GstAmount = item.GstAmount;
                     booking.TotalBookingAmount = item.TotalBookingAmount;
-                    booking.TotalAmount = BookingTotalAmount(booking);
+                    booking.TotalAmount = item.TotalAmount;
+                    booking.BillTo = item.BillTo;
+                    
                     _context.BookingDetail.Update(booking);
                     await _context.SaveChangesAsync();
 
-                    var bookedRateIds = item.BookedRoomRates.Select(r => r.Id).ToList();
-
-                    var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId && !bookedRateIds.Contains(x.Id)).ToListAsync();
-
-                    foreach (var rate in roomRates)
-                    {
-                        rate.IsActive = false;
-                        rate.UpdatedDate = currentTime;
-                        _context.BookedRoomRates.Update(rate);
-                        await _context.SaveChangesAsync();
-                    }
+                   
+                        
 
                     var roomAvailability = await _context.RoomAvailability.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId && x.RoomStatus == Constants.Constants.CheckIn);
                     if(roomAvailability == null)
@@ -1614,13 +1663,18 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "Room availability not found" });
                     }
+                    roomAvailability.CheckOutDate = booking.CheckOutDate;
+                    roomAvailability.CheckOutTime = booking.CheckOutTime;
+                    roomAvailability.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
                     roomAvailability.RoomStatus = Constants.Constants.Dirty;
                     roomAvailability.UpdatedDate = currentTime;
                     _context.RoomAvailability.Update(roomAvailability);
                     await _context.SaveChangesAsync();
                 }
 
-                foreach(var pay in payments)
+                
+
+                foreach (var pay in payments)
                 {
                     pay.UpdatedDate = currentTime;
                     _context.PaymentDetails.Update(pay);
@@ -1765,10 +1819,11 @@ namespace hotel_api.Controllers
                 int roomCounts = GetBalanceRoomCount(bookings);
                 List<decimal> equallyDivideArr = EquallyDivideAmount(agentAdvance, roomCounts);
                 int divideArrIndex = 0;
-                int paymentIndex = 0;
+               
 
                 for (int i = 0; i < bookings.Count; i++)
                 {
+                    int paymentIndex = 0;
                     decimal balance = CalculateBalanceBooking(bookings[i]);
                     if(balance > 0)
                     {
@@ -1830,12 +1885,13 @@ namespace hotel_api.Controllers
             if (advanceAmount > 0)
             {
                 int roomCounts = GetBalanceRoomCount(bookings);
-                List<decimal> equallyDivideArr = EquallyDivideAmount(agentAdvance, roomCounts);
+                List<decimal> equallyDivideArr = EquallyDivideAmount(advanceAmount, roomCounts);
                 int divideArrIndex = 0;
-                int paymentIndex = 0;
+                
 
                 for (int i = 0; i < bookings.Count; i++)
                 {
+                    int paymentIndex = 0;
                     decimal balance = CalculateBalanceBooking(bookings[i]);
                     if (balance > 0)
                     {
@@ -1898,12 +1954,13 @@ namespace hotel_api.Controllers
             if (receivedAmount > 0)
             {
                 int roomCounts = GetBalanceRoomCount(bookings);
-                List<decimal> equallyDivideArr = EquallyDivideAmount(agentAdvance, roomCounts);
+                List<decimal> equallyDivideArr = EquallyDivideAmount(receivedAmount, roomCounts);
                 int divideArrIndex = 0;
-                int paymentIndex = 0;
+               
 
                 for (int i = 0; i < bookings.Count; i++)
                 {
+                    int paymentIndex = 0;
                     decimal balance = CalculateBalanceBooking(bookings[i]);
                     if (balance > 0)
                     {
