@@ -99,5 +99,45 @@ namespace hotel_api.Controllers
             }
 
         }
+        [HttpGet("GetDataFromBookingId")]
+        public async Task<IActionResult> GetDataFromBookingId(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            if (id == 0)
+            {
+                
+                return Ok(new { Code = 400, Message = "No Data found" });
+            }
+            try
+            {
+                var data = await (from bd in _context.BookingDetail
+                                  join rm in _context.RoomMaster on bd.RoomId equals rm.RoomId
+                                  join guest in _context.GuestDetails on bd.GuestId equals guest.GuestId
+                                  where bd.BookingId == id && bd.IsActive == true && rm.IsActive == true && guest.IsActive == true &&
+                                  bd.CompanyId == companyId && rm.CompanyId == companyId && guest.CompanyId == companyId &&
+                                  bd.UserId == userId && rm.UserId == userId && guest.UserId == userId
+                                  select new
+                                  {
+                                      bd.BookingId,
+                                      bd.RoomId,
+                                      rm.RoomNo,
+                                      guest.GuestName,
+                                      CheckInDate = bd.CheckInDate.ToString("yyyy-MM-dd"),
+                                      CheckOutDate = bd.CheckOutDate.ToString("yyyy-MM-dd"),
+                                  }).ToListAsync();
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "Data Not Found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", data = data });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
     }
 }
