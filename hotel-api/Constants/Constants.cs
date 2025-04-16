@@ -1,4 +1,6 @@
-﻿namespace hotel_api.Constants
+﻿using Repository.Models;
+
+namespace hotel_api.Constants
 {
     public class Constants
     {
@@ -55,10 +57,12 @@
         public static string Rejected = "Rejected";
         public static string Pending = "Pending";
         public static string CheckOut = "CheckOut";
+        public static string Dirty = "Dirty";
 
         //document type
         public static string DocumentReservation = "Reservation";
         public static string DocumentInvoice = "Invoice";
+        public static string DocumentKot = "KOT";
 
         public static List<string> AllRoomStatus = new List<string> { CheckIn, Confirmed, Pending, CheckOut };
 
@@ -92,5 +96,15 @@
 
             return fileName;
         }
+
+        public static void SetMastersDefault(ICommonProperties model, int companyid, int userId, DateTime currentDate)
+        {
+            model.CreatedDate = currentDate;
+            model.UpdatedDate = currentDate;
+            model.IsActive = true;
+            model.CompanyId = companyid;
+            model.UserId = userId;
+        }
+
     }
 }

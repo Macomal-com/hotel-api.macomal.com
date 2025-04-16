@@ -52,6 +52,8 @@ namespace RepositoryModels.Repository
         public DbSet<BookedRoomRate> BookedRoomRates { get; set; }
 
         public DbSet<ReservationDetails> ReservationDetails { get; set; }
+
+        public DbSet<InvoiceHistory> InvoiceHistory { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

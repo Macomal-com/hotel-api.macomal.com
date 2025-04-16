@@ -68,6 +68,10 @@ namespace Repository.Models
         public decimal ServicesAmount { get; set; }
         public decimal TotalAmount { get; set; }
 
+        public decimal AgentAdvanceAmount { get; set; }
+        public string InvoiceName { get; set; } = string.Empty;
+        public string BillTo { get; set; } = string.Empty;
+         
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
 

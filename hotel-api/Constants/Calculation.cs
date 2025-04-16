@@ -1,4 +1,5 @@
 ﻿using Repository.Models;
+using System.Globalization;
 
 namespace hotel_api.Constants
 {
@@ -52,6 +53,18 @@ namespace hotel_api.Constants
             totalAmount = RoundOffDecimal(totalAmount);
 
             return (roomAmount, gst, totalAmount);
+        }
+    
+    
+        public static DateTime ConvertToDateTime(DateTime date, string time)
+        {
+            return DateTime.ParseExact((date.ToString("yyyy-MM-dd")) + " " + time, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+        }
+
+        public static int CalculateNights(DateTime checkIn, DateTime checkOut)
+        {
+            TimeSpan timeDifference = checkOut - checkIn;
+            return (int)timeDifference.TotalDays;
         }
     }
 }

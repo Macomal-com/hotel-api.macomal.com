@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -51,6 +52,9 @@ namespace Repository.Models
         public decimal TotalAmount { get; set; }
 
         public int PrimaryGuestId { get; set; }
+
+        
+
     }
 
     public class ReservationDetailsDTO

@@ -40,6 +40,9 @@ namespace Repository.Models
 
         [NotMapped]
         public List<RoomsList> RoomsList { get; set; } = new List<RoomsList>();
+
+        [NotMapped]
+        public List<InvoiceHistory> InvoiceHistories = new List<InvoiceHistory>();
     }
 
     public class RoomsList
