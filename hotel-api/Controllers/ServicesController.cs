@@ -3,7 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Repository.DTO;
+using Repository.Models;
 using RepositoryModels.Repository;
+using System.Text.RegularExpressions;
 
 namespace hotel_api.Controllers
 {
@@ -33,7 +35,7 @@ namespace hotel_api.Controllers
 
                 //groups
                 response.Groups = await _context.GroupMaster.Where(x => x.IsActive == true && x.CompanyId == companyId).ToListAsync();
-                if(response.Groups.Count == 0)
+                if (response.Groups.Count == 0)
                 {
                     return Ok(new { Code = 400, Message = "Groups not found" });
                 }
@@ -44,13 +46,58 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = "Sub Groups not found" });
                 }
                 //services
+                response.Services = await (from service in _context.ServicableMaster
+                                           join groups in _context.GroupMaster on service.GroupId equals groups.Id
+                                           join subgroups in _context.SubGroupMaster on service.SubGroupId equals subgroups.SubGroupId
+                                           where service.IsActive == true && service.CompanyId == companyId
+                                           select new ServicesDTO
+                                           {
+                                               ServiceId = service.ServiceId,
+                                               GroupId = service.GroupId,
+                                               GroupName = groups.GroupName,
+                                               SubGroupId = service.SubGroupId,
+                                               SubGroupName = subgroups.SubGroupName,
+                                               ServiceName = service.ServiceName,
+                                               ServiceDescription = service.ServiceDescription,
+                                               Amount = service.Amount,
+                                               Discount = service.Discount,
+                                               TaxType = service.TaxType,
+                                               GstPercentage = groups.GST,
+                                               //(TotalAmount, GstAmount) = Constants.Calculation.CalculateGst(service.Amount, groups.GST, service.TaxType),
+                                               IgstPercentage = groups.IGST,
+                                               //IgstAmount = service.IgstAmount,
+                                               SgstPercentage = groups.SGST,
+                                               //SgstAmount = service.SgstAmount,
+                                               CgstPercentage = groups.CGST,
+                                               //CgstAmount = service.CgstAmount,
+                                               //TotalAmount = service.TotalAmount
 
+                                           }).ToListAsync();
+
+                foreach(var item in response.Services)
+                {
+                    (item.InclusiveTotalAmount, item.GstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.GstPercentage, item.TaxType);
+
+                    (item.InclusiveTotalAmount, item.IgstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.IgstPercentage, item.TaxType);
+
+                    (item.InclusiveTotalAmount, item.SgstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.SgstPercentage, item.TaxType);
+
+                    (item.InclusiveTotalAmount, item.CgstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.CgstAmount, item.TaxType);
+
+                   
+                        item.InclusiveTotalAmount = item.Amount;
+
+                    item.ExclusiveTotalAmount = item.Amount + item.GstAmount + item.IgstAmount + item.CgstAmount + item.SgstAmount;
+                    
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", data = response });
             }
             catch (Exception ex)
             {
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
-            
+
         }
     }
 }

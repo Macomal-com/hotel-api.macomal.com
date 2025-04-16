@@ -13,7 +13,7 @@ namespace Repository.DTO
 
         public List<SubGroupMaster> SubGroups { get; set; } = new List<SubGroupMaster>();
 
-        public List<ServicableMaster> Services { get; set; } = new List<ServicableMaster>();
+        public List<ServicesDTO> Services { get; set; } = new List<ServicesDTO>();
 
         public string KotNumber { get; set; } = string.Empty;
     }

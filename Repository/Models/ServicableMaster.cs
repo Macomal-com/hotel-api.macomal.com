@@ -18,8 +18,8 @@ namespace Repository.Models
         public int SubGroupId { get; set; }
         public string ServiceName { get; set; } = String.Empty;
         public string ServiceDescription { get; set; } = String.Empty;
-        public double Amount { get; set; }
-        public double Discount { get; set; }
+        public decimal Amount { get; set; }
+        public decimal Discount { get; set; }
         public string TaxType { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
@@ -35,9 +35,36 @@ namespace Repository.Models
         public int SubGroupId { get; set; }
         public string ServiceName { get; set; } = String.Empty;
         public string ServiceDescription { get; set; } = String.Empty;
-        public double Amount { get; set; }
-        public double Discount { get; set; }
+        public decimal Amount { get; set; }
+        public decimal Discount { get; set; }
         public string TaxType { get; set; } = String.Empty;
+    }
+
+    public class ServicesDTO
+    {
+        public int ServiceId { get; set; }
+        public int GroupId { get; set; }
+        public string GroupName { get; set; } = string.Empty;
+        public int SubGroupId { get; set; }
+        public string SubGroupName { get; set; } = string.Empty;
+        public string ServiceName { get; set; } = string.Empty;
+        public string ServiceDescription { get; set; } = string.Empty;
+        public decimal Amount { get; set; }
+        public decimal Discount { get; set; }
+        public string TaxType { get; set; } = string.Empty;
+
+        public decimal GstPercentage { get; set; }
+        public decimal GstAmount { get; set; }
+        public decimal IgstPercentage { get; set; }
+        public decimal IgstAmount { get; set; }
+        public decimal SgstPercentage { get; set; }
+
+        public decimal SgstAmount { get; set; }
+        public decimal CgstPercentage { get; set; }
+        public decimal CgstAmount { get; set; }
+
+        public decimal InclusiveTotalAmount { get; set; }
+        public decimal ExclusiveTotalAmount { get; set; }
     }
 
     public class ServiveValidator : AbstractValidator<ServicableMaster>
