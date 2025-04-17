@@ -117,23 +117,48 @@ namespace hotel_api.Controllers
                 {
                     if(isUserExists.Roles == Constants.Constants.SuperAdmin)
                     {
-                        var propertiesList = await _context.CompanyDetails.Where(x => x.ClusterId == clusterId && x.IsActive == true).Select(x=> new
+                        if (clusterId == 0)
                         {
-                            PropertyId = x.PropertyId,
-                            PropertyName = x.CompanyName,
-                            PropertyAddress = x.CompanyAddress,
-                            PropertyLogo = x.PropertyLogo,
-                            Gstin = x.Gstin,
-                            CheckInTime = x.CheckInTime,
-                            CheckOutTime = x.CheckOutTime,
-                            CheckOutFormat = x.CheckOutFormat,
-                            IsCheckOutApplicable = x.IsCheckOutApplicable,
-                            IsRoomRateEditable = x.IsRoomRateEditable,
-                            GstType = x.GstType,
-                            ApproveReservation = x.ApproveReservation,
-                        }).ToListAsync();
+                            var propertiesList = await _context.CompanyDetails.Where(x => x.IsActive == true).Select(x => new
+                            {
+                                PropertyId = x.PropertyId,
+                                PropertyName = x.CompanyName,
+                                PropertyAddress = x.CompanyAddress,
+                                PropertyLogo = x.PropertyLogo,
+                                Gstin = x.Gstin,
+                                CheckInTime = x.CheckInTime,
+                                CheckOutTime = x.CheckOutTime,
+                                CheckOutFormat = x.CheckOutFormat,
+                                IsCheckOutApplicable = x.IsCheckOutApplicable,
+                                IsRoomRateEditable = x.IsRoomRateEditable,
+                                GstType = x.GstType,
+                                ApproveReservation = x.ApproveReservation,
+                            }).ToListAsync();
 
-                        return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
+                            return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
+                        }
+
+                        else
+                        {
+                            var propertiesList = await _context.CompanyDetails.Where(x => x.ClusterId == clusterId && x.IsActive == true).Select(x => new
+                            {
+                                PropertyId = x.PropertyId,
+                                PropertyName = x.CompanyName,
+                                PropertyAddress = x.CompanyAddress,
+                                PropertyLogo = x.PropertyLogo,
+                                Gstin = x.Gstin,
+                                CheckInTime = x.CheckInTime,
+                                CheckOutTime = x.CheckOutTime,
+                                CheckOutFormat = x.CheckOutFormat,
+                                IsCheckOutApplicable = x.IsCheckOutApplicable,
+                                IsRoomRateEditable = x.IsRoomRateEditable,
+                                GstType = x.GstType,
+                                ApproveReservation = x.ApproveReservation,
+                            }).ToListAsync();
+
+                            return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
+                        }
+                           
                     }
                     else
                     {
