@@ -20,15 +20,15 @@ namespace Repository.Models
         public string ServiceName { get; set; } = String.Empty;
         public decimal ServicePrice { get; set; } //serviceprice
         public int Quantity { get; set; } 
-        public string GstType { get; set; } = String.Empty;
+        public string TaxType { get; set; } = String.Empty;
         public decimal TotalAmount { get; set; } //totalserviceprice * quantity
-        public decimal GST { get; set; }
+        public decimal GSTPercentage { get; set; }
         public decimal GstAmount { get; set; } //gstamount * quantity
-        public decimal IGST { get; set; }
+        public decimal IGSTPercentage { get; set; }
         public decimal IgstAmount { get; set; }//0
-        public decimal CGST { get; set; } 
+        public decimal CGSTPercentage { get; set; } 
         public decimal CgstAmount { get; set; } //cgstamount * quanitity
-        public decimal SGST { get; set; }
+        public decimal SGSTPercentage { get; set; }
         public decimal SgstAmount { get; set; } //sgstamount * quantity
         public decimal TotalServicePrice { get; set; }//inclusive and exclusive amount
         public DateTime ServiceDate { get; set; } //validation - checkin and checkoutdate
@@ -98,9 +98,9 @@ namespace Repository.Models
                .NotEmpty().WithMessage("Service Time is required")
                ;
 
-            RuleFor(x => x.GstType)
-               .NotNull().WithMessage("Gst Type is required")
-               .NotEmpty().WithMessage("Gst Type is required")
+            RuleFor(x => x.TaxType)
+               .NotNull().WithMessage("Tax Type is required")
+               .NotEmpty().WithMessage("Tax Type is required")
                ;
 
             RuleFor(x => x.TotalServicePrice)
@@ -113,7 +113,7 @@ namespace Repository.Models
                .NotEmpty().WithMessage("TotalAmount is required")
                .GreaterThanOrEqualTo(0).WithMessage("TotalAmount is required");
 
-            RuleFor(x => x.GST)
+            RuleFor(x => x.GSTPercentage)
               .NotNull().WithMessage("GST is required")
               .NotEmpty().WithMessage("GST is required")
               .GreaterThanOrEqualTo(0).WithMessage("GST is required");

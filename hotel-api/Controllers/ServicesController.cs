@@ -131,6 +131,7 @@ namespace hotel_api.Controllers
                                   select new
                                   {
                                       bd.BookingId,
+                                      bd.ReservationNo,
                                       bd.RoomId,
                                       rm.RoomNo,
                                       guest.GuestName,
@@ -155,7 +156,7 @@ namespace hotel_api.Controllers
         public async Task<IActionResult> SaveServices([FromBody]List<AdvanceService> advanceServices)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
-            try
+            try 
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
