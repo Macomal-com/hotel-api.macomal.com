@@ -20,6 +20,11 @@ namespace hotel_api.Constants
                 
         }
 
+        public static decimal CalculateCGST(decimal gstAmount)
+        {
+            return RoundOffDecimal(gstAmount / 2);
+        }
+
         public static decimal CalculatePercentage(decimal amount, decimal percentage)
         {
             return RoundOffDecimal((amount * percentage) / 100);
@@ -66,5 +71,11 @@ namespace hotel_api.Constants
             TimeSpan timeDifference = checkOut - checkIn;
             return (int)timeDifference.TotalDays == 0 ? 1 : (int)timeDifference.TotalDays;
         }
+    
+        public static decimal BookingTotalAmount(BookingDetail booking)
+        {
+            return booking.BookingAmount + booking.GstAmount + booking.ServicesAmount;
+        }
+
     }
 }

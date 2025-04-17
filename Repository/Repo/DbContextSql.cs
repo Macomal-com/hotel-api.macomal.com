@@ -54,6 +54,8 @@ namespace RepositoryModels.Repository
         public DbSet<ReservationDetails> ReservationDetails { get; set; }
 
         public DbSet<InvoiceHistory> InvoiceHistory { get; set; }
+
+        public DbSet<AdvanceService> AdvanceServices { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

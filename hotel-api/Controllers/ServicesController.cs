@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Repository.DTO;
 using Repository.Models;
 using RepositoryModels.Repository;
+using System.ComponentModel.Design;
 using System.Text.RegularExpressions;
 
 namespace hotel_api.Controllers
@@ -26,12 +27,12 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
 
-                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentKot && x.FinancialYear == financialYear);
-                if (getbookingno == null || getbookingno.Suffix == null)
+                var getKotNo = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentKot && x.FinancialYear == financialYear);
+                if (getKotNo == null || getKotNo.Suffix == null)
                 {
-                    return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
+                    return Ok(new { Code = 400, message = "Document number not found.", data = getKotNo });
                 }
-                response.KotNumber = getbookingno.Prefix + getbookingno.Separator + getbookingno.Prefix1 + getbookingno.Separator + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
+                response.KotNumber = getKotNo.Prefix + getKotNo.Separator + getKotNo.Prefix1 + getKotNo.Separator + getKotNo.Prefix2 + getKotNo.Suffix + getKotNo.Number + getKotNo.LastNumber;
 
                 //groups
                 response.Groups = await _context.GroupMaster.Where(x => x.IsActive == true && x.CompanyId == companyId).ToListAsync();
@@ -76,18 +77,28 @@ namespace hotel_api.Controllers
 
                 foreach(var item in response.Services)
                 {
-                    (item.InclusiveTotalAmount, item.GstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.GstPercentage, item.TaxType);
+                    decimal netAmount = 0;
+                    decimal gst = 0;
+                    (netAmount, gst) = Constants.Calculation.CalculateGst(item.Amount, item.GstPercentage, item.TaxType);
 
-                    (item.InclusiveTotalAmount, item.IgstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.IgstPercentage, item.TaxType);
+                    item.ServicePrice = netAmount;
+                    item.GstAmount = gst;
+                    item.IgstAmount = gst;
+                    (netAmount, gst) = Constants.Calculation.CalculateGst(item.Amount, item.CgstPercentage, item.TaxType);
 
-                    (item.InclusiveTotalAmount, item.SgstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.SgstPercentage, item.TaxType);
+                    item.CgstAmount = gst;
 
-                    (item.InclusiveTotalAmount, item.CgstAmount) = Constants.Calculation.CalculateGst(item.Amount, item.CgstAmount, item.TaxType);
-
-                   
+                    item.SgstAmount = gst;
+                    if (item.TaxType == Constants.Constants.Inclusive)
+                    {
+                        
                         item.InclusiveTotalAmount = item.Amount;
-
-                    item.ExclusiveTotalAmount = item.Amount + item.GstAmount + item.IgstAmount + item.CgstAmount + item.SgstAmount;
+                    }
+                    else
+                    {
+                        item.ExclusiveTotalAmount = item.Amount + item.GstAmount;
+                    }
+                    
                     
                 }
 
@@ -139,5 +150,94 @@ namespace hotel_api.Controllers
             }
 
         }
+
+        [HttpPost("SaveServices")]
+        public async Task<IActionResult> SaveServices([FromBody]List<AdvanceService> advanceServices)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string financialYear = HttpContext.Request.Headers["FinancialYear"].ToString();
+                var currentTime = DateTime.Now;
+
+                if(advanceServices.Count == 0)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
+                foreach(var service in advanceServices)
+                {
+                    var validator = new AdvanceServicesValidator();
+                    var result = validator.Validate(service);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 202, message = errors });
+                    }
+
+                    Constants.Constants.SetMastersDefault(service, companyId, userId, currentTime);
+
+                    await _context.AdvanceServices.AddAsync(service);
+                    await _context.SaveChangesAsync();
+
+                }
+
+                bool isUpdated = await CalculateTotalServiceAmount(advanceServices[0].BookingId);
+                if(isUpdated == false)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 400, Message = Constants.Constants.ErrorMessage });
+                }
+
+                var getKotNo = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.Type == Constants.Constants.DocumentKot && x.CompanyId == companyId && x.IsActive == true);
+                if (getKotNo == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 400, Message = Constants.Constants.ErrorMessage });
+                }
+                getKotNo.LastNumber = getKotNo.LastNumber + 1;
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return Ok(new { Code = 200, Message = "Services added successfully" });
+                
+
+            }
+            catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+    
+
+        private async Task<bool> CalculateTotalServiceAmount(int bookingId)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            decimal totalServiceAmount = await _context.AdvanceServices.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == bookingId).SumAsync(x => x.TotalAmount);
+
+            var bookingDetail = await _context.BookingDetail.FirstOrDefaultAsync(x => x.BookingId == bookingId && x.IsActive == true && x.CompanyId == companyId);
+
+            if(bookingDetail == null)
+            {
+                return false;
+            }
+
+            bookingDetail.ServicesAmount = totalServiceAmount;
+            bookingDetail.TotalAmount = Constants.Calculation.BookingTotalAmount(bookingDetail);
+
+            _context.BookingDetail.Update(bookingDetail);
+            await _context.SaveChangesAsync();
+
+            return true;
+        }
+        
     }
 }

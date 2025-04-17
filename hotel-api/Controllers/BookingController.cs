@@ -605,7 +605,7 @@ namespace hotel_api.Controllers
                         bookingDetails.RoomId = room.RoomId;
                         bookingDetails.RoomCount = request.BookingDetailsDTO.Count == 1 && item.AssignedRooms.Count == 1 ? 0 : roomCount;
                         bookingDetails.BookingSource = request.ReservationDetailsDTO.BookingSource;
-                        bookingDetails.TotalAmount = BookingTotalAmount(bookingDetails);
+                        bookingDetails.TotalAmount = Constants.Calculation.BookingTotalAmount(bookingDetails);
                         roomCount++;
 
                         await _context.BookingDetail.AddAsync(bookingDetails);
@@ -1545,7 +1545,7 @@ namespace hotel_api.Controllers
                         item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
                         
                     }
-                    item.TotalAmount = BookingTotalAmount(item);
+                    item.TotalAmount = Constants.Calculation.BookingTotalAmount(item);
                 }
                 PaymentSummary paymentSummary = await CalculateSummary(request.ReservationDetails, bookings);
 
@@ -1611,7 +1611,7 @@ namespace hotel_api.Controllers
                             item.GstAmount = item.GstAmount + rate.GstAmount;
                             item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
                         }
-                        item.TotalAmount = BookingTotalAmount(item);
+                        item.TotalAmount = Constants.Calculation.BookingTotalAmount(item);
 
                     }
                 }
@@ -2118,9 +2118,6 @@ namespace hotel_api.Controllers
             return (agentAdvance,advance, received);
         }
 
-        private decimal BookingTotalAmount(BookingDetail booking)
-        {
-            return booking.BookingAmount + booking.GstAmount + booking.ServicesAmount;
-        }
+        
     }
 }

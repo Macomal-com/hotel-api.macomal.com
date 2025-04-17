@@ -49,7 +49,7 @@ namespace Repository.Models
         public string SubGroupName { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
         public string ServiceDescription { get; set; } = string.Empty;
-        public decimal Amount { get; set; }
+        public decimal Amount { get; set; } // amount that show in table
         public decimal Discount { get; set; }
         public string TaxType { get; set; } = string.Empty;
 
@@ -63,8 +63,9 @@ namespace Repository.Models
         public decimal CgstPercentage { get; set; }
         public decimal CgstAmount { get; set; }
 
-        public decimal InclusiveTotalAmount { get; set; }
-        public decimal ExclusiveTotalAmount { get; set; }
+        public decimal InclusiveTotalAmount { get; set; } //inclusive total amount
+        public decimal ExclusiveTotalAmount { get; set; } //exclusive total amount
+        public decimal ServicePrice { get; set; } // set to service price in advanceservices
     }
 
     public class ServiveValidator : AbstractValidator<ServicableMaster>
