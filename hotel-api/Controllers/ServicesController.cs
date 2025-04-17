@@ -137,6 +137,8 @@ namespace hotel_api.Controllers
                                       guest.GuestName,
                                       CheckInDate = bd.CheckInDate.ToString("yyyy-MM-dd"),
                                       CheckOutDate = bd.CheckOutDate.ToString("yyyy-MM-dd"),
+                                      bd.CheckOutTime,
+
                                   }).ToListAsync();
                 if (data.Count == 0)
                 {
