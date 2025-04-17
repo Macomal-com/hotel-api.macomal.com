@@ -218,8 +218,7 @@ namespace hotel_api.Controllers
                 await transaction.RollbackAsync();
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
-        }
-    
+        }   
 
         private async Task<bool> CalculateTotalServiceAmount(int bookingId)
         {
@@ -241,6 +240,47 @@ namespace hotel_api.Controllers
 
             return true;
         }
-        
+        [HttpGet("GetServiceList")]
+        public async Task<IActionResult> GetServiceList()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            
+            try
+            {
+                var data = await (from service in _context.AdvanceServices
+                                  join room in _context.RoomMaster on service.RoomId equals room.RoomId
+                                  join gm in _context.GroupMaster on service.GroupId equals gm.Id
+                                  join booking in _context.BookingDetail on service.BookingId equals booking.BookingId
+                                  join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
+                                  join subgm in _context.SubGroupMaster on service.SubGroupId equals subgm.SubGroupId
+                                  where service.IsActive == true && gm.IsActive == true && subgm.IsActive == true &&
+                                  service.CompanyId == companyId && gm.CompanyId == companyId && subgm.CompanyId == companyId &&
+                                  service.UserId == userId && gm.UserId == userId && subgm.UserId == userId
+                                  select new
+                                  {
+                                      service.ReservationNo,
+                                      guest.GuestName,
+                                      service.ServiceName,
+                                      gm.GroupName,
+                                      subgm.SubGroupName,
+                                      room.RoomNo,
+
+
+                                  }).ToListAsync();
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "Data Not Found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", data = data });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
     }
 }
