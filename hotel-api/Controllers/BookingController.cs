@@ -1705,6 +1705,91 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        [HttpGet("GetRoomsById")]
+        public async Task<IActionResult> GetRoomsById(int bookingId, int roomId)
+        {
+            try
+            {
+                var response = new CheckInRoomData();
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                if (bookingId == 0)
+                {
+                    return Ok(new { code = 400, Message = "Invalid data" });
+                }
+
+                response.BookingDetail = await (from booking in _context.BookingDetail
+                                                join room in _context.RoomMaster on booking.RoomId equals room.RoomId
+                                                join type in _context.RoomCategoryMaster on booking.RoomTypeId equals type.Id
+                                                where booking.IsActive == true && booking.CompanyId == companyId && booking.BookingId == bookingId
+                                                select new BookingDetail
+                                                {
+                                                    BookingId = booking.BookingId,
+                                                    GuestId = booking.GuestId,
+                                                    RoomId = booking.RoomId,
+                                                    RoomTypeId = booking.RoomTypeId,
+                                                    CheckInDate = booking.CheckInDate,
+                                                    CheckInTime = booking.CheckInTime,
+                                                    CheckOutDate = booking.CheckOutDate,
+                                                    CheckOutTime = booking.CheckOutTime,
+                                                    CheckInDateTime = booking.CheckInDateTime,
+                                                    CheckOutDateTime = booking.CheckOutDateTime,
+                                                    CheckoutFormat = booking.CheckoutFormat,
+                                                    NoOfNights = booking.NoOfNights,
+                                                    NoOfHours = booking.NoOfHours,
+                                                    HourId = booking.HourId,
+                                                    RoomCount = booking.RoomCount,
+                                                    Pax = booking.Pax,
+                                                    Status = booking.Status,
+                                                    Remarks = booking.Remarks,
+                                                    ReservationNo = booking.ReservationNo,
+                                                    BookingDate = booking.BookingDate,
+                                                    CreatedDate = booking.CreatedDate,
+                                                    UpdatedDate = booking.UpdatedDate,
+                                                    IsActive = booking.IsActive,
+                                                    PrimaryGuestId = booking.PrimaryGuestId,
+                                                    InitialBalanceAmount = booking.InitialBalanceAmount,
+                                                    BalanceAmount = booking.BalanceAmount,
+                                                    AdvanceAmount = booking.AdvanceAmount,
+                                                    ReceivedAmount = booking.ReceivedAmount,
+                                                    AdvanceReceiptNo = booking.AdvanceReceiptNo,
+                                                    RefundAmount = booking.RefundAmount,
+                                                    UserId = booking.UserId,
+                                                    GstType = booking.GstType,
+                                                    CompanyId = booking.CompanyId,
+                                                    BookingAmount = booking.BookingAmount,
+                                                    GstAmount = booking.GstAmount,
+                                                    TotalBookingAmount = booking.TotalBookingAmount,
+                                                    BookingSource = booking.BookingSource,
+                                                    ReservationDate = booking.ReservationDate,
+                                                    ReservationTime = booking.ReservationTime,
+                                                    ReservationDateTime = booking.ReservationDateTime,
+                                                    RoomTypeName = type.Type,
+                                                    RoomNo = room.RoomNo,
+                                                    InitialCheckOutDate = booking.InitialCheckOutDate,
+                                                    InitialCheckOutTime = booking.InitialCheckOutTime,
+                                                    InitialCheckOutDateTime = booking.InitialCheckOutDateTime,
+                                                    BillTo = "",
+                                                    InvoiceDate = DateTime.Now,
+                                                    TotalAmount = booking.TotalAmount,
+                                                    BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                                    ServicesAmount = booking.ServicesAmount
+                                                }).FirstOrDefaultAsync();
+
+                if(response.BookingDetail == null)
+                {
+                    return Ok(new { Code = 400, Message = "No booking found" });
+                }
+                return Ok(new { Code = 200, Message = "Data fetched", data = response });
+                
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
         private async Task<PaymentSummary> CalculateSummary(ReservationDetails reservationDetails, List<BookingDetail> bookings)
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
