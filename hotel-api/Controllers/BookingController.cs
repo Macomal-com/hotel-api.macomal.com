@@ -1177,6 +1177,7 @@ namespace hotel_api.Controllers
                             roomAvailability.RoomStatus = bookingDetails.Status;
                             roomAvailability.RoomTypeId = bookingDetails.RoomTypeId;
                             roomAvailability.UpdatedDate = currentDate;
+                            roomAvailability.RoomId = bookingDetails.RoomId;
                             _context.RoomAvailability.Update(roomAvailability);
                             await _context.SaveChangesAsync();
                         }
