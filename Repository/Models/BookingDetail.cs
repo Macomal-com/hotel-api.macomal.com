@@ -79,8 +79,7 @@ namespace Repository.Models
         public string RoomNo { get; set; } = string.Empty;
 
         [NotMapped]
-        public List<BookedRoomRate> BookedRoomRates { get; set; } = new List<BookedRoomRate>();
-
+        public List<BookedRoomRate> BookedRoomRates { get; set; } = new List<BookedRoomRate>();       
     }
 
     public class BookingDetailDTO
@@ -109,6 +108,7 @@ namespace Repository.Models
         public decimal GstAmount { get; set; }
         public decimal TotalBookingAmount { get; set; }
         public string BookingSource { get; set; } = string.Empty;
+        
 
     }
 
@@ -141,11 +141,10 @@ namespace Repository.Models
         public int CompanyId { get; set; }
 
         public decimal BookingAmount { get; set; }
-        public string GstType { get; set; }
+        public string GstType { get; set; } = string.Empty;
         public decimal GstAmount { get; set; }
         public decimal TotalBookingAmount { get; set; }
         public string BookingSource { get; set; } = string.Empty;
-
         public string ReservationDate { get; set; } = string.Empty;
         public string ReservationTime { get; set; } = string.Empty;
         public DateTime ReservationDateTime { get; set; }
@@ -165,6 +164,14 @@ namespace Repository.Models
 
         public string OriginalCheckOutDate { get; set; } = string.Empty;
         public string OriginalCheckOutTime { get; set; } = string.Empty;
+        [NotMapped]
+        public string GuestName { get; set; } = string.Empty;
+        [NotMapped]
+        public string GuestPhone { get; set; } = string.Empty;
+        [NotMapped]
+        public decimal TotalAmount { get; set; }
+        [NotMapped]
+        public decimal ServicesAmount { get; set; }
     }
 }
 

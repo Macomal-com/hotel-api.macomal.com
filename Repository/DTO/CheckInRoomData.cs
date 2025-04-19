@@ -9,7 +9,7 @@ namespace Repository.DTO
 {
     public class CheckInRoomData
     {
-        public BookingDetail? BookingDetail { get; set; } 
+        public BookingDetailCheckInDTO? BookingDetail { get; set; } 
         public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
     }
 }

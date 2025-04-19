@@ -250,6 +250,7 @@ namespace hotel_api.Controllers
             {
                 var data = await (from service in _context.AdvanceServices
                                   join room in _context.RoomMaster on service.RoomId equals room.RoomId
+                                  join roomType in _context.RoomCategoryMaster on room.RoomTypeId equals roomType.Id
                                   join gm in _context.GroupMaster on service.GroupId equals gm.Id
                                   join booking in _context.BookingDetail on service.BookingId equals booking.BookingId
                                   join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
@@ -262,11 +263,18 @@ namespace hotel_api.Controllers
                                       service.ReservationNo,
                                       guest.GuestName,
                                       service.ServiceName,
+                                      room.RoomNo,
+                                      roomType.Type,
+                                      guest.PhoneNumber,                                      
+                                      service.KotNo,
+                                      ServiceDate = service.ServiceDate.ToString("yyyy-MM-dd"),
+                                      service.ServiceTime,
+                                      service.ServicePrice,
+                                      service.Quantity,
+                                      service.TotalServicePrice,                                      
                                       gm.GroupName,
                                       subgm.SubGroupName,
-                                      room.RoomNo,
-
-
+                                      booking.Status
                                   }).ToListAsync();
                 if (data.Count == 0)
                 {
