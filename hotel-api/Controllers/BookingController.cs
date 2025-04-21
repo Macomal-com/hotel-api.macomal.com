@@ -717,8 +717,8 @@ namespace hotel_api.Controllers
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                
-                    if(pageName == "addPayment")
+                var statusList = new List<string> { Constants.Constants.Pending, Constants.Constants.Confirmed, Constants.Constants.CheckIn };
+                if (pageName == "addPayment")
                     {
                         var bookings = await (from booking in _context.BookingDetail
                                               join guest in _context.GuestDetails on booking.PrimaryGuestId equals guest.GuestId
@@ -729,7 +729,7 @@ namespace hotel_api.Controllers
                                               from room in rooms.DefaultIfEmpty()
                                               where booking.CompanyId == companyId && booking.IsActive == true && guest.CompanyId == companyId
 
-                                              && booking.Status == "Pending" || booking.Status == "Confirmed" || booking.Status == "CheckIn"
+                                              && statusList.Contains(booking.Status)
                                               select new
                                               {
                                                   ReservationNo = booking.ReservationNo,
