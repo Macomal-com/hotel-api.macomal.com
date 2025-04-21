@@ -274,7 +274,7 @@ namespace hotel_api.Controllers
                                       service.TotalServicePrice,                                      
                                       gm.GroupName,
                                       subgm.SubGroupName,
-                                      booking.Status
+                                      booking.Status,
                                   }).ToListAsync();
                 if (data.Count == 0)
                 {
