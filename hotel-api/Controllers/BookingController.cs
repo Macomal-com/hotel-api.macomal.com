@@ -526,7 +526,7 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    guest = _mapper.Map<GuestDetails>(request.GuestDetailsDTO);                    
+                    _mapper.Map(request.GuestDetailsDTO, guest);                    
                     //if (GuestImage != null)
                     //{
                     //    guest.GuestImage = await Constants.Constants.AddFile(GuestImage);
