@@ -40,6 +40,7 @@ namespace RepositoryModels.Repository
 
         public DbSet<DocumentMaster> DocumentMaster { get; set; }
         public DbSet<ExtraPolicies> ExtraPolicies { get; set; }
+        public DbSet<CancelPolicyMaster> CancelPolicyMaster { get; set; }
         public DbSet<AgentDetails> AgentDetails { get; set; }
         public DbSet<RoomAvailability> RoomAvailability { get; set; }
         public DbSet<GstRangeMaster> GstRangeMaster { get; set; }

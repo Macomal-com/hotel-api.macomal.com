@@ -2585,6 +2585,54 @@ namespace hotel_api.Controllers
         }
 
 
+        //CANCEL POLICY MASTER
+        [HttpGet("GetCancelPolicyMaster")]
+        public async Task<IActionResult> GetCancelPolicyMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.CancelPolicyMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetPolicyNumber")]
+        public async Task<IActionResult> GetPolicyNumber()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+               
+                var maxId = _context.CancelPolicyMaster.Any() ? _context.CancelPolicyMaster.Max(x => x.Id): 0;
+
+                var policyNumber = "C" + (maxId + 1).ToString("D4");
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = policyNumber });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+
         //GUEST APIS
         [HttpGet("GetGuestDetails")]
         public async Task<IActionResult> GetGuestDetails()
