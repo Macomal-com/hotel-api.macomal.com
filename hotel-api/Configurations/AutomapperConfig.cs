@@ -48,6 +48,7 @@ namespace hotel_api.Configurations
             CreateMap<PaymentDetailsDTO, PaymentDetails>().ReverseMap();
 
             CreateMap<ReservationDetailsDTO, ReservationDetails>().ReverseMap();
+            CreateMap<CancelPolicyMasterDTO, CancelPolicyMaster>().ReverseMap();
 
 
             CreateMap<BookingDetail, BookingDetailCheckInDTO>()

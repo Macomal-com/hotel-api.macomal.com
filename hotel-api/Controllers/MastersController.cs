@@ -2611,7 +2611,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("GetPolicyNumber")]
-        public async Task<IActionResult> GetPolicyNumber()
+        public Task<IActionResult> GetPolicyNumber()
         {
             try
             {
@@ -2622,14 +2622,119 @@ namespace hotel_api.Controllers
 
                 var policyNumber = "C" + (maxId + 1).ToString("D4");
 
-                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = policyNumber });
+                return Task.FromResult<IActionResult>(Ok(new { Code = 200, Message = "Data fetched successfully", Data = policyNumber }));
             }
 
+            catch (Exception ex)
+            {
+                return Task.FromResult<IActionResult>(StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage }));
+            }
+        }
+
+        [HttpGet("GetCancelPolicyById/{id}")]
+        public async Task<IActionResult> GetCancelPolicyById(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.CancelPolicyMaster
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
             catch (Exception ex)
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        [HttpPost("AddCancelPolicyMaster")]
+        public async Task<IActionResult> AddCancelPolicyMaster([FromBody] CancelPolicyMasterDTO gm)
+        {
+            if (gm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<CancelPolicyMaster>(gm);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new CancelPolicyValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+
+
+                await _context.CancelPolicyMaster.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Policy created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchCancelPolicyMaster/{id}")]
+        public async Task<IActionResult> PatchCancelPolicyMaster(int id, [FromBody] JsonPatchDocument<CancelPolicyMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.CancelPolicyMaster.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new CancelPolicyValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Policy updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
 
 
 
