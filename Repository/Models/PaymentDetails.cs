@@ -39,6 +39,9 @@ namespace Repository.Models
         public int CompanyId { get; set; }
 
         [NotMapped]
+        public string RoomNo { get; set; } = string.Empty;
+
+        [NotMapped]
         public List<RoomsList> RoomsList { get; set; } = new List<RoomsList>();
 
         [NotMapped]

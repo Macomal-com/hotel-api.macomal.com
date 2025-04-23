@@ -43,14 +43,26 @@ namespace hotel_api.Constants
             decimal totalAmount = 0;
             foreach(var item in bookings)
             {
-                int rooms = item.NoOfRooms;
-                while(rooms > 0)
+                if(item.NoOfRooms > 0)
+                {
+                    int rooms = item.NoOfRooms;
+
+                    while (rooms > 0)
+                    {
+                        roomAmount = roomAmount + item.BookingAmount;
+                        gst = gst + item.GstAmount;
+                        totalAmount = totalAmount + item.TotalBookingAmount;
+                        rooms--;
+                    }
+                }
+                else
                 {
                     roomAmount = roomAmount + item.BookingAmount;
                     gst = gst + item.GstAmount;
                     totalAmount = totalAmount + item.TotalBookingAmount;
-                    rooms--;
                 }
+                
+
             }
 
             roomAmount = RoundOffDecimal(roomAmount);

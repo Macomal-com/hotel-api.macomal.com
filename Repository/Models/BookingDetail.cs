@@ -127,6 +127,7 @@ namespace Repository.Models
         public string CheckOutTime { get; set; } = string.Empty;
         public DateTime CheckInDateTime { get; set; }
         public DateTime CheckOutDateTime { get; set; }
+        public string CheckOutFormat { get; set; } = string.Empty;
         public int NoOfNights { get; set; }
         public int NoOfHours { get; set; }
         public int HourId { get; set; }
@@ -164,6 +165,11 @@ namespace Repository.Models
 
         public string OriginalCheckOutDate { get; set; } = string.Empty;
         public string OriginalCheckOutTime { get; set; } = string.Empty;
+        public int OriginalRoomTypeId {get;set;}
+        public string OriginalRoomCategoryName { get; set; } = string.Empty;
+        public int OriginalRoomId { get; set; }
+        public string OriginalRoomNo { get; set; } = string.Empty;
+        public int OriginalPax { get; set; }
         [NotMapped]
         public string GuestName { get; set; } = string.Empty;
         [NotMapped]
@@ -172,6 +178,8 @@ namespace Repository.Models
         public decimal TotalAmount { get; set; }
         [NotMapped]
         public decimal ServicesAmount { get; set; }
+
+        public bool IsCheckIn { get; set; }
     }
 }
 
