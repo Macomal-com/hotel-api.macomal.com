@@ -2676,7 +2676,11 @@ namespace hotel_api.Controllers
                     }).ToList();
                     return Ok(new { Code = 202, message = errors });
                 }
-
+                if(cm.CancellationTime == "Day")
+                {
+                    cm.FromTime = cm.FromTime * 24;
+                    cm.ToTime = cm.ToTime * 24;
+                }
 
 
                 await _context.CancelPolicyMaster.AddAsync(cm);

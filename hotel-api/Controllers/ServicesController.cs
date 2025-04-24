@@ -1,11 +1,13 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Repository.DTO;
 using Repository.Models;
 using RepositoryModels.Repository;
 using System.ComponentModel.Design;
+using System.Data;
 using System.Text.RegularExpressions;
 
 namespace hotel_api.Controllers
@@ -138,6 +140,7 @@ namespace hotel_api.Controllers
                                       CheckInDate = bd.CheckInDate.ToString("yyyy-MM-dd"),
                                       CheckOutDate = bd.CheckOutDate.ToString("yyyy-MM-dd"),
                                       bd.CheckOutTime,
+                                      bd.CheckInTime
 
                                   }).ToListAsync();
                 if (data.Count == 0)
@@ -290,5 +293,195 @@ namespace hotel_api.Controllers
 
         }
 
+        [HttpGet("GetCancellableBookings")]
+        public async Task<IActionResult> GetCancellableBookings(string reservationNo, int guestId)
+        {
+            try
+            {
+                var checkInResponse = new CheckInResponse();
+                if (string.IsNullOrEmpty(reservationNo) || guestId == 0)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid data" });
+                }
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                //Get reservation details
+                checkInResponse.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
+                if (checkInResponse.ReservationDetails == null)
+                {
+                    return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
+                }
+
+                checkInResponse.GuestDetails = await _context.GuestDetails.Where(x => x.CompanyId == companyId && x.IsActive && x.GuestId == guestId).FirstOrDefaultAsync();
+                if (checkInResponse.GuestDetails == null)
+                {
+                    return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
+                }
+
+                var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
+
+
+                checkInResponse.BookingDetailCheckInDTO = await (
+                                        from booking in _context.BookingDetail
+                                        join room in _context.RoomMaster
+                                            on new { RoomId = booking.RoomId, CompanyId = companyId }
+                                            equals new { RoomId = room.RoomId, CompanyId = room.CompanyId } into rooms
+                                        from bookrooms in rooms.DefaultIfEmpty()
+                                        join category in _context.RoomCategoryMaster
+                                            on new { RoomTypeId = booking.RoomTypeId, CompanyId = companyId }
+                                            equals new { RoomTypeId = category.Id, CompanyId = category.CompanyId }
+
+                                        where booking.IsActive == true
+                                            && booking.CompanyId == companyId
+                                            && booking.ReservationNo == reservationNo
+                                        select new BookingDetailCheckInDTO
+                                        {
+                                            BookingId = booking.BookingId,
+                                            GuestId = booking.GuestId,
+                                            RoomId = booking.RoomId,
+                                            RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
+                                            OriginalRoomId = booking.RoomId,
+                                            OriginalRoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
+                                            RoomTypeId = booking.RoomTypeId,
+                                            RoomCategoryName = category.Type,
+                                            OriginalRoomTypeId = booking.RoomTypeId,
+                                            OriginalRoomCategoryName = category.Type,
+                                            CheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
+                                            CheckInTime = booking.CheckInTime,
+                                            CheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
+                                            CheckOutTime = booking.CheckOutTime,
+                                            CheckInDateTime = booking.CheckInDateTime,
+                                            CheckOutDateTime = booking.CheckOutDateTime,
+                                            NoOfNights = booking.NoOfNights,
+                                            NoOfHours = booking.NoOfHours,
+                                            HourId = booking.HourId,
+                                            Status = booking.Status,
+                                            Remarks = booking.Remarks,
+                                            ReservationNo = booking.ReservationNo,
+                                            UserId = booking.UserId,
+                                            CompanyId = booking.CompanyId,
+                                            BookingAmount = booking.BookingAmount,
+                                            GstType = booking.GstType,
+                                            GstAmount = booking.GstAmount,
+                                            TotalBookingAmount = booking.TotalBookingAmount,
+                                            BookingSource = booking.BookingSource,
+                                            ReservationDate = booking.ReservationDate.ToString("yyyy-MM-dd"),
+                                            ReservationTime = booking.ReservationTime,
+                                            ReservationDateTime = booking.ReservationDateTime,
+                                            Pax = booking.Pax,
+                                            OriginalPax = booking.Pax,
+                                            IsSameGuest = booking.PrimaryGuestId == booking.GuestId ? true : false,
+                                            OriginalReservationDateTime = booking.ReservationDateTime,
+                                            OriginalReservationDate = booking.ReservationDate.ToString("yyyy-MM-dd"),
+                                            OriginalReservationTime = booking.ReservationTime,
+                                            OriginalCheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
+                                            OriginalCheckInTime = booking.CheckInTime,
+                                            OriginalCheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
+                                            OriginalCheckOutTime = booking.CheckOutTime,
+                                            CheckOutFormat = booking.CheckoutFormat,
+                                            IsCheckBox = booking.Status != Constants.Constants.CheckOut && _context.AdvanceServices.Any(s => s.BookingId == booking.BookingId && s.CompanyId == companyId && s.IsActive)
+                                        }
+                                    ).ToListAsync();
+
+                foreach (var item in checkInResponse.BookingDetailCheckInDTO)
+                {
+                    item.BookedRoomRates = roomRates.Where(x => x.BookingId == item.BookingId).ToList();
+                    item.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestId == item.GuestId) ?? new GuestDetails();
+                }
+
+
+
+                //payment details
+                checkInResponse.PaymentDetails = await (from x in _context.PaymentDetails
+                                                        join room in _context.RoomMaster on x.RoomId equals room.RoomId into roomT
+                                                        from rm in roomT.DefaultIfEmpty()
+                                                        where x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo
+                                                        select new PaymentDetails
+                                                        {
+                                                            PaymentId = x.PaymentId,
+                                                            BookingId = x.BookingId,
+                                                            ReservationNo = x.ReservationNo,
+                                                            PaymentDate = x.PaymentDate,
+                                                            PaymentMethod = x.PaymentMethod,
+                                                            TransactionId = x.TransactionId,
+                                                            PaymentStatus = x.PaymentStatus,
+                                                            PaymentType = x.PaymentType,
+                                                            BankName = x.BankName,
+                                                            PaymentReferenceNo = x.PaymentReferenceNo,
+                                                            PaidBy = x.PaidBy,
+                                                            Remarks = x.Remarks,
+                                                            Other1 = x.Other1,
+                                                            Other2 = x.Other2,
+                                                            IsActive = x.IsActive,
+                                                            IsReceived = x.IsReceived,
+                                                            RoomId = x.RoomId,
+                                                            UserId = x.UserId,
+                                                            PaymentFormat = x.PaymentFormat,
+                                                            RefundAmount = x.RefundAmount,
+                                                            PaymentAmount = x.PaymentAmount,
+                                                            CreatedDate = x.CreatedDate,
+                                                            UpdatedDate = x.UpdatedDate,
+                                                            CompanyId = x.CompanyId,
+                                                            RoomNo = rm != null ? rm.RoomNo : ""
+                                                        }).ToListAsync();
+
+
+
+                //payment summary
+                var paymentSummary = new PaymentSummary();
+                paymentSummary.TotalRoomAmount = checkInResponse.ReservationDetails.TotalRoomPayment;
+                paymentSummary.TotalGstAmount = checkInResponse.ReservationDetails.TotalGst;
+                paymentSummary.TotalAmount = checkInResponse.ReservationDetails.TotalAmount;
+                paymentSummary.AgentPaid = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.AgentPayment).Sum(x => x.PaymentAmount);
+                paymentSummary.AdvanceAmount = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.AdvancePayment).Sum(x => x.PaymentAmount);
+                paymentSummary.ReceivedAmount = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.ReceivedPayment).Sum(x => x.PaymentAmount);
+                var balance = paymentSummary.TotalAmount - (paymentSummary.AgentPaid + paymentSummary.AdvanceAmount + paymentSummary.ReceivedAmount);
+                paymentSummary.BalanceAmount = balance > 0 ? balance : 0;
+                paymentSummary.RefundAmount = balance < 0 ? Math.Abs(balance) : 0;
+
+                checkInResponse.PaymentSummary = paymentSummary;
+
+
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", data = checkInResponse });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetAllReservations")]
+        public async Task<IActionResult> GetAllReservations()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            DataSet? dataSet = null;
+            try
+            {
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    using (var command = new SqlCommand("searchPanel", connection))
+                    {
+                        command.CommandTimeout = 120;
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@companyId", companyId);
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            dataSet = new DataSet();
+                            adapter.Fill(dataSet);
+                        }
+                        await connection.CloseAsync();
+                    }
+                }
+                return Ok(new { Code = 200, Message = "Reservations Fetched Successfully", data = dataSet });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }

@@ -180,6 +180,9 @@ namespace Repository.Models
         public decimal ServicesAmount { get; set; }
 
         public bool IsCheckIn { get; set; }
+
+        [NotMapped]
+        public bool IsCheckBox { get; set; }
     }
 }
 
