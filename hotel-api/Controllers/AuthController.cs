@@ -133,6 +133,10 @@ namespace hotel_api.Controllers
                                 IsRoomRateEditable = x.IsRoomRateEditable,
                                 GstType = x.GstType,
                                 ApproveReservation = x.ApproveReservation,
+                                x.HotelTagline,
+                                x.ContactNo1,
+                                x.Email,
+                                
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -154,6 +158,10 @@ namespace hotel_api.Controllers
                                 IsRoomRateEditable = x.IsRoomRateEditable,
                                 GstType = x.GstType,
                                 ApproveReservation = x.ApproveReservation,
+                                x.HotelTagline,
+                                x.ContactNo1,
+                                x.Email,
+
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -180,6 +188,10 @@ namespace hotel_api.Controllers
                                                             IsCheckOutApplicable = prop.IsCheckOutApplicable,
                                                             IsRoomRateEditable= prop.IsRoomRateEditable,
                                                             GstType = prop.GstType,
+                                                            prop.HotelTagline,
+                                                            prop.ContactNo1,
+                                                            prop.Email,
+
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -202,6 +214,9 @@ namespace hotel_api.Controllers
                                                             IsCheckOutApplicable = prop.IsCheckOutApplicable,
                                                             IsRoomRateEditable = prop.IsRoomRateEditable,
                                                             GstType = prop.GstType,
+                                                            prop.HotelTagline,
+                                                            prop.ContactNo1,
+                                                            prop.Email,
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });

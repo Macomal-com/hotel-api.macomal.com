@@ -35,5 +35,8 @@ namespace Repository.DTO
         public decimal BalanceAmount { get; set; }//Balance
         public decimal RefundAmount { get; set; }//Refund
        
+        public decimal TotalRoomServicesAmount { get; set; }
+
+        public decimal TotalAllAmount { get; set; } //Total Room Amount
     }
 }

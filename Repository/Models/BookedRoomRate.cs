@@ -39,6 +39,11 @@ namespace Repository.Models
         public int UserId { get; set; }
         public int CompanyId { get; set; }
         public bool IsActive { get; set; }
+
+        public decimal CGST { get; set; }
+        public decimal CGSTAmount { get; set; }
+        public decimal SGST { get; set; }
+        public decimal SGSTAmount { get; set; }
     }
 
 }

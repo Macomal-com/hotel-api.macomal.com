@@ -1,4 +1,5 @@
 ﻿using Repository.Models;
+using System;
 using System.Globalization;
 
 namespace hotel_api.Constants
@@ -30,6 +31,7 @@ namespace hotel_api.Constants
             return RoundOffDecimal((amount * percentage) / 100);
         }
 
+        
         public static decimal RoundOffDecimal(decimal value)
         {
             return Math.Round(value, 2);
@@ -89,5 +91,21 @@ namespace hotel_api.Constants
             return booking.BookingAmount + booking.GstAmount + booking.ServicesAmount;
         }
 
+        public static DateTime GetADayBefore(DateTime date)
+        {
+           
+            DateTime previousDate = date.AddDays(-1);
+
+            return previousDate;
+        }
+
+        public static (DateTime,string) GetAMinuteAfter(DateTime date, string time)
+        {
+
+            DateTime previousDate = ConvertToDateTime(date, time);
+            previousDate = previousDate.AddMinutes(1);
+
+            return (Convert.ToDateTime(previousDate.ToString("yyyy-MM-dd")), previousDate.ToString("HH:mm"));
+        }
     }
 }

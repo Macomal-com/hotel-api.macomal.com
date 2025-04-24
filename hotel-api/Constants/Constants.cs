@@ -58,6 +58,7 @@ namespace hotel_api.Constants
         public static string Pending = "Pending";
         public static string CheckOut = "CheckOut";
         public static string Dirty = "Dirty";
+        public static string Shift = "Shift";
 
         //document type
         public static string DocumentReservation = "Reservation";
@@ -70,6 +71,11 @@ namespace hotel_api.Constants
         public static string ReservationInvoice = "ReservationInvoice";
         public static string RoomInvoice = "RoomInvoice";
 
+        //time
+        public static string DayStartTime = "00:00";
+        public static string DayEndTime = "23:59";
+
+        //image 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";
         
