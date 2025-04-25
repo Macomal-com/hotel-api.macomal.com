@@ -12,7 +12,7 @@ namespace Repository.Models
         [Key]
         public int InvoiceId { get; set; }
         public string InvoiceNo { get; set; } = string.Empty;
-        public DateTime InvoiceDate { get; set; } 
+        public DateOnly InvoiceDate { get; set; } 
         public int PaymentId { get; set; }
         public int BookingId { get; set; }
         public string ReservationNo { get; set; } = string.Empty;

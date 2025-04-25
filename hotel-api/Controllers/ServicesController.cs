@@ -226,7 +226,11 @@ namespace hotel_api.Controllers
         private async Task<bool> CalculateTotalServiceAmount(int bookingId)
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-            decimal totalServiceAmount = await _context.AdvanceServices.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == bookingId).SumAsync(x => x.TotalAmount);
+            List<AdvanceService> services  = await _context.AdvanceServices.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == bookingId).ToListAsync();
+
+            decimal servicesAmount = services.Sum(x => x.ServicePrice);
+            decimal taxAmount = services.Sum(x => x.GstAmount);
+            decimal totalServiceAmount = services.Sum(x => x.TotalAmount);
 
             var bookingDetail = await _context.BookingDetail.FirstOrDefaultAsync(x => x.BookingId == bookingId && x.IsActive == true && x.CompanyId == companyId);
 
@@ -234,8 +238,10 @@ namespace hotel_api.Controllers
             {
                 return false;
             }
-
-            bookingDetail.ServicesAmount = totalServiceAmount;
+            bookingDetail.ServicesAmount = servicesAmount;
+            bookingDetail.ServicesTaxAmount = taxAmount;
+            bookingDetail.TotalServicesAmount = totalServiceAmount;
+           
             bookingDetail.TotalAmount = Constants.Calculation.BookingTotalAmount(bookingDetail);
 
             _context.BookingDetail.Update(bookingDetail);
@@ -483,5 +489,28 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        [HttpGet("GetAllStatus")]
+        public async Task<IActionResult> GetAllStatus()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.ServicesStatus.ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Status not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Status fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
     }
 }

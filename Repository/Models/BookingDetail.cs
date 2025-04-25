@@ -47,7 +47,7 @@ namespace Repository.Models
         public decimal ReceivedAmount { get; set; }
         public string AdvanceReceiptNo { get; set; } = string.Empty;
         public decimal RefundAmount { get; set; }
-        public DateTime InvoiceDate { get; set; } = new DateTime(1900, 01, 01);
+        public DateOnly InvoiceDate { get; set; } = new DateOnly(1900, 01, 01);
         public string InvoiceNo { get; set; } = string.Empty;
         public int UserId { get; set; }
         public string GstType { get; set; } = string.Empty;
@@ -71,7 +71,10 @@ namespace Repository.Models
         public decimal AgentAdvanceAmount { get; set; }
         public string InvoiceName { get; set; } = string.Empty;
         public string BillTo { get; set; } = string.Empty;
-         
+
+        public decimal TotalServicesAmount { get; set; }
+        public decimal ServicesTaxAmount { get; set; }
+
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
 
