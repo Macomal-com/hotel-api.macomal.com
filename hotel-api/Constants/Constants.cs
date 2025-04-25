@@ -38,6 +38,7 @@ namespace hotel_api.Constants
 
         //gst masters
         public static string Reservation = "Reservation";
+        public static string Booking = "Booking";
         public static string Agent = "Agent";
 
         //Payment format
