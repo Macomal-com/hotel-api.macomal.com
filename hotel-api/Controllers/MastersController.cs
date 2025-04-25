@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using FluentValidation;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -2288,6 +2289,7 @@ namespace hotel_api.Controllers
             }
         }
 
+       
 
 
         //HOUR MASTER
@@ -2739,6 +2741,299 @@ namespace hotel_api.Controllers
 
         }
 
+
+        //REMINDER MASTER
+        [HttpGet("GetReminderMaster")]
+        public async Task<IActionResult> GetReminderMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.ReminderMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetReminderById/{id}")]
+        public async Task<IActionResult> GetReminderById(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.ReminderMaster
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddReminderMaster")]
+        public async Task<IActionResult> AddReminderMaster([FromBody] ReminderMasterDTO gm)
+        {
+            if (gm == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<ReminderMaster>(gm);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new ReminderValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+
+                await _context.ReminderMaster.AddAsync(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Reminder created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchReminderMaster/{id}")]
+        public async Task<IActionResult> PatchReminderMaster(int id, [FromBody] JsonPatchDocument<ReminderMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.ReminderMaster.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new ReminderValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Reminder updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+
+
+        //REMINDER HISTORY MASTER
+        [HttpGet("GetReminderHistoryMaster")]
+        public async Task<IActionResult> GetReminderHistoryMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var data = await (from history in _context.ReminderHistoryMaster
+                                  join reminder in _context.ReminderMaster on history.ReminderId equals reminder.Id
+                                  where history.IsActive && history.CompanyId == companyId && history.UserId == userId
+                                  select new
+                                  {
+                                      history.Id,
+                                      reminder.ReminderType,
+                                      history.DaysBefore,
+                                      DueDate = history.DueDate.ToString("yyyy-MM-dd"),
+                                      history.BillPaid,
+                                      history.DocumentPath
+                                  }).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetReminderHistoryById/{id}")]
+        public async Task<IActionResult> GetReminderHistoryById(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.ReminderHistoryMaster
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddReminderHistoryMaster")]
+        public async Task<IActionResult> AddReminderHistoryMaster([FromForm] string formData, IFormFile? file)
+        {
+            if (string.IsNullOrWhiteSpace(formData))
+                return Ok(new { Code = 400, Message = "Invalid Data" });
+
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            var cm = JsonConvert.DeserializeObject<ReminderHistoryMaster>(formData);
+
+            if (cm == null)
+                return Ok(new { Code = 400, Message = "Invalid Data" });
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                SetMastersDefault(cm, companyId, userId);
+
+                // Handle file upload
+                if (file != null)
+                {
+                    var documentPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "reminderDocuments");
+                    Directory.CreateDirectory(documentPath);
+
+                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    var filePath = Path.Combine(documentPath, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    cm.DocumentPath = fileName;
+                }
+
+                // Validate
+                var validator = new ReminderHistoryValidator(_context);
+
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                await _context.ReminderHistoryMaster.AddAsync(cm);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, Message = "Reminder saved successfully" });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return StatusCode(500, new { Code = 500, Message = "An error occurred", Detail = ex.Message });
+            }
+        }
+
+        [HttpPatch("PatchReminderHistoryMaster/{id}")]
+        public async Task<IActionResult> PatchReminderHistoryMaster(int id, [FromBody] JsonPatchDocument<ReminderHistoryMaster> patchDocument)
+        {
+            try
+            {
+                if (patchDocument == null)
+                {
+                    return Ok(new { Code = 500, Message = "Invalid Data" });
+
+                }
+
+                var gm = await _context.ReminderHistoryMaster.FindAsync(id);
+
+                if (gm == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+
+                patchDocument.ApplyTo(gm, ModelState);
+
+                var validator = new ReminderHistoryValidator(_context);
+                var result = await validator.ValidateAsync(gm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+
+                gm.UpdatedDate = DateTime.Now;
+                if(gm.BillPaid) gm.BillPaidDate = DateOnly.FromDateTime(DateTime.Now);
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Reminder updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
 
 
 

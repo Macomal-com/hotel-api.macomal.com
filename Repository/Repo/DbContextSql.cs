@@ -58,6 +58,8 @@ namespace RepositoryModels.Repository
 
         public DbSet<AdvanceService> AdvanceServices { get; set; }
         public DbSet<ServicesStatus> ServicesStatus { get; set; }
+        public DbSet<ReminderMaster> ReminderMaster { get; set; }
+        public DbSet<ReminderHistoryMaster> ReminderHistoryMaster { get; set; }
 
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
