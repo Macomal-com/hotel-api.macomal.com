@@ -14,7 +14,7 @@ namespace hotel_api.Notifications
             {
                 var fromAddress = new MailAddress("enquiry@macoinfotech.com", "Himanshi Goel");
                 var toAddress = new MailAddress("himanshi@macoinfotech.us", "Himanshi Test name");
-                const string fromPassword = ""; // Important: App Password, not your regular password
+                const string fromPassword = "edpc ysfl riva kylb"; // Important: App Password, not your regular password
                 
 
                 var smtp = new SmtpClient

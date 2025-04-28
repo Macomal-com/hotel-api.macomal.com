@@ -91,7 +91,8 @@ namespace Repository.Models
         [NotMapped]
         public List<RoomCancelHistory> RoomCancelHistory { get; set; } = new List<RoomCancelHistory>();
 
-       
+        [NotMapped]
+        public GuestDetails GuestDetails = new GuestDetails(); 
 
     }
 

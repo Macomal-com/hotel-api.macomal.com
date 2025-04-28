@@ -118,6 +118,7 @@ namespace Repository.Models
 
         public string CancelMethod { get; set; } = string.Empty;
         public string CancelCalculatedBy { get; set; } = string.Empty;
+        public string CheckOutInvoice { get; set; } = string.Empty;
 
     }
     public class CompanyDetailsDTO
@@ -142,5 +143,6 @@ namespace Repository.Models
         public string IsRoomRateEditable { get; set; } = string.Empty;
         public string GstType { get; set; } = string.Empty;
         public bool ApproveReservation { get; set; }
+        public string CheckOutInvoice { get; set; } = string.Empty;
     }
 }

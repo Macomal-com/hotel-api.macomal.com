@@ -714,6 +714,12 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
 
+                var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
+                if(property == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                }
 
                 //send email
                 string subject = $"Reservation Successful - {reservationDetails.ReservationNo}";
@@ -735,44 +741,33 @@ namespace hotel_api.Controllers
 
         <tr>
             <td style=""padding: 20px; color: #333333;"">
-                <p>Dear <strong>[Guest Name]</strong>,</p>
+                <p>Dear <strong>{guest.GuestName}</strong>,</p>
 
                 <p>We are pleased to inform you that your reservation has been successfully confirmed!</p>
 
                 <table width=""100%"" style=""margin-top: 20px;"">
                     <tr>
                         <td style=""padding: 8px; color: #555555;""><strong>Reservation Number:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">[Reservation Number]</td>
+                        <td style=""padding: 8px; color: #555555;"">{request.ReservationDetailsDTO.ReservationNo}</td>
                     </tr>
-                    <tr style=""background-color: #f9f9f9;"">
-                        <td style=""padding: 8px; color: #555555;""><strong>Check-in Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">[Check-in Date]</td>
-                    </tr>
+                   
                     <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check-out Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">[Check-out Date]</td>
-                    </tr>
-                    <tr style=""background-color: #f9f9f9;"">
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Type:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">[Room Type]</td>
-                    </tr>
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Number of Guests:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">[Number of Guests]</td>
+                        <td style=""padding: 8px; color: #555555;""><strong>Number of Rooms:</strong></td>
+                        <td style=""padding: 8px; color: #555555;"">{roomCount-1}</td>
                     </tr>
                 </table>
 
                 <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  
                 <br>We look forward to welcoming you and ensuring you have a wonderful stay!</p>
 
-                <p style=""margin-top: 30px;"">Thank you for choosing <strong>[Hotel/Property Name]</strong>!</p>
+                <p style=""margin-top: 30px;"">Thank you for choosing <strong>{property.CompanyName}</strong>!</p>
             </td>
         </tr>
 
         <tr>
             <td style=""padding: 20px; text-align: center; font-size: 12px; color: #888888; background-color: #f1f1f1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;"">
-                [Hotel Name] | [Contact Information] | [Hotel Address] <br/>
-                <a href=""[Hotel Website]"" style=""color: #007bff; text-decoration: none;"">Visit our website</a>
+                {property.CompanyName} | {property.ContactNo1} | {property.CompanyAddress} <br/>
+                
             </td>
         </tr>
     </table>
@@ -781,16 +776,11 @@ namespace hotel_api.Controllers
 </html>
 ";
 
-                if (Notifications.Notification.SendMail(subject, htmlBody))
-                {
+                Notifications.Notification.SendMail(subject, htmlBody);
+                
                     await transaction.CommitAsync();
                     return Ok(new { Code = 200, Message = "Reservation created successfully" });
-                }
-                else
-                {
-                    await transaction.RollbackAsync();
-                    return Ok(new { Code = 500, Message = "Error while sending mail" });
-                }
+                
                 
                 
 
@@ -1669,6 +1659,8 @@ namespace hotel_api.Controllers
                 response.BookingDetails = await (from booking in _context.BookingDetail
                                                  join rooms in _context.RoomMaster on booking.RoomId equals rooms.RoomId
                                                  join roomType in _context.RoomCategoryMaster on booking.RoomTypeId equals roomType.Id
+                                                 join guest in _context.GuestDetails
+                                                 on booking.GuestId equals guest.GuestId
                                                  where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == reservationNo && booking.Status == Constants.Constants.CheckIn
                                                  select new BookingDetail
                                                  {
@@ -1726,7 +1718,8 @@ namespace hotel_api.Controllers
                                                      ServicesAmount = booking.ServicesAmount,
                                                      ServicesTaxAmount = booking.ServicesTaxAmount,
                                                      TotalServicesAmount = booking.TotalServicesAmount,
-                                                     BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList()
+                                                     BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                                     GuestDetails= guest
                                                  }).ToListAsync();
 
 
@@ -1734,8 +1727,70 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 500, Message = "Bookings not found" });
                 }
+                response.PaymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.IsReceived == false && x.PaymentLeft > 0 && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
 
                 response.PaymentSummary = await CalculateSummary(response.ReservationDetails, response.BookingDetails);
+
+                CalculateInvoice(response.BookingDetails, response.PaymentDetails);
+
+                foreach (var item in response.BookingDetails)
+                {
+                    item.BalanceAmount = CalculateBalanceBooking(item);
+                }
+
+                Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
+                //calculate refund
+                foreach (var pay in response.PaymentDetails)
+                {
+                   
+                    if (pay.RoomId == 0 && pay.BookingId == 0)
+                    {
+                        pay.IsReceived = true;
+                        pay.RefundAmount = pay.PaymentLeft;
+                        pay.PaymentLeft = 0;
+
+                        decimal equallydivide = 0;
+                        if (pay.RefundAmount > 0)
+                        {
+                            equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count);
+                        }
+                        foreach (var invoice in pay.InvoiceHistories)
+                        {
+                            if (pay.RefundAmount > 0)
+                            {
+                                invoice.RefundAmount = equallydivide;
+                                invoice.PaymentLeft = 0;
+
+                                if (refundAmouts.ContainsKey(invoice.BookingId))
+                                {
+                                    refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
+                                }
+                                else
+                                {
+                                    refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
+                                }
+                            }
+
+                            
+
+                        }
+                    }
+                    
+                   
+                }
+
+                foreach (var kvp in refundAmouts)
+                {
+                    foreach(var item in response.BookingDetails)
+                    {
+                        if(item.BookingId == kvp.Key)
+                        {
+                            item.RefundAmount = kvp.Value;
+                        }
+                    }
+                    
+                    
+                }
 
                 return Ok(new { Code = 200, Message = "Data fetch successfully", data = response });
             }
@@ -1767,6 +1822,8 @@ namespace hotel_api.Controllers
                 var bookings = await (from booking in _context.BookingDetail
                                       join rooms in _context.RoomMaster on booking.RoomId equals rooms.RoomId
                                       join roomType in _context.RoomCategoryMaster on booking.RoomTypeId equals roomType.Id
+                                      join guest in _context.GuestDetails
+                                                 on booking.GuestId equals guest.GuestId
                                       where booking.IsActive == true && booking.CompanyId == companyId && bookingIdList.
                                       Contains(booking.BookingId)
                                       orderby booking.TotalAmount
@@ -1821,6 +1878,7 @@ namespace hotel_api.Controllers
                                           InitialCheckOutDateTime = booking.InitialCheckOutDateTime,
                                           ServicesTaxAmount = booking.ServicesTaxAmount,
                                           TotalServicesAmount = booking.TotalServicesAmount,
+                                          GuestDetails = guest
                                       }).ToListAsync();
 
                 //var bookings = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && request.BookingIds.Contains(x.BookingId)).ToListAsync();
@@ -1861,10 +1919,78 @@ namespace hotel_api.Controllers
                     }
                     item.TotalAmount = Constants.Calculation.BookingTotalAmount(item);
                 }
+
                 PaymentSummary paymentSummary = await CalculateSummary(request.ReservationDetails, bookings);
 
                 response.BookingDetails = bookings;
                 response.PaymentSummary = paymentSummary;
+
+                response.PaymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.IsReceived == false && x.PaymentLeft > 0 && x.CompanyId == companyId && x.ReservationNo == request.ReservationDetails.ReservationNo).ToListAsync();
+
+                
+
+                CalculateInvoice(response.BookingDetails, response.PaymentDetails);
+
+                foreach(var item in response.BookingDetails)
+                {
+                    item.BalanceAmount = CalculateBalanceBooking(item);
+                }
+
+                Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
+                //calculate refund
+                foreach (var pay in response.PaymentDetails)
+                {
+
+                    if (pay.RoomId == 0 && pay.BookingId == 0)
+                    {
+                        pay.IsReceived = true;
+                        pay.RefundAmount = pay.PaymentLeft;
+                        pay.PaymentLeft = 0;
+
+                        decimal equallydivide = 0;
+                        if (pay.RefundAmount > 0)
+                        {
+                            equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count);
+                        }
+                        foreach (var invoice in pay.InvoiceHistories)
+                        {
+                            if (pay.RefundAmount > 0)
+                            {
+                                invoice.RefundAmount = equallydivide;
+                                invoice.PaymentLeft = 0;
+
+                                if (refundAmouts.ContainsKey(invoice.BookingId))
+                                {
+                                    refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
+                                }
+                                else
+                                {
+                                    refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
+                                }
+                            }
+
+
+
+                        }
+                    }
+
+
+                }
+
+                foreach (var kvp in refundAmouts)
+                {
+                    foreach (var item in response.BookingDetails)
+                    {
+                        if (item.BookingId == kvp.Key)
+                        {
+                            item.RefundAmount = kvp.Value;
+                        }
+                    }
+
+
+                }
+
+                
 
                 return Ok(new { Code = 200, Message = "Rates fetched successfully", data = response });
 
@@ -3802,7 +3928,7 @@ namespace hotel_api.Controllers
             int count = 0;
             foreach (var item in bookings)
             {
-                decimal balance = CalculateBalanceCancelAmount(item);
+                decimal balance = CalculateBalanceBooking(item);
                 if (balance > 0)
                 {
                     count++;
@@ -3957,39 +4083,44 @@ namespace hotel_api.Controllers
                                                      InitialCheckOutTime = booking.InitialCheckOutTime,
                                                      InitialCheckOutDateTime = booking.InitialCheckOutDateTime,
                                                      BillTo = "",
-                                                     
+
                                                      TotalAmount = booking.TotalAmount,
                                                      BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList()
                                                  }).ToListAsync();
 
-                response.PaymentDetails = await _context.PaymentDetails.Select(x => new PaymentDetails
-                {
-                    PaymentId = x.PaymentId,
-                    BookingId = x.BookingId,
-                    ReservationNo = x.ReservationNo,
-                    PaymentDate = x.PaymentDate,
-                    PaymentMethod = x.PaymentMethod,
-                    TransactionId = x.TransactionId,
-                    PaymentStatus = x.PaymentStatus,
-                    PaymentType = x.PaymentType,
-                    BankName = x.BankName,
-                    PaymentReferenceNo = x.PaymentReferenceNo,
-                    PaidBy = x.PaidBy,
-                    Remarks = x.Remarks,
-                    Other1 = x.Other1,
-                    Other2 = x.Other2,
-                    IsActive = x.IsActive,
-                    IsReceived = x.IsReceived,
-                    RoomId = x.RoomId,
-                    UserId = x.UserId,
-                    PaymentFormat = x.PaymentFormat,
-                    RefundAmount = x.RefundAmount,
-                    PaymentAmount = x.PaymentAmount,
-                    CreatedDate = x.CreatedDate,
-                    UpdatedDate = x.UpdatedDate,
-                    CompanyId = x.CompanyId,
-                    PaymentLeft = x.PaymentLeft
-                }).Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
+                response.PaymentDetails = await (from payment in _context.PaymentDetails
+                                                 join rooms in _context.RoomMaster on payment.RoomId equals rooms.RoomId
+                                                 where payment.IsActive == true && payment.CompanyId == companyId && payment.ReservationNo == reservationNo
+                                                 select new PaymentDetails
+                                                 {
+                                                     PaymentId = payment.PaymentId,
+                                                     BookingId = payment.BookingId,
+                                                     ReservationNo = payment.ReservationNo,
+                                                     PaymentDate = payment.PaymentDate,
+                                                     PaymentMethod = payment.PaymentMethod,
+                                                     TransactionId = payment.TransactionId,
+                                                     PaymentStatus = payment.PaymentStatus,
+                                                     PaymentType = payment.PaymentType,
+                                                     BankName = payment.BankName,
+                                                     PaymentReferenceNo = payment.PaymentReferenceNo,
+                                                     PaidBy = payment.PaidBy,
+                                                     Remarks = payment.Remarks,
+                                                     Other1 = payment.Other1,
+                                                     Other2 = payment.Other2,
+                                                     IsActive = payment.IsActive,
+                                                     IsReceived = payment.IsReceived,
+                                                     RoomId = payment.RoomId,
+                                                     RoomNo = rooms.RoomNo,
+                                                     UserId = payment.UserId,
+                                                     PaymentFormat = payment.PaymentFormat,
+                                                     RefundAmount = payment.RefundAmount,
+                                                     PaymentAmount = payment.PaymentAmount,
+                                                     CreatedDate = payment.CreatedDate,
+                                                     UpdatedDate = payment.UpdatedDate,
+                                                     CompanyId = payment.CompanyId,
+                                                     PaymentLeft = payment.PaymentLeft
+                                                 }).ToListAsync();
+
                 if (response.BookingDetails.Count == 0)
                 {
                     return Ok(new { Code = 500, Message = "Bookings not found" });

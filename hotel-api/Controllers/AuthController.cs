@@ -138,7 +138,8 @@ namespace hotel_api.Controllers
                                 x.ContactNo1,
                                 x.Email,
                                 x.CancelCalculatedBy,
-                                x.CancelMethod
+                                x.CancelMethod,
+                                x.CheckOutInvoice
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -164,7 +165,8 @@ namespace hotel_api.Controllers
                                 x.ContactNo1,
                                 x.Email,
                                 x.CancelCalculatedBy,
-                                x.CancelMethod
+                                x.CancelMethod,
+                                x.CheckOutInvoice
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -195,7 +197,8 @@ namespace hotel_api.Controllers
                                                             prop.ContactNo1,
                                                             prop.Email,
                                                             prop.CancelCalculatedBy,
-                                                            prop.CancelMethod
+                                                            prop.CancelMethod,
+                                                            prop.CheckOutInvoice
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -222,7 +225,8 @@ namespace hotel_api.Controllers
                                                             prop.ContactNo1,
                                                             prop.Email,
                                                             prop.CancelCalculatedBy,
-                                                            prop.CancelMethod
+                                                            prop.CancelMethod,
+                                                            prop.CheckOutInvoice
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
