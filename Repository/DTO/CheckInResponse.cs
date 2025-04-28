@@ -47,4 +47,30 @@ namespace Repository.DTO
         //total tax = advance services tax + room service tax
         public decimal TotalTaxAmount { get; set; }
     }
+
+
+    public class CancelBookingResponse
+    {
+        public ReservationDetails? ReservationDetails { get; set; }
+        public List<BookingDetail> bookingDetails { get; set; } = new List<BookingDetail>();
+        public GuestDetails? GuestDetails { get; set; }
+        public List<PaymentDetails> PaymentDetails { get; set; } = new List<PaymentDetails>();
+
+        public CancelSummary CancelSummary { get; set; } = new CancelSummary();
+        public string InvoiceNo { get; set; } = string.Empty;
+    }
+
+    public class CancelSummary
+    {
+        public decimal AgentAmount { get; set; }
+        public decimal AdvanceAmount { get; set; }
+        public decimal ReceivedAmount { get; set; }
+        public decimal TotalPaid { get; set; }
+
+        public decimal TotalRooms { get; set; }
+
+        public decimal CancelAmount { get; set; }
+        public decimal BalanceAmount { get; set; }
+        public decimal RefundAmount { get; set; }
+    }
 }

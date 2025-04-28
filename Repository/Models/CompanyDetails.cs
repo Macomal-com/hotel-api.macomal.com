@@ -116,6 +116,9 @@ namespace Repository.Models
         public IFormFile? watermarkfile { get; set; }
         public bool ApproveReservation { get; set; }
 
+        public string CancelMethod { get; set; } = string.Empty;
+        public string CancelCalculatedBy { get; set; } = string.Empty;
+
     }
     public class CompanyDetailsDTO
     {

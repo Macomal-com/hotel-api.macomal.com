@@ -13,4 +13,7 @@ namespace Repository.RequestDTO
         public string ReservationNo { get; set; } = string.Empty;
         
     }
+
+
+    
 }

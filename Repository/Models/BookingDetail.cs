@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Globalization;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -75,6 +76,9 @@ namespace Repository.Models
         public decimal TotalServicesAmount { get; set; }
         public decimal ServicesTaxAmount { get; set; }
 
+        public decimal CancelAmount { get; set; }
+        public DateTime CancelDate { get; set; } = new DateTime(1900, 01, 01);
+
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
 
@@ -82,7 +86,13 @@ namespace Repository.Models
         public string RoomNo { get; set; } = string.Empty;
 
         [NotMapped]
-        public List<BookedRoomRate> BookedRoomRates { get; set; } = new List<BookedRoomRate>();       
+        public List<BookedRoomRate> BookedRoomRates { get; set; } = new List<BookedRoomRate>();
+
+        [NotMapped]
+        public List<RoomCancelHistory> RoomCancelHistory { get; set; } = new List<RoomCancelHistory>();
+
+       
+
     }
 
     public class BookingDetailDTO
@@ -187,6 +197,9 @@ namespace Repository.Models
         [NotMapped]
         public bool IsCheckBox { get; set; }
     }
+
+
+   
 }
 
 

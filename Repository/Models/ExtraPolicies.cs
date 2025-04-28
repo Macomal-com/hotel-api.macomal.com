@@ -24,6 +24,10 @@ namespace Repository.Models
         public DateTime UpdatedDate { get; set; }
         public int CompanyId { get; set; }
         public int UserId { get; set; }
+
+        public string DeductionBy { get; set; } = string.Empty;
+
+        public string ChargesApplicableOn { get; set; } = string.Empty;
     }
     public class ExtraPoliciesDTO
     {
@@ -32,6 +36,8 @@ namespace Repository.Models
         public int ToHour { get; set; }
         public double Amount { get; set; }
         public string Status { get; set; } = string.Empty;
+        public string DeductionBy { get; set; } = string.Empty;
+        public string ChargesApplicableOn { get; set; } = string.Empty;
     }
     public class ExtrapolicyValidator : AbstractValidator<ExtraPolicies>
     {
@@ -48,9 +54,19 @@ namespace Repository.Models
             RuleFor(x => x.ToHour)
                 .NotNull().WithMessage("ToHour is required")
                 .NotEmpty().WithMessage("ToHour is required");
+
+            RuleFor(x => x.DeductionBy)
+                .NotNull().WithMessage("DeductionBy is required")
+                .NotEmpty().WithMessage("DeductionBy is required");
+
+            RuleFor(x => x.ChargesApplicableOn)
+                .NotNull().WithMessage("ChargesApplicableOn is required")
+                .NotEmpty().WithMessage("ChargesApplicableOn is required")
+                .When(x=>x.DeductionBy == "Percentage");
+
             RuleFor(x => x.Amount)
-                .NotNull().WithMessage("Amount is required")
-                .NotEmpty().WithMessage("Amount is required");
+                
+                .GreaterThanOrEqualTo(0).WithMessage("Amount is required");
             RuleFor(x => x)
                 .MustAsync(IsUniquePolicyName)
                 .When(x => x.PolicyId == 0)

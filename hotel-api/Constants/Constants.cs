@@ -60,6 +60,7 @@ namespace hotel_api.Constants
         public static string CheckOut = "CheckOut";
         public static string Dirty = "Dirty";
         public static string Shift = "Shift";
+        public static string Cancel = "Cancel";
 
         //document type
         public static string DocumentReservation = "Reservation";
@@ -75,6 +76,18 @@ namespace hotel_api.Constants
         //time
         public static string DayStartTime = "00:00";
         public static string DayEndTime = "23:59";
+
+        //cancel method
+        public static string DateWiseCancel = "DateWise";
+        public static string RoomRateCancel = "RoomRate";
+
+        //cancel charges applicable on 
+        public static string ChargesOnTotalAmount = "Total Amount";
+        public static string ChargesOnBookingAmount = "Booking Amount";
+
+        //cancel deduction by
+        public static string DeductionByAmount = "Amount";
+        public static string DeductionByPercentage = "Percentage";
 
         //image 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };

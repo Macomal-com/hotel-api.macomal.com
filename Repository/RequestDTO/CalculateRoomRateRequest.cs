@@ -15,4 +15,17 @@ namespace Repository.RequestDTO
 
         //public DateTime EarlyCheckOutDate { get; set; }
     }
+
+
+    public class CalculateCancelAmountRequest
+    {
+        
+        public List<int> BookingIds { get; set; } = new List<int>();
+        public string ReservationNo { get; set; } = string.Empty;
+
+        public DateTime CancelDate { get; set; }
+
+        public string cancelMethod { get; set; } = string.Empty;
+        public string calculatedBy { get; set; } = string.Empty;
+    }
 }

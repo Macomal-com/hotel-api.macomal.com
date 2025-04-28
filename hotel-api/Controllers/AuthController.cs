@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Identity.Client;
 using Repository.Models;
 using RepositoryModels.Repository;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -136,7 +137,8 @@ namespace hotel_api.Controllers
                                 x.HotelTagline,
                                 x.ContactNo1,
                                 x.Email,
-                                
+                                x.CancelCalculatedBy,
+                                x.CancelMethod
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -161,7 +163,8 @@ namespace hotel_api.Controllers
                                 x.HotelTagline,
                                 x.ContactNo1,
                                 x.Email,
-
+                                x.CancelCalculatedBy,
+                                x.CancelMethod
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -191,7 +194,8 @@ namespace hotel_api.Controllers
                                                             prop.HotelTagline,
                                                             prop.ContactNo1,
                                                             prop.Email,
-
+                                                            prop.CancelCalculatedBy,
+                                                            prop.CancelMethod
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -217,6 +221,8 @@ namespace hotel_api.Controllers
                                                             prop.HotelTagline,
                                                             prop.ContactNo1,
                                                             prop.Email,
+                                                            prop.CancelCalculatedBy,
+                                                            prop.CancelMethod
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });

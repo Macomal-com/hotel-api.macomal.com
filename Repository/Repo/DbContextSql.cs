@@ -61,6 +61,8 @@ namespace RepositoryModels.Repository
         public DbSet<ReminderMaster> ReminderMaster { get; set; }
         public DbSet<ReminderHistoryMaster> ReminderHistoryMaster { get; set; }
 
+        public DbSet<RoomCancelHistory> RoomCancelHistory { get; set; }
+
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
