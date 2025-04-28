@@ -789,7 +789,7 @@ namespace hotel_api.Controllers
                 else
                 {
                     await transaction.RollbackAsync();
-                    return Ok(new { Code = 200, Message = "Error while sending mail" });
+                    return Ok(new { Code = 500, Message = "Error while sending mail" });
                 }
                 
                 

@@ -12,7 +12,7 @@ namespace hotel_api.Notifications
         {
             try
             {
-                var fromAddress = new MailAddress("sandeep@macoinfotech.in", "Himanshi Goel");
+                var fromAddress = new MailAddress("enquiry@macoinfotech.com", "Himanshi Goel");
                 var toAddress = new MailAddress("himanshi@macoinfotech.us", "Himanshi Test name");
                 const string fromPassword = ""; // Important: App Password, not your regular password
                 
