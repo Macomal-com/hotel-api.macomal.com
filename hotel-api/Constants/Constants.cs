@@ -66,6 +66,7 @@ namespace hotel_api.Constants
         public static string DocumentReservation = "Reservation";
         public static string DocumentInvoice = "Invoice";
         public static string DocumentKot = "KOT";
+        public static string DocumentCancelPolicy = "Cancel Policy";
 
         public static List<string> AllRoomStatus = new List<string> { CheckIn, Confirmed, Pending, CheckOut };
 

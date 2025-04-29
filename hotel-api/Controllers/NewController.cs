@@ -361,7 +361,7 @@ namespace hotel_api.Controllers
                                   from fb in buildingRoom.DefaultIfEmpty()
                                   join property in _context.CompanyDetails on roommaster.PropertyId equals property.PropertyId
                                   join roomtype in _context.RoomCategoryMaster on roommaster.RoomTypeId equals roomtype.Id
-                                  where roommaster.IsActive == true && roommaster.PropertyId == companyId && fr.IsActive == true && fb.IsActive == true && property.IsActive == true && roomtype.IsActive == true && roommaster.RoomId == id
+                                  where roommaster.IsActive == true && roommaster.PropertyId == companyId && (fr == null || fr.IsActive == true) && (fb == null || fb.IsActive == true) && property.IsActive == true && roomtype.IsActive == true && roommaster.RoomId == id
                                   select new
                                   {
                                       RoomId = roommaster.RoomId,
@@ -391,11 +391,10 @@ namespace hotel_api.Controllers
                                       Description = roommaster.Description,
 
 
-                                  }
-                                   ).FirstOrDefaultAsync();
+                                  }).FirstOrDefaultAsync();
 
                 return data==null
-                    ? NotFound(new { Code = 404, Message = "Room not found", Data = Array.Empty<object>() })
+                    ? Ok(new { Code = 404, Message = "Room not found", Data = Array.Empty<object>() })
                     : Ok(new { Code = 200, Message = "Room fetched successfully", Data = data });
             }
             catch (Exception ex)

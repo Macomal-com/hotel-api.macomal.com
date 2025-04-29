@@ -73,8 +73,8 @@ namespace Repository.Models
                 .NotNull().WithMessage("GST No is required");
 
             RuleFor(x => x.GstNo)
-                .Length(16)
-                .WithMessage("GST No length should be 16 numbers");
+                .Length(15)
+                .WithMessage("GST No length should be 15 numbers");
 
             RuleFor(x => x.GstPercentage)
                 .GreaterThan(0)

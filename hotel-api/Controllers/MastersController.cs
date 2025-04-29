@@ -12,7 +12,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.Design;
 using System.Data;
 using System.Xml.XPath;
-
+using hotel_api.GeneralMethods;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -2626,25 +2626,30 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("GetPolicyNumber")]
-        public Task<IActionResult> GetPolicyNumber()
+        public async Task<IActionResult> GetPolicyNumber()
         {
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-               
-                var maxId = _context.CancelPolicyMaster.Any() ? _context.CancelPolicyMaster.Max(x => x.Id): 0;
+                string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
 
-                var policyNumber = "C" + (maxId + 1).ToString("D4");
+                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentCancelPolicy && x.FinancialYear == financialYear && x.IsActive);
 
-                return Task.FromResult<IActionResult>(Ok(new { Code = 200, Message = "Data fetched successfully", Data = policyNumber }));
+                if (getbookingno == null || getbookingno.Suffix == null)
+                {
+                    return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
+                }
+                var bookingno = getbookingno.Prefix + getbookingno.Separator + getbookingno.Prefix1 + getbookingno.Separator + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
+                
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = bookingno });
             }
-
             catch (Exception ex)
             {
-                return Task.FromResult<IActionResult>(StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage }));
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
 
         [HttpGet("GetCancelPolicyById/{id}")]
         public async Task<IActionResult> GetCancelPolicyById(int id)
@@ -2697,7 +2702,11 @@ namespace hotel_api.Controllers
                     cm.ToTime = cm.ToTime * 24;
                 }
 
-
+                var response = await DocumentHelper.UpdateDocumentNo(_context, Constants.Constants.DocumentCancelPolicy, companyId);
+                if (response == null)
+                {
+                    return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                }
                 await _context.CancelPolicyMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
 
