@@ -2109,7 +2109,20 @@ namespace hotel_api.Controllers
 
                     var savedObject = await _context.CompanyDetails
                                                      .FirstOrDefaultAsync(c => c.CompanyName == cm.CompanyName);
-
+                    if(savedObject == null)
+                    {
+                        return Ok(new { Code = 404, Message = "Data Not Found!" });
+                    }
+                    savedObject.GstType = Constants.PropertyConstants.GSTTYPE;
+                    savedObject.IsCheckOutApplicable = Constants.PropertyConstants.ISCHECKOUTAPPLICABLE;
+                    savedObject.CheckOutFormat = Constants.PropertyConstants.CHECKOUTFORMAT;
+                    savedObject.IsRoomRateEditable = Constants.PropertyConstants.ISROOMRATEEDITABLE;
+                    savedObject.CheckInTime = Constants.PropertyConstants.CHECKINTIME;
+                    savedObject.CheckOutTime = Constants.PropertyConstants.CHECKOUTTIME;
+                    savedObject.ApproveReservation = Constants.PropertyConstants.APPROVERESERVATION;
+                    savedObject.CancelMethod = Constants.PropertyConstants.CANCELMETHOD;
+                    savedObject.CancelCalculatedBy = Constants.PropertyConstants.CANCELCALCULATEBY;
+                    savedObject.CheckOutInvoice = Constants.PropertyConstants.CHECKOUTINVOICE;
                     if (files == null || files.Length == 0)
                     {
                         return BadRequest("No files uploaded.");

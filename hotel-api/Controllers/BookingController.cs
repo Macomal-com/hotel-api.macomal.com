@@ -4213,7 +4213,7 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 400, Message = "Reservation details not found" });
                 }
-
+                response.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestId == reservationDetails.PrimaryGuestId);
                 List<BookingDetail> BookingDetails = new List<BookingDetail>();
 
                 if (property.CheckOutInvoice == Constants.Constants.ReservationInvoice)
@@ -4356,7 +4356,7 @@ namespace hotel_api.Controllers
                 }
 
                 PaymentSummary paymentSummary = await CalculateSummary(reservationDetails, BookingDetails);
-                
+                response.BookingDetails = BookingDetails;
                 response.ReservationDetails = reservationDetails;
                 response.PaymentSummary = paymentSummary;
                 return Ok(new { Code = 200, Message = "Data fetched successfully", data = response });
