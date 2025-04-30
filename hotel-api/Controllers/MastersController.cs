@@ -2681,6 +2681,7 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string  financialYear = HttpContext.Request.Headers["FinancialYear"].ToString();
 
                 var cm = _mapper.Map<CancelPolicyMaster>(gm);
                 SetMastersDefault(cm, companyId, userId);
@@ -2702,7 +2703,7 @@ namespace hotel_api.Controllers
                     cm.ToTime = cm.ToTime * 24;
                 }
 
-                var response = await DocumentHelper.UpdateDocumentNo(_context, Constants.Constants.DocumentCancelPolicy, companyId);
+                var response = await DocumentHelper.UpdateDocumentNo(_context, Constants.Constants.DocumentCancelPolicy, companyId, financialYear);
                 if (response == null)
                 {
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });

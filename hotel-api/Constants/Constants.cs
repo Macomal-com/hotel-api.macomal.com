@@ -71,8 +71,8 @@ namespace hotel_api.Constants
         public static List<string> AllRoomStatus = new List<string> { CheckIn, Confirmed, Pending, CheckOut };
 
         //invoice format
-        public static string ReservationInvoice = "ReservationInvoice";
-        public static string RoomInvoice = "RoomInvoice";
+        public static string ReservationInvoice = "Reservation";
+        public static string RoomInvoice = "Room Wise";
 
         //time
         public static string DayStartTime = "00:00";

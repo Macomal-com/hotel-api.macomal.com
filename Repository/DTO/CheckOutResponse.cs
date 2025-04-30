@@ -17,5 +17,9 @@ namespace Repository.DTO
         public string InvoiceNo { get; set; } = string.Empty;
 
         public List<PaymentDetails> PaymentDetails = new List<PaymentDetails>();
+
+        public DateOnly InvoiceDate { get; set; }
+
+        public string InvoiceName { get; set; } = string.Empty;
     }
 }

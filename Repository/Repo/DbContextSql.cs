@@ -63,6 +63,8 @@ namespace RepositoryModels.Repository
 
         public DbSet<RoomCancelHistory> RoomCancelHistory { get; set; }
 
+        public DbSet<EmailCredential> EmailCredential { get; set; }
+
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

@@ -3,25 +3,33 @@ using System.Net.Mail;
 using System.Net;
 using System.Threading.Tasks;
 using System;
+using RepositoryModels.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace hotel_api.Notifications
 {
     public class Notification
     {
-        public static bool SendMail(string emailSubject, string htmlBody)
+        public async static Task<bool> SendMail(DbContextSql _context, string emailSubject, string htmlBody, int companyId, string sendAddress)
         {
             try
             {
-                var fromAddress = new MailAddress("enquiry@macoinfotech.com", "Himanshi Goel");
-                var toAddress = new MailAddress("himanshi@macoinfotech.us", "Himanshi Test name");
-                const string fromPassword = "edpc ysfl riva kylb"; // Important: App Password, not your regular password
+                EmailCredential emaiCredential = await _context.EmailCredential.FirstOrDefaultAsync(x => x.CompanyId == companyId);
+
+                if(emaiCredential == null)
+                {
+                    return false;
+                }
+                var fromAddress = new MailAddress(emaiCredential.Email, emaiCredential.UserName);
+                var toAddress = new MailAddress(sendAddress);
+                string fromPassword = emaiCredential.AppPassword; // Important: App Password, not your regular password
                 
 
                 var smtp = new SmtpClient
                 {
-                    Host = "smtp.gmail.com",
-                    Port = 587,
-                    EnableSsl = true,
+                    Host = emaiCredential.Smtp,
+                    Port = emaiCredential.Port,
+                    EnableSsl = emaiCredential.SslTrue,
                     DeliveryMethod = SmtpDeliveryMethod.Network,
                     UseDefaultCredentials = false,
                     Credentials = new NetworkCredential(fromAddress.Address, fromPassword),

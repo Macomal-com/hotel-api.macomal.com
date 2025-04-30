@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using hotel_api.Constants;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
@@ -137,6 +138,8 @@ namespace hotel_api.Controllers
                                       bd.RoomId,
                                       rm.RoomNo,
                                       guest.GuestName,
+                                      bd.CheckInDateTime,
+                                      bd.CheckOutDateTime,
                                       CheckInDate = bd.CheckInDate.ToString("yyyy-MM-dd"),
                                       CheckOutDate = bd.CheckOutDate.ToString("yyyy-MM-dd"),
                                       bd.CheckOutTime,
@@ -242,7 +245,7 @@ namespace hotel_api.Controllers
             bookingDetail.ServicesTaxAmount = taxAmount;
             bookingDetail.TotalServicesAmount = totalServiceAmount;
            
-            bookingDetail.TotalAmount = Constants.Calculation.BookingTotalAmount(bookingDetail);
+            bookingDetail.TotalAmount = BookingCalulation.BookingTotalAmount(bookingDetail);
 
             _context.BookingDetail.Update(bookingDetail);
             await _context.SaveChangesAsync();

@@ -78,6 +78,7 @@ namespace Repository.Models
 
         public decimal CancelAmount { get; set; }
         public DateTime CancelDate { get; set; } = new DateTime(1900, 01, 01);
+        public string CheckOutInvoiceFormat { get; set; } = string.Empty;
 
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
@@ -92,8 +93,10 @@ namespace Repository.Models
         public List<RoomCancelHistory> RoomCancelHistory { get; set; } = new List<RoomCancelHistory>();
 
         [NotMapped]
-        public GuestDetails GuestDetails = new GuestDetails(); 
+        public GuestDetails GuestDetails = new GuestDetails();
 
+        [NotMapped]
+        public List<AdvanceService> AdvanceServices = new List<AdvanceService>();
     }
 
     public class BookingDetailDTO

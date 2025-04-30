@@ -38,42 +38,7 @@ namespace hotel_api.Constants
         }
 
 
-        public static (decimal RoomAmout, decimal TotalGst, decimal TotalAmount) CalculateTotalRoomAmount(List<BookingDetailDTO> bookings)
-        {
-            decimal roomAmount = 0;
-            decimal gst = 0;
-            decimal totalAmount = 0;
-            foreach(var item in bookings)
-            {
-                if(item.NoOfRooms > 0)
-                {
-                    int rooms = item.NoOfRooms;
-
-                    while (rooms > 0)
-                    {
-                        roomAmount = roomAmount + item.BookingAmount;
-                        gst = gst + item.GstAmount;
-                        totalAmount = totalAmount + item.TotalBookingAmount;
-                        rooms--;
-                    }
-                }
-                else
-                {
-                    roomAmount = roomAmount + item.BookingAmount;
-                    gst = gst + item.GstAmount;
-                    totalAmount = totalAmount + item.TotalBookingAmount;
-                }
-                
-
-            }
-
-            roomAmount = RoundOffDecimal(roomAmount);
-            gst = RoundOffDecimal(gst);
-            totalAmount = RoundOffDecimal(totalAmount);
-
-            return (roomAmount, gst, totalAmount);
-        }
-    
+        
     
         public static DateTime ConvertToDateTime(DateTime date, string time)
         {
@@ -87,10 +52,7 @@ namespace hotel_api.Constants
             return (int)timeDifference.TotalDays == 0 ? 1 : (int)timeDifference.TotalDays;
         }
     
-        public static decimal BookingTotalAmount(BookingDetail booking)
-        {
-            return booking.BookingAmount + booking.GstAmount + booking.TotalServicesAmount;
-        }
+        
 
         public static DateTime GetADayBefore(DateTime date)
         {
