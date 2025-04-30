@@ -117,6 +117,10 @@ namespace hotel_api.Controllers
                     {
                         spName = "rejectedBookingList";
                     }
+                    else if (status == "cancelBookingList")
+                    {
+                        spName = "cancelBooking";
+                    }
                     using (var command = new SqlCommand(spName, connection))
                     {
                         command.CommandTimeout = 120;
