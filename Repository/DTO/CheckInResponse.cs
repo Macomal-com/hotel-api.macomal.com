@@ -58,6 +58,8 @@ namespace Repository.DTO
 
         public CancelSummary CancelSummary { get; set; } = new CancelSummary();
         public string InvoiceNo { get; set; } = string.Empty;
+        public DateOnly InvoiceDate { get; set; }
+        public string InvoiceName { get; set; } = string.Empty;
     }
 
     public class CancelSummary
