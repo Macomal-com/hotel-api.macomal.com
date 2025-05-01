@@ -116,23 +116,35 @@ namespace hotel_api.Controllers
                         using (SqlDataReader reader = command.ExecuteReader())
                         {
                             // 1. Available Rooms (Clean) - Category wise
-                            var availableRooms = new Dictionary<string,int>();
+                           
+                            int count = 0;
+                            List<CategoryWiseCount> availableRoomsData = new List<CategoryWiseCount>();
                             while (reader.Read())
                             {
-                                availableRooms.Add(reader.GetString(0), reader.GetInt32(1));
-                                
+                                CategoryWiseCount room = new CategoryWiseCount();
+                                room.Name = reader.GetString(0);
+                                room.Data = reader.GetInt32(1);
+                                room.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                availableRoomsData.Add(room);
+                                count++; 
                             }
+
+                            var availableRooms = new
+                            {
+                                Total = availableRoomsData.Sum(x => x.Data),
+                                List = availableRoomsData
+                            };
 
                             // 2. Check-in Rooms - Category wise
                             reader.NextResult();
                             List<CategoryWiseCount> checkInRooms = new List<CategoryWiseCount>();
-                            int count = 0;
+                            count = 0;
                             while (reader.Read())
                             {
                                 CategoryWiseCount category = new CategoryWiseCount();
                                 category.Name = reader.GetString(0);
                                 category.Data = reader.GetInt32(1);
-                                category.Color = count == ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                category.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 checkInRooms.Add(category);
                                 count++;
                             }
@@ -152,7 +164,7 @@ namespace hotel_api.Controllers
                                 CategoryWiseCount category = new CategoryWiseCount();
                                 category.Name = reader.GetString(0);
                                 category.Data = reader.GetInt32(1);
-                                category.Color = count == ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                category.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 checkOutRooms.Add(category);
                                 count++;
                             }
@@ -172,7 +184,7 @@ namespace hotel_api.Controllers
                                 CategoryWiseCount category = new CategoryWiseCount();
                                 category.Name = reader.GetString(0);
                                 category.Data = reader.GetInt32(1);
-                                category.Color = count == ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                category.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 pendingConfirmedRooms.Add(category);
                                 count++;
                             }
@@ -236,7 +248,8 @@ namespace hotel_api.Controllers
                             var totalRooms = bookingAverages.Sum(x => x.Value);
                             foreach(var item in bookingAverages)
                             {
-                                item.Width = ((item.Value / totalRooms) * 100).ToString() + "%";
+                                
+                                item.Width = (Constants.Calculation.RoundOffDecimal((decimal)((double)item.Value / totalRooms)) * 100).ToString() + "%";
                             }
 
                             
@@ -265,7 +278,7 @@ namespace hotel_api.Controllers
                             reservationsCounts.Add(cancelReservation);
 
                             await connection.CloseAsync();
-                            return Ok(new { Code = 200, Message = "Data Fetched Successfully", availableRooms = availableRooms, checkInRooms = checkInTotal, checkOutRooms = checkOutTotal, roomStatuses = bookings, bookingSourceStats = bookingSources, bookingAverages = bookingAverages , reservationsCounts = reservationsCounts });
+                            return Ok(new { Code = 200, Message = "Data Fetched Successfully", availableRooms = availableRooms, checkInRooms = checkInTotal, checkOutRooms = checkOutTotal, roomStatuses = roomStatus, bookingSourceStats = bookingSources, bookingAverages = bookingAverages , reservationsCounts = reservationsCounts, pendingConfirmedRooms= bookings });
 
                             
                         }
