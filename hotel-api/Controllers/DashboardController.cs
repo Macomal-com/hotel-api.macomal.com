@@ -295,7 +295,27 @@ namespace hotel_api.Controllers
 
 
 
-     
+        [HttpGet("GetAllStatus")]
+        public async Task<IActionResult> GetAllStatus()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.ServicesStatus.ToListAsync();
 
-}
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Status not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Status fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+    }
 }

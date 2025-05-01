@@ -31,7 +31,7 @@ namespace Repository.Models
         public decimal SGSTPercentage { get; set; }
         public decimal SgstAmount { get; set; } //sgstamount * quantity
         public decimal TotalServicePrice { get; set; }//inclusive and exclusive amount
-        public DateTime ServiceDate { get; set; } //validation - checkin and checkoutdate
+        public DateOnly ServiceDate { get; set; } //validation - checkin and checkoutdate
         public string ServiceTime { get; set; } = String.Empty;
         public string KotNo { get; set; } = String.Empty;
         public int UserId { get; set; }
