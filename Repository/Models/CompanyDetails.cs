@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
+using FluentValidation;
+using RepositoryModels.Repository;
 
 namespace Repository.Models
 {
@@ -131,6 +133,7 @@ namespace Repository.Models
         public string State { get; set; } = string.Empty;
         public string Country { get; set; } = string.Empty;
         public string Pincode { get; set; } = string.Empty;
+        
         public string HotelTagline { get; set; } = string.Empty;
         public string ContactNo1 { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
@@ -144,5 +147,48 @@ namespace Repository.Models
         public string GstType { get; set; } = string.Empty;
         public bool ApproveReservation { get; set; }
         public string CheckOutInvoice { get; set; } = string.Empty;
+    }
+    public class PropertyDetailsValidator : AbstractValidator<CompanyDetails>
+    {
+        private readonly DbContextSql _context;
+        public PropertyDetailsValidator(DbContextSql context)
+        {
+            _context = context;
+
+            RuleFor(x => x.CompanyName)
+                .NotEmpty().WithMessage("Property Name is required")
+                .NotNull().WithMessage("Property Name is required");
+
+            RuleFor(x => x.ClusterId)
+               .NotEmpty().WithMessage("Cluster is required")
+               .NotNull().WithMessage("Cluster is required");
+
+            RuleFor(x => x.OwnerId)
+               .NotEmpty().WithMessage("Landlord is required")
+               .NotNull().WithMessage("Landlord is required");
+
+            RuleFor(x => x.Gstin)
+               .NotEmpty().WithMessage("GSTIN is required")
+               .NotNull().WithMessage("GSTIN is required")
+               .Length(15)
+               .WithMessage("GST No length should be 15 numbers");
+
+            RuleFor(x => x.State)
+               .NotEmpty().WithMessage("State is required")
+               .NotNull().WithMessage("State is required");
+
+            RuleFor(x => x.City)
+               .NotEmpty().WithMessage("City is required")
+               .NotNull().WithMessage("City is required");
+
+            RuleFor(x => x.ContactNo1)
+               .NotEmpty().WithMessage("Contanct No is required")
+               .NotNull().WithMessage("Contanct No is required");
+
+            RuleFor(x => x.PanNo)
+               .NotEmpty().WithMessage("PAN No is required")
+               .NotNull().WithMessage("PAN No is required");
+
+        }
     }
 }

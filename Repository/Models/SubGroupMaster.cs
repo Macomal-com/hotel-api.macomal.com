@@ -46,21 +46,21 @@ namespace Repository.Models
                 .NotNull().WithMessage("Group Name cannot be null")
                 .NotEmpty().WithMessage("Group Name is required");
             RuleFor(x => x)
-                .MustAsync(IsUniqueClusterName)
+                .MustAsync(IsUniqueSubGroupName)
                 .When(x => x.SubGroupId == 0)
                 .WithMessage("SubGroup Name already exists");
 
             RuleFor(x => x)
-                .MustAsync(IsUniqueUpdateClusterName)
+                .MustAsync(IsUniqueUpdateSubgroupName)
                 .When(x => x.SubGroupId > 0)
                 .WithMessage("SubGroup Name already exists");
         }
-        private async Task<bool> IsUniqueClusterName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueSubGroupName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
         {
-            return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.IsActive == true && x.CompanyId == subGroupMaster.CompanyId, cancellationToken);
+            return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.GroupId == subGroupMaster.GroupId && x.IsActive == true && x.CompanyId == subGroupMaster.CompanyId, cancellationToken);
         }
 
-        private async Task<bool> IsUniqueUpdateClusterName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueUpdateSubgroupName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
         {
             return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.SubGroupId != subGroupMaster.SubGroupId && x.IsActive == true && x.CompanyId == subGroupMaster.CompanyId, cancellationToken);
         }

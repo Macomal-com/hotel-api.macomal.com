@@ -709,33 +709,51 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(group, ModelState);
-
-                var validator = new GroupValidator(_context);
-                var result = await validator.ValidateAsync(group);
-                if (!result.IsValid)
+                if (group.IsActive == false)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var validator = new GroupDeleteValidator(_context);
+
+                    var result = await validator.ValidateAsync(group);
+                    if (!result.IsValid)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
-                }
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, message = errors });
+                    }
 
-                group.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
+                    group.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Group deleted successfully" });
+                }
+                else
                 {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
+                    var validator = new GroupValidator(_context);
+
+                    var result = await validator.ValidateAsync(group);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, message = errors });
+                    }
+
+                    group.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Group updated successfully" });
                 }
+                
 
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Group updated successfully" });
+               
             }
             catch (Exception ex)
             {
@@ -2092,7 +2110,7 @@ namespace hotel_api.Controllers
         public async Task<IActionResult> AddCompanyDetails([FromForm] CompanyDetailsDTO companyDetails, IFormFile[] files)
         {
             if (companyDetails == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+                return Ok(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
 
             using (var transaction = await _context.Database.BeginTransactionAsync())
             {
@@ -2123,39 +2141,39 @@ namespace hotel_api.Controllers
                     savedObject.CancelMethod = Constants.PropertyConstants.CANCELMETHOD;
                     savedObject.CancelCalculatedBy = Constants.PropertyConstants.CANCELCALCULATEBY;
                     savedObject.CheckOutInvoice = Constants.PropertyConstants.CHECKOUTINVOICE;
-                    if (files == null || files.Length == 0)
+                    if (files != null || files?.Length != 0)
                     {
-                        return BadRequest("No files uploaded.");
-                    }
+                        var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
 
-                    var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
-
-                    if (!Directory.Exists(uploadPath))
-                    {
-                        Directory.CreateDirectory(uploadPath);
-                    }
-
-                    var propertyImages = new List<PropertyImages>();
-
-                    foreach (var file in files)
-                    {
-                        var fileName = $"{Guid.NewGuid()}_{file.FileName}";
-                        var filePath = Path.Combine(uploadPath, fileName);
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        if (!Directory.Exists(uploadPath))
                         {
-                            await file.CopyToAsync(stream);
+                            Directory.CreateDirectory(uploadPath);
                         }
 
-                        var propertyImage = new PropertyImages
+                        var propertyImages = new List<PropertyImages>();
+
+                        foreach (var file in files)
                         {
-                            PropertyId = savedObject.PropertyId,
-                            FilePath = fileName
-                        };
-                        propertyImages.Add(propertyImage);
+                            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                            var filePath = Path.Combine(uploadPath, fileName);
+
+                            using (var stream = new FileStream(filePath, FileMode.Create))
+                            {
+                                await file.CopyToAsync(stream);
+                            }
+
+                            var propertyImage = new PropertyImages
+                            {
+                                PropertyId = savedObject.PropertyId,
+                                FilePath = fileName
+                            };
+                            propertyImages.Add(propertyImage);
+                        }
+
+                        _context.PropertyImages.AddRange(propertyImages);
                     }
 
-                    _context.PropertyImages.AddRange(propertyImages);
+                    
 
                     await _context.SaveChangesAsync();
 

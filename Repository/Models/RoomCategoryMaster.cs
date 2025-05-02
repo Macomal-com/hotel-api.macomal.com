@@ -75,12 +75,6 @@ namespace Repository.Models
                .GreaterThan(0).WithMessage("No of Rooms should be greater than 0")
                ;
 
-            RuleFor(x => x.ExtraBed)
-               .NotEmpty().WithMessage("Extra Bed is required")
-               .NotNull().WithMessage("Extra Bed is required")
-               .GreaterThan(0).WithMessage("Extra Bed should be greater than 0")
-               ;
-
             RuleFor(x => x)
                 .MustAsync(isUniqueCategory)
                 .When(x => x.Id == 0)

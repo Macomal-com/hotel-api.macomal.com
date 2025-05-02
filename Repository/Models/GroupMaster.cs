@@ -59,7 +59,6 @@ namespace Repository.Models
                 .MustAsync(IsUniqueGroupCode)
                 .When(x => x.Id == 0)
                 .WithMessage("Group Code already exists");
-
             RuleFor(x => x)
                 .MustAsync(IsUniqueUpdateGroupCode)
                 .When(x => x.Id > 0)
@@ -75,6 +74,24 @@ namespace Repository.Models
         private async Task<bool> IsUniqueUpdateGroupCode(GroupMaster groupMaster, CancellationToken cancellationToken)
         {
             return !await _context.GroupMaster.AnyAsync(x => x.Code == groupMaster.Code && x.Id != groupMaster.Id && x.IsActive == true && x.CompanyId == groupMaster.CompanyId, cancellationToken);
+        }
+    }
+
+    public class GroupDeleteValidator : AbstractValidator<GroupMaster>
+    {
+        private readonly DbContextSql _context;
+        public GroupDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .MustAsync(DoSubGroupExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Group, sub-group already exists!");
+        }
+        private async Task<bool> DoSubGroupExists(GroupMaster groupMaster, CancellationToken cancellationToken)
+        {
+            return !await _context.SubGroupMaster.Where(x => x.IsActive == true && x.CompanyId == groupMaster.CompanyId && x.GroupId == groupMaster.Id).AnyAsync();
+            
         }
     }
 }
