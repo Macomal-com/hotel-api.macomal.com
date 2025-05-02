@@ -1179,8 +1179,8 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
                 
                 var agentDetails = _mapper.Map<AgentDetails>(agentDetailsDTO);
-                
 
+                SetMastersDefault(agentDetails, companyId, userId);
                 var validator = new AgentDetailValidator(_context);
                 var result = await validator.ValidateAsync(agentDetails);
                 if (!result.IsValid)
@@ -1196,7 +1196,6 @@ namespace hotel_api.Controllers
                     
                 }
 
-                SetMastersDefault(agentDetails, companyId, userId);
                 if (file != null)
                 {
                     

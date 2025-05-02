@@ -76,11 +76,6 @@ namespace Repository.Models
                 .Length(15)
                 .WithMessage("GST No length should be 15 numbers");
 
-            RuleFor(x => x.GstPercentage)
-                .GreaterThan(0)
-                .When(x => x.GstType == "Exclusive")
-                .WithMessage("GST Percentage is required when Gst type is Excelusive");
-
             RuleFor(x => x.Commission)
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("Commission cannot be negative");
@@ -105,7 +100,7 @@ namespace Repository.Models
 
         private async Task<bool> IsUniqueGst(AgentDetails cm, CancellationToken cancellationToken)
         {
-
+            var d = await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.GstNo == cm.GstNo, cancellationToken);
             return !await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.GstNo == cm.GstNo, cancellationToken);
         }
 

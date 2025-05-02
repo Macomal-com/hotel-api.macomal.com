@@ -2141,6 +2141,8 @@ namespace hotel_api.Controllers
                     savedObject.CancelMethod = Constants.PropertyConstants.CANCELMETHOD;
                     savedObject.CancelCalculatedBy = Constants.PropertyConstants.CANCELCALCULATEBY;
                     savedObject.CheckOutInvoice = Constants.PropertyConstants.CHECKOUTINVOICE;
+                    savedObject.IsWhatsappNotification = false;
+                    savedObject.IsEmailNotification = false;
                     if (files != null || files?.Length != 0)
                     {
                         var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
@@ -2179,7 +2181,7 @@ namespace hotel_api.Controllers
 
                     await transaction.CommitAsync();
 
-                    return Ok(new { Code = 200, Message = "Company created successfully" });
+                    return Ok(new { Code = 200, Message = "Property created successfully" });
                 }
                 catch (Exception ex)
                 {

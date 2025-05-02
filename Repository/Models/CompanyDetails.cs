@@ -121,6 +121,8 @@ namespace Repository.Models
         public string CancelMethod { get; set; } = string.Empty;
         public string CancelCalculatedBy { get; set; } = string.Empty;
         public string CheckOutInvoice { get; set; } = string.Empty;
+        public bool IsWhatsappNotification { get; set; }
+        public bool IsEmailNotification { get; set; }
 
     }
     public class CompanyDetailsDTO
@@ -147,6 +149,8 @@ namespace Repository.Models
         public string GstType { get; set; } = string.Empty;
         public bool ApproveReservation { get; set; }
         public string CheckOutInvoice { get; set; } = string.Empty;
+        public bool IsWhatsappNotification { get; set; }
+        public bool IsEmailNotification { get; set; }
     }
     public class PropertyDetailsValidator : AbstractValidator<CompanyDetails>
     {
@@ -183,11 +187,15 @@ namespace Repository.Models
 
             RuleFor(x => x.ContactNo1)
                .NotEmpty().WithMessage("Contanct No is required")
-               .NotNull().WithMessage("Contanct No is required");
+               .NotNull().WithMessage("Contanct No is required")
+               .Length(10)
+                   .WithMessage("Contact No length should be 10 digits");
 
             RuleFor(x => x.PanNo)
                .NotEmpty().WithMessage("PAN No is required")
-               .NotNull().WithMessage("PAN No is required");
+               .NotNull().WithMessage("PAN No is required")
+               .Length(10)
+                   .WithMessage("Pan No length should be 10 numbers");
 
         }
     }
