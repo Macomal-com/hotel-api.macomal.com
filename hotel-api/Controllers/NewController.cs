@@ -117,6 +117,7 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var cm = _mapper.Map<RoomCategoryMaster>(roomCat);
+                SetMastersDefault(cm, companyId, userId);
                 var validator = new RoomCategoryValidator(_context);
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
@@ -129,7 +130,6 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 202, Message = errors });
                 }
 
-                SetMastersDefault(cm, companyId, userId);
 
                 cm.BedTypeId = cm.BedTypeId == 0 ? null : cm.BedTypeId;
 
@@ -165,7 +165,28 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(roomCat, ModelState);
-                if(roomCat.IsActive == true)
+                if (roomCat.IsActive == false)
+                {
+                    var validator = new RoomCategoryDeleteValidator(_context);
+
+                    var result = await validator.ValidateAsync(roomCat);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, message = errors });
+                    }
+
+                    roomCat.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Room Category deleted successfully" });
+                }
+                else
                 {
                     var validator = new RoomCategoryValidator(_context);
                     var result = await validator.ValidateAsync(roomCat);
@@ -182,15 +203,6 @@ namespace hotel_api.Controllers
                 }
                
                 roomCat.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
 
                 await _context.SaveChangesAsync();
 

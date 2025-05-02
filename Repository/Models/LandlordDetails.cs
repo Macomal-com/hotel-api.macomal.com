@@ -82,4 +82,21 @@ namespace Repository.Models
 
         }
     }
+    public class LandlordDeleteValidator : AbstractValidator<LandlordDetails>
+    {
+        private readonly DbContextSql _context;
+        public LandlordDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .MustAsync(DoLandlordExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this landlord, a property for this already exists!");
+        }
+        private async Task<bool> DoLandlordExists(LandlordDetails landlord, CancellationToken cancellationToken)
+        {
+            return !await _context.CompanyDetails.Where(x => x.IsActive == true && x.CompanyId == landlord.CompanyId && x.OwnerId == landlord.LandlordId).AnyAsync();
+
+        }
+    }
 }

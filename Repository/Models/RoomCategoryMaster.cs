@@ -102,4 +102,22 @@ namespace Repository.Models
 
         }
     }
+
+    public class RoomCategoryDeleteValidator : AbstractValidator<RoomCategoryMaster>
+    {
+        private readonly DbContextSql _context;
+        public RoomCategoryDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .MustAsync(DoRoomCategoryExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Category, Room already exists!");
+        }
+        private async Task<bool> DoRoomCategoryExists(RoomCategoryMaster categotyMaster, CancellationToken cancellationToken)
+        {
+            return !await _context.RoomMaster.Where(x => x.IsActive == true && x.CompanyId == categotyMaster.CompanyId && x.RoomTypeId == categotyMaster.Id).AnyAsync();
+
+        }
+    }
 }

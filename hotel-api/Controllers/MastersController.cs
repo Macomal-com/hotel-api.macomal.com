@@ -215,33 +215,48 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
-
                 patchDocument.ApplyTo(landlord, ModelState);
-                var validator = new LandlordValidator(_context);
-                var result = await validator.ValidateAsync(landlord);
-                if (!result.IsValid)
+                if (landlord.IsActive == false)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var validator = new LandlordDeleteValidator(_context);
+
+                    var result = await validator.ValidateAsync(landlord);
+                    if (!result.IsValid)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, message = errors });
+                    }
+
+                    landlord.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Landlord deleted successfully" });
                 }
-                landlord.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
+                else
                 {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
+                    var validator = new LandlordValidator(_context);
+                    var result = await validator.ValidateAsync(landlord);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, Message = errors });
+                    }
+                    landlord.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Landlord updated successfully" });
+
                 }
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Landlord updated successfully" });
 
             }
             catch (Exception ex)
@@ -2121,7 +2136,18 @@ namespace hotel_api.Controllers
 
                     var cm = _mapper.Map<CompanyDetails>(companyDetails);
                     SetMastersDefault(cm, companyId, userId);
+                    var validator = new PropertyDetailsValidator(_context);
 
+                    var result = await validator.ValidateAsync(cm);
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, message = errors });
+                    }
                     _context.CompanyDetails.Add(cm);
                     await _context.SaveChangesAsync();
 
