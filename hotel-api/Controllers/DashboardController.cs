@@ -124,7 +124,7 @@ namespace hotel_api.Controllers
                                 CategoryWiseCount room = new CategoryWiseCount();
                                 room.Name = reader.GetString(0);
                                 room.Data = reader.GetInt32(1);
-                                room.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                room.Color = count < ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 availableRoomsData.Add(room);
                                 count++; 
                             }
@@ -144,7 +144,7 @@ namespace hotel_api.Controllers
                                 CategoryWiseCount category = new CategoryWiseCount();
                                 category.Name = reader.GetString(0);
                                 category.Data = reader.GetInt32(1);
-                                category.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                category.Color = count < ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 checkInRooms.Add(category);
                                 count++;
                             }
@@ -164,7 +164,7 @@ namespace hotel_api.Controllers
                                 CategoryWiseCount category = new CategoryWiseCount();
                                 category.Name = reader.GetString(0);
                                 category.Data = reader.GetInt32(1);
-                                category.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                category.Color = count < ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 checkOutRooms.Add(category);
                                 count++;
                             }
@@ -184,7 +184,7 @@ namespace hotel_api.Controllers
                                 CategoryWiseCount category = new CategoryWiseCount();
                                 category.Name = reader.GetString(0);
                                 category.Data = reader.GetInt32(1);
-                                category.Color = count != ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
+                                category.Color = count < ColourCodes.Count ? ColourCodes[count] : ColourCodes[0];
                                 pendingConfirmedRooms.Add(category);
                                 count++;
                             }
