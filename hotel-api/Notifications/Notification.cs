@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System;
 using RepositoryModels.Repository;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace hotel_api.Notifications
 {
@@ -14,7 +15,7 @@ namespace hotel_api.Notifications
         {
             try
             {
-                EmailCredential emaiCredential = await _context.EmailCredential.FirstOrDefaultAsync(x => x.CompanyId == companyId);
+                EmailCredential? emaiCredential = await _context.EmailCredential.FirstOrDefaultAsync(x => x.CompanyId == companyId);
 
                 if(emaiCredential == null)
                 {
@@ -53,6 +54,51 @@ namespace hotel_api.Notifications
                 return false;
             }
         }
+    
+        public static async Task<bool> SendWhatsAppMessage(DbContextSql _context, int companyId, object requestBody)
+        {
+            try
+            {
+                WhatsAppCredentials? whatsAppCredentials = await _context.WhatsAppCredentials.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.IsActive);
+
+                if (whatsAppCredentials == null)
+                {
+                    return false;
+                }
+                var url = whatsAppCredentials.Url;
+                var authKey = whatsAppCredentials.AuthKey;
+
+                
+
+                var httpClient = new HttpClient();
+                httpClient.DefaultRequestHeaders.Add("Authorization", $"Basic {authKey}");
+
+                var jsonBody = System.Text.Json.JsonSerializer.Serialize(requestBody);
+                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
+
+                var response = await httpClient.PostAsync(url, content);
+
+                var responseString = await response.Content.ReadAsStringAsync();
+                if(response.StatusCode == HttpStatusCode.Created)
+                {
+                    Console.WriteLine($"Status Code: {response.StatusCode}");
+                    Console.WriteLine($"Response: {responseString}");
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+                    
+
+            }
+            catch(Exception ex)
+            {
+                return false;
+            }
+            
+        }
+    
     }
 }
 

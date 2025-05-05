@@ -60,6 +60,8 @@ namespace Repository.DTO
         public string InvoiceNo { get; set; } = string.Empty;
         public DateOnly InvoiceDate { get; set; }
         public string InvoiceName { get; set; } = string.Empty;
+
+        public bool IsAllCancel { get; set; } 
     }
 
     public class CancelSummary
@@ -74,5 +76,7 @@ namespace Repository.DTO
         public decimal CancelAmount { get; set; }
         public decimal BalanceAmount { get; set; }
         public decimal RefundAmount { get; set; }
+
+        public decimal ResidualAmount { get; set; }
     }
 }

@@ -65,6 +65,8 @@ namespace RepositoryModels.Repository
 
         public DbSet<EmailCredential> EmailCredential { get; set; }
 
+        public DbSet<WhatsAppCredentials> WhatsAppCredentials { get; set; }
+
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

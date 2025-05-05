@@ -42,7 +42,8 @@ namespace hotel_api.Configurations
 
             CreateMap<GuestDetailsDTO, GuestDetails>().ReverseMap();
 
-            CreateMap<BookingDetailDTO, BookingDetail>()
+            CreateMap<BookingDetailDTO, BookingDetail>().ForMember(dest => dest.RoomTypeName, opt => opt.MapFrom(src =>
+                                                                    string.IsNullOrWhiteSpace(src.RoomCategoryName) ? "" : src.RoomCategoryName))
                 .ReverseMap();
 
             CreateMap<PaymentDetailsDTO, PaymentDetails>().ReverseMap();

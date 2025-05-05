@@ -4,6 +4,7 @@ using Azure.Core;
 using hotel_api.Constants;
 using hotel_api.GeneralMethods;
 using hotel_api.Notifications;
+using hotel_api.Notifications.Email;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -381,6 +382,7 @@ namespace hotel_api.Controllers
 
                 //save booking
                 int roomCount = 1;
+                List<BookingDetail> bookings = new List<BookingDetail>();
                 foreach (var item in request.BookingDetailsDTO)
                 {
                     foreach (var room in item.AssignedRooms)
@@ -388,7 +390,7 @@ namespace hotel_api.Controllers
                         var bookingDetails = _mapper.Map<BookingDetail>(item);
                         Constants.Constants.SetMastersDefault(bookingDetails, companyId, userId, currentDate);
 
-
+                      
                         bookingDetails.CheckInDateTime = DateTime.ParseExact((bookingDetails.CheckInDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
                         bookingDetails.CheckOutDateTime = DateTime.ParseExact((bookingDetails.CheckOutDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
                         bookingDetails.ReservationDate = bookingDetails.CheckInDate;
@@ -410,6 +412,8 @@ namespace hotel_api.Controllers
 
                         await _context.BookingDetail.AddAsync(bookingDetails);
                         await _context.SaveChangesAsync();
+
+                        bookings.Add(bookingDetails);
 
                         //room availability
                         RoomAvailability roomAvailability = new RoomAvailability();
@@ -485,61 +489,18 @@ namespace hotel_api.Controllers
                 }
 
                 //send email
-                string subject = $"Reservation Successful - {reservationDetails.ReservationNo}";
-                string htmlBody = @$"
-                <!DOCTYPE html>
-<html lang=""en"">
-<head>
-    <meta charset=""UTF-8"">
-    <title>Reservation Confirmation</title>
-</head>
-<body style=""font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;"">
+                if (property.IsEmailNotification)
+                {
+                    ReservationEmailNotification emailNotification = new ReservationEmailNotification(_context, property, request.ReservationDetailsDTO.ReservationNo, roomCount - 1, guest, companyId);
+                    await emailNotification.SendEmail();
+                }
 
-    <table width=""100%"" style=""max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
-        <tr>
-            <td style=""padding: 20px; text-align: center; background-color: #007bff; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;"">
-                <h2>Reservation Confirmed</h2>
-            </td>
-        </tr>
-
-        <tr>
-            <td style=""padding: 20px; color: #333333;"">
-                <p>Dear <strong>{guest.GuestName}</strong>,</p>
-
-                <p>We are pleased to inform you that your reservation has been successfully confirmed!</p>
-
-                <table width=""100%"" style=""margin-top: 20px;"">
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Reservation Number:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{request.ReservationDetailsDTO.ReservationNo}</td>
-                    </tr>
-                   
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Number of Rooms:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{roomCount - 1}</td>
-                    </tr>
-                </table>
-
-                <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  
-                <br>We look forward to welcoming you and ensuring you have a wonderful stay!</p>
-
-                <p style=""margin-top: 30px;"">Thank you for choosing <strong>{property.CompanyName}</strong>!</p>
-            </td>
-        </tr>
-
-        <tr>
-            <td style=""padding: 20px; text-align: center; font-size: 12px; color: #888888; background-color: #f1f1f1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;"">
-                {property.CompanyName} | {property.ContactNo1} | {property.CompanyAddress} <br/>
+                //if (property.IsWhatsappNotification)
+                //{
+                //    ReservationWhatsAppNotification whatsAppNotification = new ReservationWhatsAppNotification(_context, property, guest,companyId, bookings);
+                //    await whatsAppNotification.SendWhatsAppNotification();
+                //}
                 
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>
-";
-
-                await Notification.SendMail(_context, subject, htmlBody, companyId, guest.Email);
 
                 await transaction.CommitAsync();
                 return Ok(new { Code = 200, Message = "Reservation created successfully" });
@@ -1295,6 +1256,7 @@ namespace hotel_api.Controllers
             { 
                 var currentDate = DateTime.Now;
                 List<CheckInNotificationDTO> notificationDTOs = new List<CheckInNotificationDTO>();
+                List<BookingDetail> bookings = new List<BookingDetail>();
                 if (rooms.Count == 0)
                 {
                     await transaction.RollbackAsync();
@@ -1337,6 +1299,9 @@ namespace hotel_api.Controllers
                         _context.BookingDetail.Update(booking);
 
 
+                        booking.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestId == booking.GuestId && x.IsActive == true && x.CompanyId == companyId);
+                        bookings.Add(booking);
+                        
 
                         var roomAvailability = await _context.RoomAvailability.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId && x.RoomStatus == Constants.Constants.Confirmed);
                         if (roomAvailability == null)
@@ -1360,85 +1325,23 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
 
-                foreach (var item in notificationDTOs)
-                {
-                    //send email
-                    string subject = $"Check In Successful - {item.ReservationNo}";
-                    string htmlBody = @$"
-                <!DOCTYPE html>
-<html lang=""en"">
-<head>
-    <meta charset=""UTF-8"">
-    <title>Check In Confirmation</title>
-</head>
-<body style=""font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;"">
+             
+                    if (property.IsEmailNotification)
+                    {
+                        CheckInEmailNotification inEmailNotification = new CheckInEmailNotification(_context, notificationDTOs, companyId, property);
+                        
+                        await inEmailNotification.SendEmail();
+                    }
 
-    <table width=""100%"" style=""max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
-        <tr>
-            <td style=""padding: 20px; text-align: center; background-color: #007bff; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;"">
-                <h2>Check In Confirmed</h2>
-            </td>
-        </tr>
+                //if (property.IsWhatsappNotification)
+                //{
+                //    CheckInWhatsAppNotification inWhatsAppNotification = new CheckInWhatsAppNotification(_context, property, companyId, bookings);
 
-        <tr>
-            <td style=""padding: 20px; color: #333333;"">
-                <p>Dear <strong>{item.GuestName}</strong>,</p>
+                    
+                //    await inWhatsAppNotification.SendWhatsAppNotification();
+                //}
 
-                <p>We are pleased to inform you that your check-in has been successfully confirmed!</p>
 
-                <table width=""100%"" style=""margin-top: 20px;"">
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Reservation Number:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.ReservationNo}</td>
-                    </tr>
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Type:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomNo}</td>
-                    </tr>
-
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Category:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomType}</td>
-                    </tr>
-
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check In Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CheckInDateTime}</td>
-                    </tr>
-                   
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check Out Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CheckOutDateTime}</td>
-                    </tr>
-
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Pax:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.Pax}</td>
-                    </tr>
-                </table>
-
-                <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  
-                <br>We look forward to welcoming you and ensuring you have a wonderful stay!</p>
-
-                <p style=""margin-top: 30px;"">Thank you for choosing <strong>{property.CompanyName}</strong>!</p>
-            </td>
-        </tr>
-
-        <tr>
-            <td style=""padding: 20px; text-align: center; font-size: 12px; color: #888888; background-color: #f1f1f1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;"">
-                {property.CompanyName} | {property.ContactNo1} | {property.CompanyAddress} <br/>
-                
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>
-";
-
-                    await Notifications.Notification.SendMail(_context, subject, htmlBody, companyId, item.GuestEmail);
-
-                }
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
                 return Ok(new { Code = 200, Message = "Rooms Check-In successfully" });
@@ -2696,7 +2599,7 @@ namespace hotel_api.Controllers
         public async Task<IActionResult> UpdateRoomsCheckOut([FromBody] CheckOutResponse request)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
-            List<CheckInNotificationDTO> notificationDTOs = new List<CheckInNotificationDTO>();
+            List<CheckOutNotificationDTO> notificationDTOs = new List<CheckOutNotificationDTO>();
             try
             {
                 
@@ -2762,7 +2665,7 @@ namespace hotel_api.Controllers
 
                 foreach (var item in request.BookingDetails)
                 {
-                    CheckInNotificationDTO inNotificationDTO = new CheckInNotificationDTO();
+                    CheckOutNotificationDTO inNotificationDTO = new CheckOutNotificationDTO();
 
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId && x.Status == Constants.Constants.CheckIn);
                     if (booking == null)
@@ -2864,84 +2767,11 @@ namespace hotel_api.Controllers
                 }
 
 
-                foreach (var item in notificationDTOs)
+                if (property.IsEmailNotification)
                 {
-                    //send email
-                    string subject = $"Check Out Successful - {item.ReservationNo}";
-                    string htmlBody = @$"
-                <!DOCTYPE html>
-<html lang=""en"">
-<head>
-    <meta charset=""UTF-8"">
-    <title>Check Out Confirmation</title>
-</head>
-<body style=""font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;"">
+                    CheckOutEmailNotification outEmailNotification = new CheckOutEmailNotification(_context, notificationDTOs, companyId, property);
 
-    <table width=""100%"" style=""max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
-        <tr>
-            <td style=""padding: 20px; text-align: center; background-color: #007bff; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;"">
-                <h2>Check Out Confirmed</h2>
-            </td>
-        </tr>
-
-        <tr>
-            <td style=""padding: 20px; color: #333333;"">
-                <p>Dear <strong>{item.GuestName}</strong>,</p>
-
-                <p>We are pleased to inform you that your check-out has been successfully confirmed!</p>
-
-                <table width=""100%"" style=""margin-top: 20px;"">
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Reservation Number:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.ReservationNo}</td>
-                    </tr>
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Type:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomNo}</td>
-                    </tr>
-
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Category:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomType}</td>
-                    </tr>
-
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check In Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CheckInDateTime}</td>
-                    </tr>
-                   
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check Out Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CheckOutDateTime}</td>
-                    </tr>
-
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Pax:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.Pax}</td>
-                    </tr>
-                </table>
-
-                <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  
-                <br>We look forward to welcoming you and ensuring you have a wonderful stay!</p>
-
-                <p style=""margin-top: 30px;"">Thank you for choosing <strong>{property.CompanyName}</strong>!</p>
-            </td>
-        </tr>
-
-        <tr>
-            <td style=""padding: 20px; text-align: center; font-size: 12px; color: #888888; background-color: #f1f1f1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;"">
-                {property.CompanyName} | {property.ContactNo1} | {property.CompanyAddress} <br/>
-                
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>
-";
-
-                    await Notifications.Notification.SendMail(_context, subject, htmlBody, companyId, item.GuestEmail);
-
+                    await outEmailNotification.SendEmail();
                 }
 
                 await _context.SaveChangesAsync();
@@ -3039,20 +2869,18 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 500, Message = "Invalid data" });
                 }
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                string financialYear = HttpContext.Request.Headers["FinancialYear"].ToString();
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                
                 var statusList = new List<string> { Constants.Constants.Pending, Constants.Constants.Confirmed, Constants.Constants.CheckIn };
 
                 DateTime cancelDateTime = DateTime.Now;
 
-                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentInvoice && x.FinancialYear == financialYear);
+                var getbookingno = await DocumentHelper.GetDocumentNo(_context, Constants.Constants.DocumentInvoice, companyId, financialYear);
 
-                if (getbookingno == null || getbookingno.Suffix == null)
+                if (getbookingno == null)
                 {
                     return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
                 }
-                cancelBookingResponse.InvoiceNo = getbookingno.Prefix + getbookingno.Separator + getbookingno.Prefix1 + getbookingno.Separator + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
+                cancelBookingResponse.InvoiceNo = getbookingno;
 
                 cancelBookingResponse.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
                 if (cancelBookingResponse.ReservationDetails == null)
@@ -3066,9 +2894,13 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
                 }
 
+
+                List<BookingDetail> allBookings = await _context.BookingDetail.Where(x => x.IsActive == true && x.ReservationNo == reservationNo && x.CompanyId == companyId && x.Status != Constants.Constants.CheckOut).ToListAsync();
+
+                
                 List<BookingDetail> bookingDetails =
-                    await (
-                                        from booking in _context.BookingDetail
+                     (
+                                        from booking in allBookings
                                         join room in _context.RoomMaster
                                             on new { RoomId = booking.RoomId, CompanyId = companyId }
                                             equals new { RoomId = room.RoomId, CompanyId = room.CompanyId } into rooms
@@ -3107,12 +2939,12 @@ namespace hotel_api.Controllers
                                             BookingAmount = booking.BookingAmount,
                                             GstAmount = booking.GstAmount,
                                             InvoiceNo = cancelBookingResponse.InvoiceNo,
-                                            CancelDate = cancelDateTime
-                                            ,
+                                            CancelDate = cancelDateTime,
+                                            Pax=booking.Pax,
                                             GuestDetails = guest
                                         }
-                                    ).ToListAsync();
-
+                                    ).ToList();
+                cancelBookingResponse.IsAllCancel = allBookings.Count == bookingDetails.Count;
 
                 foreach (var item in bookingDetails)
                 {
@@ -3135,9 +2967,9 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
 
+                CancelSummary cancelSummary = new CancelSummary();
 
-
-                cancelBookingResponse.CancelSummary = CalculateCancelSummary(bookingDetails, paymentDetails);
+                cancelBookingResponse.CancelSummary = CalculatePaymentSummary(cancelSummary, paymentDetails,bookingDetails);
 
                 CalculateCancelInvoice(bookingDetails, paymentDetails);
 
@@ -3146,59 +2978,65 @@ namespace hotel_api.Controllers
                     item.BalanceAmount = CalculateBalanceCancelAmount(item);
                 }
 
-                Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
-                //calculate refund
-                foreach (var pay in paymentDetails)
+                cancelBookingResponse.CancelSummary = CalculateCancelSummary(cancelSummary, bookingDetails);
+
+                if (cancelBookingResponse.IsAllCancel)
                 {
-
-                    if (pay.RoomId == 0 && pay.BookingId == 0)
+                    Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
+                    //calculate refund
+                    foreach (var pay in paymentDetails)
                     {
-                        pay.IsReceived = true;
-                        pay.RefundAmount = pay.PaymentLeft;
-                        pay.PaymentLeft = 0;
 
-                        decimal equallydivide = 0;
-                        if (pay.RefundAmount > 0)
+                        if (pay.RoomId == 0 && pay.BookingId == 0)
                         {
-                            equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count);
-                        }
-                        foreach (var invoice in pay.InvoiceHistories)
-                        {
+                            pay.IsReceived = true;
+                            pay.RefundAmount = pay.PaymentLeft;
+                            pay.PaymentLeft = 0;
+
+                            decimal equallydivide = 0;
                             if (pay.RefundAmount > 0)
                             {
-                                invoice.RefundAmount = equallydivide;
-                                invoice.PaymentLeft = 0;
-
-                                if (refundAmouts.ContainsKey(invoice.BookingId))
-                                {
-                                    refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
-                                }
-                                else
-                                {
-                                    refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
-                                }
+                                equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count);
                             }
+                            foreach (var invoice in pay.InvoiceHistories)
+                            {
+                                if (pay.RefundAmount > 0)
+                                {
+                                    invoice.RefundAmount = equallydivide;
+                                    invoice.PaymentLeft = 0;
+
+                                    if (refundAmouts.ContainsKey(invoice.BookingId))
+                                    {
+                                        refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
+                                    }
+                                    else
+                                    {
+                                        refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
+                                    }
+                                }
 
 
 
+                            }
                         }
+
+
                     }
 
-
-                }
-
-                foreach (var kvp in refundAmouts)
-                {
-                    foreach (var item in bookingDetails)
+                    foreach (var kvp in refundAmouts)
                     {
-                        if (item.BookingId == kvp.Key)
+                        foreach (var item in bookingDetails)
                         {
-                            item.RefundAmount = kvp.Value;
+                            if (item.BookingId == kvp.Key)
+                            {
+                                item.RefundAmount = kvp.Value;
+                            }
                         }
+
+
                     }
-
-
                 }
+              
                 cancelBookingResponse.bookingDetails = bookingDetails;
                 cancelBookingResponse.PaymentDetails = paymentDetails;
 
@@ -3231,12 +3069,12 @@ namespace hotel_api.Controllers
                
                 var statusList = new List<string> { Constants.Constants.Pending, Constants.Constants.Confirmed, Constants.Constants.CheckIn };
 
-                
 
+                List<BookingDetail> allbookingDetails = await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == request.ReservationNo && x.Status != Constants.Constants.CheckOut).ToListAsync();
 
-                List<BookingDetail> allbookingDetails =
-                    await (
-                                        from booking in _context.BookingDetail
+                List<BookingDetail> bookingDetails =
+                   
+                                 (    from booking in allbookingDetails
                                         join room in _context.RoomMaster
                                             on new { RoomId = booking.RoomId, CompanyId = companyId }
                                             equals new { RoomId = room.RoomId, CompanyId = room.CompanyId } into rooms
@@ -3252,6 +3090,7 @@ namespace hotel_api.Controllers
                                               && statusList.Contains(booking.Status)
                                               && !(booking.Status == Constants.Constants.CheckIn || booking.ServicesAmount > 0)
                                               && booking.ReservationNo == request.ReservationNo
+                                              && request.BookingIds.Contains(booking.BookingId)
 
                                         select new BookingDetail
                                         {
@@ -3277,13 +3116,14 @@ namespace hotel_api.Controllers
                                             GstAmount = booking.GstAmount,
                                             InvoiceNo = cancelBookingResponse.InvoiceNo,
                                             CancelDate = request.CancelDate,
-                                            GuestDetails = guest
+                                            GuestDetails = guest,
+                                            Pax = booking.Pax,
                                         }
-                                    ).ToListAsync();
+                                    ).ToList();
 
 
-                bool isAllRoomCheckOut = allbookingDetails.Count == request.BookingIds.Count ? true : false;
-                List<BookingDetail> bookingDetails = (List<BookingDetail>)allbookingDetails.Where(x => request.BookingIds.Contains(x.BookingId)).ToList();
+                cancelBookingResponse.IsAllCancel = allbookingDetails.Count == bookingDetails.Count ? true : false;
+               
 
                 foreach (var item in bookingDetails)
                 {
@@ -3306,7 +3146,8 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
 
-                cancelBookingResponse.CancelSummary = CalculateCancelSummary(bookingDetails, paymentDetails);
+                CancelSummary cancelSummary = new CancelSummary();
+                cancelBookingResponse.CancelSummary = CalculatePaymentSummary(cancelSummary, paymentDetails, bookingDetails);
 
                 CalculateCancelInvoice(bookingDetails, paymentDetails);
 
@@ -3315,10 +3156,12 @@ namespace hotel_api.Controllers
                     item.BalanceAmount = CalculateBalanceCancelAmount(item);
                 }
 
+                cancelBookingResponse.CancelSummary = CalculateCancelSummary(cancelSummary, bookingDetails);
+
 
                 Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
                 //calculate refund
-                if (isAllRoomCheckOut)
+                if (cancelBookingResponse.IsAllCancel)
                 {
                     foreach (var pay in paymentDetails)
                     {
@@ -3795,10 +3638,8 @@ namespace hotel_api.Controllers
 
         }
 
-        private CancelSummary CalculateCancelSummary(List<BookingDetail> bookingDetails, List<PaymentDetails> paymentDetails)
+        private CancelSummary CalculatePaymentSummary(CancelSummary cancelSummary , List<PaymentDetails> paymentDetails,List<BookingDetail> bookingDetails)
         {
-            CancelSummary cancelSummary = new CancelSummary();
-            cancelSummary.TotalRooms = bookingDetails.Count;
             foreach (var pay in paymentDetails)
             {
                 if (pay.PaymentStatus == Constants.Constants.AdvancePayment)
@@ -3825,16 +3666,28 @@ namespace hotel_api.Controllers
             }
 
             cancelSummary.TotalPaid = cancelSummary.AgentAmount + cancelSummary.AdvanceAmount + cancelSummary.ReceivedAmount;
-            foreach (var item in bookingDetails)
-            {
-                cancelSummary.CancelAmount = cancelSummary.CancelAmount + item.CancelAmount;
-            }
-            decimal balance = cancelSummary.CancelAmount - cancelSummary.TotalPaid;
-            cancelSummary.BalanceAmount = balance > 0 ? balance : 0;
-            cancelSummary.RefundAmount = balance < 0 ? Math.Abs(balance) : 0;
+           
 
             return cancelSummary;
         }
+
+        private CancelSummary CalculateCancelSummary(CancelSummary cancelSummary, List<BookingDetail> bookingDetails)
+        {
+        
+            cancelSummary.TotalRooms = bookingDetails.Count;
+            
+            foreach (var item in bookingDetails)
+            {
+                cancelSummary.CancelAmount = cancelSummary.CancelAmount + item.CancelAmount;
+                cancelSummary.BalanceAmount = cancelSummary.BalanceAmount + item.BalanceAmount;
+                cancelSummary.RefundAmount = cancelSummary.RefundAmount + item.RefundAmount;
+            }
+           
+            return cancelSummary;
+        }
+
+
+
         private decimal CalculateBalanceCancelAmount(BookingDetail booking)
         {
             return (booking.CancelAmount - (booking.AgentAdvanceAmount + booking.AdvanceAmount + booking.ReceivedAmount));

@@ -248,8 +248,15 @@ namespace hotel_api.Controllers
                             var totalRooms = bookingAverages.Sum(x => x.Value);
                             foreach(var item in bookingAverages)
                             {
+                                if (totalRooms != 0)
+                                {
+                                    item.Width = (Constants.Calculation.RoundOffDecimal((decimal)(item.Value / totalRooms)) * 100).ToString() + "%";
+                                }
+                                else
+                                {
+                                    item.Width = "0%";
+                                }
                                 
-                                item.Width = (Constants.Calculation.RoundOffDecimal((decimal)((double)item.Value / totalRooms)) * 100).ToString() + "%";
                             }
 
                             
