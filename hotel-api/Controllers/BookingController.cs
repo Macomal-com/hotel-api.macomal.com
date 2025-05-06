@@ -1522,9 +1522,9 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 400, Message = "No room availability found" });
                     }
 
-                    roomAvailaibility.CheckOutDate = Constants.Calculation.GetADayBefore(request.ShiftDate);
+                    roomAvailaibility.CheckOutDate = DateTimeMethod.GetADayBefore(request.ShiftDate);
                     roomAvailaibility.CheckOutTime = Constants.Constants.DayEndTime;
-                    roomAvailaibility.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
+                    roomAvailaibility.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
                     roomAvailaibility.RoomStatus = Constants.Constants.Dirty;
                     roomAvailaibility.UpdatedDate = currentDate;
                     _context.RoomAvailability.Update(roomAvailaibility);
@@ -1534,10 +1534,10 @@ namespace hotel_api.Controllers
                     var newRoomAvailability = new RoomAvailability();
                     newRoomAvailability.CheckInDate = request.ShiftDate;
                     newRoomAvailability.CheckInTime = Constants.Constants.DayStartTime;
-                    newRoomAvailability.CheckInDateTime = Constants.Calculation.ConvertToDateTime(newRoomAvailability.CheckInDate, newRoomAvailability.CheckInTime);
+                    newRoomAvailability.CheckInDateTime = DateTimeMethod.ConvertToDateTime(newRoomAvailability.CheckInDate, newRoomAvailability.CheckInTime);
                     newRoomAvailability.CheckOutDate = booking.CheckOutDate;
                     newRoomAvailability.CheckOutTime = booking.CheckOutTime;
-                    newRoomAvailability.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(newRoomAvailability.CheckOutDate, newRoomAvailability.CheckOutTime);
+                    newRoomAvailability.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(newRoomAvailability.CheckOutDate, newRoomAvailability.CheckOutTime);
                     newRoomAvailability.ReservationNo = request.ReservationNo;
                     newRoomAvailability.BookingId = newBooking.BookingId;
                     newRoomAvailability.RoomId = newBooking.RoomId;
@@ -1640,7 +1640,7 @@ namespace hotel_api.Controllers
                     //check new room available or not
                     DateTime tempDate = DateTime.Now;
                     string tempTime = "";
-                    (tempDate, tempTime) = Constants.Calculation.GetAMinuteAfter(booking.CheckOutDate, booking.CheckOutTime);
+                    (tempDate, tempTime) = DateTimeMethod.GetAMinuteAfter(booking.CheckOutDate, booking.CheckOutTime);
 
                     string isRoomAvailable = await CheckRoomAvailable(tempDate, tempTime, request.ExtendedDate, booking.CheckOutTime, booking.RoomTypeId, booking.RoomId);
 
@@ -1677,8 +1677,8 @@ namespace hotel_api.Controllers
 
                     booking.CheckOutDate = request.ExtendedDate;
                     booking.InitialCheckOutDate = request.ExtendedDate;
-                    booking.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
-                    booking.InitialCheckOutDateTime = Constants.Calculation.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                    booking.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                    booking.InitialCheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
                     booking.UpdatedDate = currentDate;
                     _context.BookingDetail.Update(booking);
                     await _context.SaveChangesAsync();
@@ -1692,7 +1692,7 @@ namespace hotel_api.Controllers
                     }
 
                     roomAvailaibility.CheckOutDate = request.ExtendedDate;
-                    roomAvailaibility.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
+                    roomAvailaibility.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
                     roomAvailaibility.UpdatedDate = currentDate;
                     _context.RoomAvailability.Update(roomAvailaibility);
 
@@ -2193,9 +2193,9 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 400, Message = "Invalid data" });
                     }
                     //set checkout date
-                    (item.CheckOutDate, item.CheckOutTime) = Constants.Calculation.GetDateTime(value);
+                    (item.CheckOutDate, item.CheckOutTime) = DateTimeMethod.GetDateTime(value);
 
-                    item.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(item.CheckOutDate, item.CheckOutTime);
+                    item.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(item.CheckOutDate, item.CheckOutTime);
                     item.NoOfNights = Constants.Calculation.CalculateNights(item.ReservationDate, item.CheckOutDate);
                     item.BookingAmount = 0;
                     item.GstAmount = 0;
@@ -2677,7 +2677,7 @@ namespace hotel_api.Controllers
 
                     booking.CheckOutDate = item.CheckOutDate;
                     booking.CheckOutTime = item.CheckOutTime;
-                    booking.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                    booking.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
                     booking.NoOfNights = Constants.Calculation.CalculateNights(booking.ReservationDate, booking.CheckOutDate);
                     booking.Status = Constants.Constants.CheckOut;
                     booking.UpdatedDate = currentTime;
@@ -2727,7 +2727,7 @@ namespace hotel_api.Controllers
                     }
                     roomAvailability.CheckOutDate = booking.CheckOutDate;
                     roomAvailability.CheckOutTime = booking.CheckOutTime;
-                    roomAvailability.CheckOutDateTime = Constants.Calculation.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                    roomAvailability.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
                     roomAvailability.RoomStatus = Constants.Constants.Dirty;
                     roomAvailability.UpdatedDate = currentTime;
                     _context.RoomAvailability.Update(roomAvailability);

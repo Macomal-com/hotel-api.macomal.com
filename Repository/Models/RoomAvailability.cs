@@ -25,6 +25,8 @@ namespace Repository.Models
         public bool IsActive { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
+
+        public string ServiceStatus { get; set; } = string.Empty;
     }
 
     public class RoomAvailabilityDTO
