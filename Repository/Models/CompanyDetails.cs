@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using FluentValidation;
 using RepositoryModels.Repository;
+using Microsoft.EntityFrameworkCore;
 
 namespace Repository.Models
 {
@@ -173,9 +174,10 @@ namespace Repository.Models
 
             RuleFor(x => x.Gstin)
                .NotEmpty().WithMessage("GSTIN is required")
-               .NotNull().WithMessage("GSTIN is required")
+               .NotNull().WithMessage("GSTIN is required")               
                .Length(15)
-               .WithMessage("GST No length should be 15 numbers");
+               .WithMessage("GST No. length should be 15 numbers")
+               .When(x => x.Gstin != "");
 
             RuleFor(x => x.State)
                .NotEmpty().WithMessage("State is required")
@@ -196,7 +198,43 @@ namespace Repository.Models
                .NotNull().WithMessage("PAN No is required")
                .Length(10)
                    .WithMessage("Pan No length should be 10 numbers");
+            RuleFor(x => x)
+                .MustAsync(IsUniqueProperty)
+                .When(x => x.PropertyId == 0)
+                .WithMessage("Property already exists");
 
+            RuleFor(x => x)
+                .MustAsync(IsUniqueUpdateProperty)
+                .When(x => x.PropertyId > 0)
+                .WithMessage("Property already exists");
+
+        }
+        private async Task<bool> IsUniqueProperty(CompanyDetails cm, CancellationToken cancellationToken)
+        {
+            if(cm.Gstin == "")
+            {
+                var data = await _context.CompanyDetails.AnyAsync(x => x.CompanyName == cm.CompanyName && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+
+                return !await _context.CompanyDetails.AnyAsync(x => x.CompanyName == cm.CompanyName && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            }
+            else { 
+
+                var data = await _context.CompanyDetails.AnyAsync(x => x.Gstin == cm.Gstin && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            return !await _context.CompanyDetails.AnyAsync(x => x.Gstin == cm.Gstin && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            }
+        }
+
+
+        private async Task<bool> IsUniqueUpdateProperty(CompanyDetails cm, CancellationToken cancellationToken)
+        {
+            if (cm.Gstin != "")
+            {
+                return !await _context.CompanyDetails.AnyAsync(x => x.CompanyName == cm.CompanyName && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            }
+            else
+            {
+                return !await _context.CompanyDetails.AnyAsync(x => x.Gstin == cm.Gstin && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            }
         }
     }
 }

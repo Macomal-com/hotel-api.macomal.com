@@ -11,7 +11,7 @@ namespace hotel_api.GeneralMethods
             string bookingType,
             int companyId, string financialYear)
         {
-            var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == bookingType && x.FinancialYear == financialYear);
+            var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == bookingType && x.FinancialYear == financialYear && x.IsActive == true);
 
             if (getbookingno == null || getbookingno.Suffix == null)
             {

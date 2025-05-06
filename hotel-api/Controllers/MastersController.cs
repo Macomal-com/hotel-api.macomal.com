@@ -13,6 +13,7 @@ using System.ComponentModel.Design;
 using System.Data;
 using System.Xml.XPath;
 using hotel_api.GeneralMethods;
+using Azure;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -2133,6 +2134,7 @@ namespace hotel_api.Controllers
                 {
                     int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                     int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                    string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
 
                     var cm = _mapper.Map<CompanyDetails>(companyDetails);
                     SetMastersDefault(cm, companyId, userId);
@@ -2152,7 +2154,7 @@ namespace hotel_api.Controllers
                     await _context.SaveChangesAsync();
 
                     var savedObject = await _context.CompanyDetails
-                                                     .FirstOrDefaultAsync(c => c.CompanyName == cm.CompanyName);
+                                                     .FirstOrDefaultAsync(c => c.CompanyName == cm.CompanyName && c.IsActive == true);
                     if(savedObject == null)
                     {
                         return Ok(new { Code = 404, Message = "Data Not Found!" });
@@ -2201,8 +2203,22 @@ namespace hotel_api.Controllers
                         _context.PropertyImages.AddRange(propertyImages);
                     }
 
-                    
 
+                    var documentMaster = new DocumentMaster
+                    {
+                        Type = Constants.Constants.DocumentCancelPolicy,
+                        Prefix = "C",
+                        LastNumber = 0,
+                        CompanyId = savedObject.PropertyId,
+                        FinancialYear = financialYear,
+                        Prefix1 = "1",
+                        Separator = "/",
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        IsActive = true,
+                        CreatedBy = savedObject.UserId
+                    };
+                    _context.DocumentMaster.Add(documentMaster);
                     await _context.SaveChangesAsync();
 
                     await transaction.CommitAsync();
@@ -2680,15 +2696,12 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
                 string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
 
-                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentCancelPolicy && x.FinancialYear == financialYear && x.IsActive);
-
-                if (getbookingno == null || getbookingno.Suffix == null)
+                var getbookingno = await DocumentHelper.GetDocumentNo(_context,Constants.Constants.DocumentCancelPolicy, companyId, financialYear);
+                if (getbookingno == null)
                 {
-                    return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
+                    return Ok(new { Code = 400, message = "Document number not found." });
                 }
-                var bookingno = getbookingno.Prefix + getbookingno.Separator + getbookingno.Prefix1 + getbookingno.Separator + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
-                
-                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = bookingno });
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = getbookingno });
             }
             catch (Exception ex)
             {

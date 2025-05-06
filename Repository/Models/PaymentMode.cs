@@ -45,9 +45,9 @@ namespace Repository.Models
             RuleFor(x => x.PaymentModeName)
                 .NotEmpty().WithMessage("Payment Mode is required")
                 .NotNull().WithMessage("Payment Mode is required");
-            RuleFor(x => x.TransactionCharges)
-                .NotEmpty().WithMessage("Transaction Charges is required")
-                .NotNull().WithMessage("Transaction Charges is required");
+            //RuleFor(x => x.TransactionCharges)
+            //    .NotEmpty().WithMessage("Transaction Charges is required")
+            //    .NotNull().WithMessage("Transaction Charges is required");
             RuleFor(x => x.TransactionType)
                 .NotEmpty().WithMessage("Transaction Type is required")
                 .NotNull().WithMessage("Transaction Type is required");
