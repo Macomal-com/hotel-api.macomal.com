@@ -177,6 +177,39 @@ namespace hotel_api.Controllers
         }
 
 
+        [HttpGet("GetSearchPanel")]
+        public async Task<IActionResult> GetSearchPanel(DateTime fromDate, DateTime toDate)
+        {
+            
+            DataSet? dataSet = null;
+            try
+            {
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    using (var command = new SqlCommand("searchPanel", connection))
+                    {
+                        command.CommandTimeout = 120;
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@companyId", companyId);
+                        command.Parameters.AddWithValue("@fromDate", fromDate);
+                        command.Parameters.AddWithValue("@toDate", toDate);
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            dataSet = new DataSet();
+                            adapter.Fill(dataSet);
+                        }
+                        await connection.CloseAsync();
+                    }
+                }
+                return Ok(new { Code = 200, Message = "Reservation Fetched Successfully", data = dataSet });
+            }
+            catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
     }
 }

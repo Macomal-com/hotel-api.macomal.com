@@ -137,12 +137,13 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
 
-                var getbookingno = await _context.DocumentMaster.FirstOrDefaultAsync(x => x.CompanyId == companyId && x.Type == Constants.Constants.DocumentReservation && x.FinancialYear == financialYear);
-                if (getbookingno == null || getbookingno.Suffix == null)
+                var getbookingno = await DocumentHelper.GetDocumentNo(_context, Constants.Constants.DocumentReservation, companyId, financialYear);   
+
+                if (getbookingno == null)
                 {
-                    return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
+                    return Ok(new { Code = 400, Message = "Document number not found.", data = getbookingno });
                 }
-                var bookingno = getbookingno.Prefix + getbookingno.Separator + getbookingno.Prefix1 + getbookingno.Separator + getbookingno.Prefix2 + getbookingno.Suffix + getbookingno.Number + getbookingno.LastNumber;
+                var bookingno = getbookingno;
 
                 var agentDetails = await _context.AgentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x => new
                 {
@@ -232,6 +233,14 @@ namespace hotel_api.Controllers
                 if (string.IsNullOrWhiteSpace(request.GuestDetailsDTO.GuestName) || string.IsNullOrWhiteSpace(request.GuestDetailsDTO.PhoneNumber))
                 {
                     return Ok(new { code = 400, message = "Guest name and phone number is required.", data = new object { } });
+
+                }
+
+                //CHECK RESERVATION NO ALREADY USED
+                var updatedBookingNo = await DocumentHelper.GetDocumentNo(_context, Constants.Constants.DocumentReservation, companyId, financialYear);
+
+                if(updatedBookingNo != request.ReservationDetailsDTO.ReservationNo)
+                {
 
                 }
 

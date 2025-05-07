@@ -164,8 +164,8 @@ namespace hotel_api.Controllers
                                   join rm in _context.RoomMaster on bd.RoomId equals rm.RoomId
                                   join guest in _context.GuestDetails on bd.GuestId equals guest.GuestId
                                   where bd.BookingId == id && bd.IsActive == true && rm.IsActive == true && guest.IsActive == true &&
-                                  bd.CompanyId == companyId && rm.CompanyId == companyId && guest.CompanyId == companyId &&
-                                  bd.UserId == userId && rm.UserId == userId && guest.UserId == userId
+                                  bd.CompanyId == companyId && rm.CompanyId == companyId && guest.CompanyId == companyId 
+                                  
                                   select new
                                   {
                                       bd.BookingId,
