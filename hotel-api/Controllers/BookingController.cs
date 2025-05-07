@@ -235,6 +235,22 @@ namespace hotel_api.Controllers
 
                 }
 
+
+                //CHECK IF CHECKIN ROOMS SHOULD BE ASSIGNED
+                if (request.ReservationDetailsDTO.IsCheckIn == true)
+                {
+                    foreach (var item in request.BookingDetailsDTO)
+                    {
+                        bool allRoomIdsValid = item.AssignedRooms.All(room => room.RoomId > 0);
+                        if(allRoomIdsValid == false)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = "All selected rooms must be assigned before check-in" });
+                        }
+                    }
+                }
+                
+
                 //CHECK ROOM ALREADY BOOKING OR NOT
                 foreach (var item in request.BookingDetailsDTO)
                 {
@@ -4313,7 +4329,7 @@ namespace hotel_api.Controllers
 
 
         //GET ROOM AVAILABILITY
-        private async Task<DataSet> GetRoomAvailability(DateTime checkInDate, string checkInTime, DateTime checkOutDate, string checkOutTime, string pageName = "", int roomTypeId = 0, int roomId = 0)
+        private async Task<DataSet> GetRoomAvailability(DateTime checkInDate, string checkInTime, DateTime checkOutDate, string checkOutTime, string pageName = "", int roomTypeId = 0, int roomId = 0, string roomStatus = "")
         {
             DataSet dataSet = null;
             try
@@ -4332,6 +4348,7 @@ namespace hotel_api.Controllers
                         command.Parameters.AddWithValue("@pageName", pageName);
                         command.Parameters.AddWithValue("@roomTypeId", roomTypeId);
                         command.Parameters.AddWithValue("@roomId", roomId);
+                        command.Parameters.AddWithValue("@roomStatus", roomStatus);
                         await connection.OpenAsync();
 
                         using (var adapter = new SqlDataAdapter(command))
@@ -5025,6 +5042,96 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 200, Message = "Data fetched successfully", data = checkInResponse });
             }
             catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+
+        [HttpGet("GetCheckAvailabilityFormData")]
+        public async Task<IActionResult> GetCheckAvailabilityFormData()
+        {
+            try
+            {
+                var roomCategories = await _context.RoomCategoryMaster.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x => new
+                {
+                    Id = x.Id,
+                    Type = x.Type
+                }).ToListAsync();
+
+                var serviceStatus = await _context.ServicesStatus.ToListAsync();
+
+                var result = new
+                {
+                    RoomCategories = roomCategories,
+                    ServicesStatus = serviceStatus
+                };
+
+                return Ok(new { Code = 200, Message = "Data found",data = result });
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("RoomAvailaibility")]
+        public async Task<IActionResult> RoomAvailaibility(DateTime checkInDate, string checkInTime, DateTime checkOutDate, string checkOutTime, string pageName = "", int roomTypeId = 0, string roomStatus = "")
+        {
+            try
+            {
+
+                if (checkInDate == null || checkOutDate == null || checkInDate == DateTime.MinValue || checkOutDate == DateTime.MinValue || checkInDate == Constants.Constants.DefaultDate || checkOutDate == Constants.Constants.DefaultDate)
+                {
+                    var result = await (from room in _context.RoomMaster
+                                        join category in _context.RoomCategoryMaster on room.RoomTypeId equals category.Id
+                                        where room.IsActive == true && room.CompanyId == companyId
+                                        select new
+                                        {
+                                            RoomId = room.RoomId,
+                                            RoomNo = room.RoomNo,
+                                            RoomDesc = room.Description,
+                                            CategoryId = room.RoomTypeId,
+                                            RoomCategory = category.Type,
+                                            RoomStatus = "Clean"
+                                        }).ToListAsync();
+                    return Ok(new { Code = 200, message = "Room availability retrieved successfully.", data = result, AvailableRooms = result.Count });
+                }
+                else
+                {
+                    DataSet dataSet = await GetRoomAvailability(checkInDate, checkInTime, checkOutDate, checkOutTime, pageName, roomTypeId, 0,roomStatus);
+                    if (dataSet == null)
+                    {
+                        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                    }
+                    var rows = new List<Dictionary<string, object>>();
+                    
+                    var dataTable = dataSet.Tables[0];
+                    foreach (DataRow row in dataTable.Rows)
+                    {
+                        var dict = new Dictionary<string, object>();
+                        foreach (DataColumn col in dataTable.Columns)
+                        {
+                            dict[col.ColumnName] = row[col];
+                        }
+                        rows.Add(dict);
+                    }
+
+                    var countRows = new List<Dictionary<string, object>>();
+                    var dataTable2 = dataSet.Tables[1];
+                    foreach (DataRow row in dataTable2.Rows)
+                    {
+                        var dict = new Dictionary<string, object>();
+                        foreach (DataColumn col in dataTable2.Columns)
+                        {
+                            dict[col.ColumnName] = row[col];
+                        }
+                        countRows.Add(dict);
+                    }
+                    return Ok(new { Code = 200, message = "Room availability retrieved successfully.", data = rows, countRows = countRows });
+                }
+            }
+            catch (Exception ex)
             {
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
