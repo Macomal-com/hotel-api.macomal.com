@@ -61,8 +61,12 @@ namespace Repository.Models
 
             RuleFor(x => x)
                 .MustAsync(IsUniqueRoomNo)
+                .When(x => x.RoomId == 0)
                 .WithMessage("Room No already exists");
-
+            RuleFor(x => x)
+                .MustAsync(IsUpdatedUniqueRoomNo)
+                .When(x => x.RoomId > 0)
+                .WithMessage("Room No already exists");
             RuleFor(x => x)
                 .MustAsync(IsRoomCategoryCountExceed)               
                 .WithMessage("You have already created total rooms in this room type.");
@@ -83,12 +87,19 @@ namespace Repository.Models
             else
             {
                 return !await _context.RoomMaster.AnyAsync(x => x.RoomNo == master.RoomNo && x.PropertyId == master.PropertyId && x.IsActive == true , cancellationToken);
-            }
-                
-
-
+            }           
         }
-
+        private async Task<bool> IsUpdatedUniqueRoomNo(RoomMaster master, CancellationToken cancellationToken)
+        {
+            if (master.BuildingId > 0)
+            {
+                return !await _context.RoomMaster.AnyAsync(x => x.RoomNo == master.RoomNo && x.PropertyId == master.PropertyId && x.RoomId != master.RoomId && x.IsActive == true && x.BuildingId == master.BuildingId, cancellationToken);
+            }
+            else
+            {
+                return !await _context.RoomMaster.AnyAsync(x => x.RoomNo == master.RoomNo && x.PropertyId == master.PropertyId && x.RoomId != master.RoomId && x.IsActive == true, cancellationToken);
+            }
+        }
         private async Task<bool> IsRoomCategoryCountExceed(RoomMaster master, CancellationToken cancellationToken)
         {
             var alreadyCreatedCount = master.RoomId > 0 ?
