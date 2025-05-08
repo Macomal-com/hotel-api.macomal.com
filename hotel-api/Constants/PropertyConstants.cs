@@ -6,8 +6,8 @@
         public static string ISCHECKOUTAPPLICABLE = "Yes";
         public static string CHECKOUTFORMAT = "24 Hours";
         public static string ISROOMRATEEDITABLE = "No";
-        public static string CHECKINTIME = "12:30 PM";
-        public static string CHECKOUTTIME = "06:15 PM";
+        public static string CHECKINTIME = "12:30";
+        public static string CHECKOUTTIME = "06:15";
         public static bool APPROVERESERVATION = false;
         public static string CANCELMETHOD = "Datewise";
         public static string CANCELCALCULATEBY = "Percentage";

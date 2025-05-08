@@ -415,9 +415,9 @@ namespace hotel_api.Controllers
                         var bookingDetails = _mapper.Map<BookingDetail>(item);
                         Constants.Constants.SetMastersDefault(bookingDetails, companyId, userId, currentDate);
 
-                      
-                        bookingDetails.CheckInDateTime = DateTime.ParseExact((bookingDetails.CheckInDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckInTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
-                        bookingDetails.CheckOutDateTime = DateTime.ParseExact((bookingDetails.CheckOutDate.ToString("yyyy-MM-dd")) + " " + bookingDetails.CheckOutTime, "yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture);
+
+                        bookingDetails.CheckInDateTime = DateTimeMethod.ConvertToDateTime(bookingDetails.CheckInDate, bookingDetails.CheckInTime);
+                        bookingDetails.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(bookingDetails.CheckOutDate, bookingDetails.CheckOutTime);
                         bookingDetails.ReservationDate = bookingDetails.CheckInDate;
                         bookingDetails.ReservationTime = bookingDetails.CheckInTime;
                         bookingDetails.ReservationDateTime = bookingDetails.CheckInDateTime;
