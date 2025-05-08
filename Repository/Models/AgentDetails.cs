@@ -68,13 +68,13 @@ namespace Repository.Models
                 .NotNull().WithMessage("Agent Type is required")
                 .NotEmpty().WithMessage("Agent Type is required");
 
-            RuleFor(x => x.GstNo)
-                .NotEmpty().WithMessage("GST No is required")
-                .NotNull().WithMessage("GST No is required");
+            //RuleFor(x => x.GstNo)
+            //    .NotEmpty().WithMessage("GST No is required")
+            //    .NotNull().WithMessage("GST No is required");
 
-            RuleFor(x => x.GstNo)
-                .Length(15)
-                .WithMessage("GST No length should be 15 numbers");
+            //RuleFor(x => x.GstNo)
+            //    .Length(15)
+            //    .WithMessage("GST No length should be 15 numbers");
 
             RuleFor(x => x.Commission)
                 .GreaterThanOrEqualTo(0)
