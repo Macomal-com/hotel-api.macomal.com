@@ -48,8 +48,9 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 404, Message = "Invalid username or password" });
                 }
                 var clustersList = await _context.ClusterMaster.Where(x => x.IsActive == true).ToListAsync();
-                if (isUserExists.Roles == Constants.Constants.SuperAdmin) 
-                {                    
+                //if (isUserExists.Roles == Constants.Constants.SuperAdmin)
+                    if (true)
+                    {                    
                     //if no cluster found then find properties
                     if(clustersList.Count == 0)
                     {
@@ -116,8 +117,9 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    if(isUserExists.Roles == Constants.Constants.SuperAdmin)
-                    {
+                    //if(isUserExists.Roles == Constants.Constants.SuperAdmin)
+                        if (true)
+                        {
                         if (clusterId == 0)
                         {
                             var propertiesList = await _context.CompanyDetails.Where(x => x.IsActive == true).Select(x => new
