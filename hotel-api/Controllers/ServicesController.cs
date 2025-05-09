@@ -66,7 +66,7 @@ namespace hotel_api.Controllers
 
                 if (updatedKotNo == null)
                 {
-                    return Ok(new { Code = 400, message = "Document number not found." });
+                    return Ok(new { Code = 400, Message = "Document number not found." });
                 }
                 else
                 {
@@ -305,8 +305,7 @@ namespace hotel_api.Controllers
                                   join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
                                   join subgm in _context.SubGroupMaster on service.SubGroupId equals subgm.SubGroupId
                                   where service.IsActive == true && gm.IsActive == true && subgm.IsActive == true &&
-                                  service.CompanyId == companyId && gm.CompanyId == companyId && subgm.CompanyId == companyId &&
-                                  service.UserId == userId && gm.UserId == userId && subgm.UserId == userId
+                                  service.CompanyId == companyId && gm.CompanyId == companyId && subgm.CompanyId == companyId
                                   select new
                                   {
                                       service.Id,

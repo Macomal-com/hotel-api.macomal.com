@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -34,6 +35,9 @@ namespace Repository.Models
         public string Gender { get; set; } = string.Empty;
         public string IdType { get; set; } = string.Empty;
         public string IdNumber { get; set; } = string.Empty;
+
+        [NotMapped]
+        public string GuestNamePhone { get; set; } = string.Empty;
     }
 
     public class GuestDetailsDTO

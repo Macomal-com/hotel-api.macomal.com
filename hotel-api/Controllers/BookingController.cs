@@ -65,7 +65,58 @@ namespace hotel_api.Controllers
             
         }
 
-        
+        //GUEST APIS
+        [HttpGet("GetGuestDetails")]
+        public async Task<IActionResult> GetGuestDetails()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+
+                var data = await _context.GuestDetails.Where(bm => bm.IsActive && bm.CompanyId == companyId).Select(x => new GuestDetails
+                {
+                    GuestId = x.GuestId,
+                    GuestName = x.GuestName,
+                    Nationality = x.Nationality,
+                    StateName = x.StateName,
+                    Address = x.Address,
+                    City = x.City,
+                    PhoneNumber = x.PhoneNumber,
+                    Email = x.Email,
+                    GuestImage = x.GuestImage,
+                    Other1 = x.Other1,
+                    Other2 = x.Other2,
+                    IsActive = x.IsActive,
+                    CreatedDate = x.CreatedDate,
+                    UpdatedDate = x.UpdatedDate,
+                    UserId = x.UserId,
+                    CompanyId = x.CompanyId,
+                    CityId = x.CityId,
+                    StateId = x.StateId,
+                    CountryId = x.CountryId,
+                    Gender = x.Gender,
+                    IdType = x.IdType,
+                    IdNumber = x.IdNumber,
+                    GuestNamePhone = x.GuestName + " : " + x.PhoneNumber
+                }).ToListAsync();
+
+                
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
         [HttpGet("CheckRoomAvailaibility")]
         public async Task<IActionResult> CheckRoomAvailaibility(DateTime checkInDate, string checkInTime, DateTime checkOutDate, string checkOutTime, string pageName = "", int roomTypeId = 0)

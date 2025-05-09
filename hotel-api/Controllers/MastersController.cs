@@ -2207,8 +2207,8 @@ namespace hotel_api.Controllers
                     var documentMaster = new DocumentMaster
                     {
                         Type = Constants.Constants.DocumentCancelPolicy,
-                        Prefix = "C",
-                        LastNumber = 0,
+                        Prefix = "CP",
+                        LastNumber = 1,
                         CompanyId = savedObject.PropertyId,
                         FinancialYear = financialYear,
                         Prefix1 = "1",
@@ -3119,30 +3119,7 @@ namespace hotel_api.Controllers
 
 
 
-        //GUEST APIS
-        [HttpGet("GetGuestDetails")]
-        public async Task<IActionResult> GetGuestDetails()
-        {
-            try
-            {
-                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-                var data = await _context.GuestDetails.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
-
-                if (data.Count == 0)
-                {
-                    return Ok(new { Code = 200, Message = "Data not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
-            }
-
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
-            }
-        }
+        
 
         [HttpGet("GetGuestDetailsById/{id}")]
         public async Task<IActionResult> GetGuestDetailsById(int id)
