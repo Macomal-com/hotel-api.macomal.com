@@ -44,6 +44,25 @@ namespace hotel_api.GeneralMethods
                 return null;
             }
         }
+
+        public static void CreateDocument(DbContextSql _context, string prefix, int companyId, CompanyDetails savedObject, string financialYear)
+        {
+            var documentMaster = new DocumentMaster
+            {
+                Type = Constants.Constants.DocumentCancelPolicy,
+                Prefix = prefix,
+                LastNumber = 0,
+                CompanyId = savedObject.PropertyId,
+                FinancialYear = financialYear,
+                Prefix1 = "1",
+                Separator = "/",
+                CreatedDate = DateTime.Now,
+                UpdatedDate = DateTime.Now,
+                IsActive = true,
+                CreatedBy = savedObject.UserId
+            };
+            _context.DocumentMaster.Add(documentMaster);
+        }
     }
 
 }

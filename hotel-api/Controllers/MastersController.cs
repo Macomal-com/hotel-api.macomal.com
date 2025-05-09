@@ -2202,23 +2202,11 @@ namespace hotel_api.Controllers
 
                         _context.PropertyImages.AddRange(propertyImages);
                     }
+                    DocumentHelper.CreateDocument(Constants.Constants.DocumentCancelPolicy, _context, "CP", companyId, savedObject, financialYear);
+                    DocumentHelper.CreateDocument(Constants.Constants.ReservationInvoice, _context, "REV", companyId, savedObject, financialYear);
+                    DocumentHelper.CreateDocument(Constants.Constants.DocumentInvoice, _context, "INV", companyId, savedObject, financialYear);
+                    DocumentHelper.CreateDocument(Constants.Constants.DocumentKot, _context, "KOT", companyId, savedObject, financialYear);
 
-
-                    var documentMaster = new DocumentMaster
-                    {
-                        Type = Constants.Constants.DocumentCancelPolicy,
-                        Prefix = "CP",
-                        LastNumber = 1,
-                        CompanyId = savedObject.PropertyId,
-                        FinancialYear = financialYear,
-                        Prefix1 = "1",
-                        Separator = "/",
-                        CreatedDate = DateTime.Now,
-                        UpdatedDate = DateTime.Now,
-                        IsActive = true,
-                        CreatedBy = savedObject.UserId
-                    };
-                    _context.DocumentMaster.Add(documentMaster);
                     await _context.SaveChangesAsync();
 
                     await transaction.CommitAsync();
