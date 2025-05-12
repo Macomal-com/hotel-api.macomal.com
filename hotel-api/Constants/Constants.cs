@@ -93,7 +93,10 @@ namespace hotel_api.Constants
         //image 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
         public static string InvalidFileError = "Invalid File type. Only PNG, JPG, JPEG are allowed";
-        
+
+        //extra policy
+        public static string EARLYCHECKIN = "CheckIn";
+        public static string LATECHECKOUT = "CheckOut";
         public async static Task<string> AddFile(IFormFile file)
         {
             var fileExtension = Path.GetExtension(file.FileName).ToLower();

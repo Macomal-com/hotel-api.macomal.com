@@ -2169,8 +2169,10 @@ namespace hotel_api.Controllers
                     savedObject.CancelMethod = Constants.PropertyConstants.CANCELMETHOD;
                     savedObject.CancelCalculatedBy = Constants.PropertyConstants.CANCELCALCULATEBY;
                     savedObject.CheckOutInvoice = Constants.PropertyConstants.CHECKOUTINVOICE;
-                    savedObject.IsWhatsappNotification = false;
-                    savedObject.IsEmailNotification = false;
+                    savedObject.IsWhatsappNotification = Constants.PropertyConstants.WHATSAPPNOTIFICATIONENABLE;
+                    savedObject.IsEmailNotification = Constants.PropertyConstants.EMAILNOTIFICATIONENABLE;
+                    savedObject.IsDefaultCheckInTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKIN;
+                    savedObject.IsDefaultCheckOutTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKOUT;
                     if (files != null || files?.Length != 0)
                     {
                         var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
@@ -2202,10 +2204,16 @@ namespace hotel_api.Controllers
 
                         _context.PropertyImages.AddRange(propertyImages);
                     }
-                    DocumentHelper.CreateDocument(Constants.Constants.DocumentCancelPolicy, _context, "CP", companyId, savedObject, financialYear);
-                    DocumentHelper.CreateDocument(Constants.Constants.ReservationInvoice, _context, "REV", companyId, savedObject, financialYear);
-                    DocumentHelper.CreateDocument(Constants.Constants.DocumentInvoice, _context, "INV", companyId, savedObject, financialYear);
-                    DocumentHelper.CreateDocument(Constants.Constants.DocumentKot, _context, "KOT", companyId, savedObject, financialYear);
+                    DocumentHelper.CreateDocument(_context, "CP", companyId, financialYear, Constants.Constants.DocumentCancelPolicy, userId);
+
+                    DocumentHelper.CreateDocument(_context, "RES", companyId, financialYear, Constants.Constants.DocumentReservation, userId);
+
+
+                    DocumentHelper.CreateDocument(_context, "INV", companyId, financialYear, Constants.Constants.DocumentInvoice, userId);
+
+                    DocumentHelper.CreateDocument(_context, "KOT", companyId, financialYear, Constants.Constants.DocumentKot, userId);
+
+                   
 
                     await _context.SaveChangesAsync();
 

@@ -45,21 +45,21 @@ namespace hotel_api.GeneralMethods
             }
         }
 
-        public static void CreateDocument(DbContextSql _context, string prefix, int companyId, CompanyDetails savedObject, string financialYear)
+        public static void CreateDocument(DbContextSql _context, string prefix, int companyId, string financialYear, string documentType, int userId)
         {
             var documentMaster = new DocumentMaster
             {
-                Type = Constants.Constants.DocumentCancelPolicy,
+                Type = documentType,
                 Prefix = prefix,
                 LastNumber = 0,
-                CompanyId = savedObject.PropertyId,
+                CompanyId = companyId,
                 FinancialYear = financialYear,
                 Prefix1 = "1",
                 Separator = "/",
                 CreatedDate = DateTime.Now,
                 UpdatedDate = DateTime.Now,
                 IsActive = true,
-                CreatedBy = savedObject.UserId
+                CreatedBy = userId
             };
             _context.DocumentMaster.Add(documentMaster);
         }

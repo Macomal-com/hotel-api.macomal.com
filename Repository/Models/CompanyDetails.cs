@@ -125,6 +125,13 @@ namespace Repository.Models
         public bool IsWhatsappNotification { get; set; }
         public bool IsEmailNotification { get; set; }
 
+        public bool IsEarlyCheckInPolicyEnable { get; set; }
+        public bool IsLateCheckOutPolicyEnable { get; set; }
+
+        public bool IsDefaultCheckInTimeApplicable { get; set; }
+
+        public bool IsDefaultCheckOutTimeApplicable { get; set; }
+
     }
     public class CompanyDetailsDTO
     {
