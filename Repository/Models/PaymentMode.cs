@@ -75,7 +75,7 @@ namespace Repository.Models
         private async Task<bool> IsModeUpdateExists(PaymentMode master, CancellationToken cancellationToken)
         {
 
-            return !await _context.PaymentMode.AnyAsync(x => x.PaymentModeName == master.PaymentModeName && x.PaymentId != master.PaymentId && x.IsActive == true, cancellationToken);
+            return !await _context.PaymentMode.AnyAsync(x => x.PaymentModeName == master.PaymentModeName && x.CompanyId == master.CompanyId && x.PaymentId != master.PaymentId && x.IsActive == true, cancellationToken);
 
 
         }

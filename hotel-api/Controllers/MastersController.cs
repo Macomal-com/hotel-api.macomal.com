@@ -627,15 +627,15 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
+                string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
                 var data = await _context.GroupMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
-
+                var groupCode = await DocumentHelper.GetDocumentNo(_context, Constants.Constants.DocumentGroupCode, companyId, financialYear);
                 if (data.Count == 0)
                 {
-                    return Ok(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() });
+                    return Ok(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>(), groupCode });
                 }
 
-                return Ok(new { Code = 200, Message = "Group fetched successfully", Data = data });
+                return Ok(new { Code = 200, Message = "Group fetched successfully", Data = data, groupCode });
             }
 
             catch (Exception ex)
@@ -1270,8 +1270,91 @@ namespace hotel_api.Controllers
             return Ok(new { Code = 200, Message = "Vendor updated successfully" });
         }
 
+        //VENDOR HISTORY MASTER
+        [HttpGet("GetVendorHistoryMaster")]
+        public async Task<IActionResult> GetVendorHistoryMaster()
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                var data = await (
+                        from history in _context.VendorHistoryMaster
+                        join vendor in _context.VendorMaster on history.VendorId equals vendor.VendorId
+                        join service in _context.VendorServiceMaster on history.ServiceId equals service.Id
+                        where history.IsActive && history.CompanyId == companyId && history.UserId == userId
+                        select new
+                        {
+                            history.Id,
+                            history.GivenBy,
+                            vendor.VendorName,
+                            service.Name,
+                            DueDate = history.GivenDate.ToString("dd MMMM, yyyy"),
+                            history.Remarks
+                        }).ToListAsync();
 
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
 
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+        [HttpPost("AddVendorHistoryMaster")]
+        public async Task<IActionResult> AddVendorHistoryMaster([FromBody] VendorHistoryMasterDTO vendor)
+        {
+            if (vendor == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+               
+
+                var cm = _mapper.Map<VendorHistoryMaster>(vendor);
+                var staff = new StaffManagementMaster{
+                    StaffName = cm.GivenBy,
+                    PhoneNo = cm.PhoneNo,
+                    Department = "Vendor",
+                    StaffDesignation = "",
+                    Salary = 0,
+                    IsActive = true,
+                    CreatedDate = DateTime.Now,
+                    UpdatedDate = DateTime.Now,
+                    UserId = userId,
+                    CompanyId = companyId
+                };
+                SetMastersDefault(cm, companyId, userId);
+
+                var validator = new VendorHistoryValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, message = errors });
+                }
+                _context.VendorHistoryMaster.Add(cm);
+                _context.StaffManagementMaster.Add(staff);
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Service History created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
         //PAYMENT MODE
         [HttpGet("GetPaymentMode")]
         public async Task<IActionResult> GetPaymentMode()
@@ -1389,30 +1472,13 @@ namespace hotel_api.Controllers
 
         //STAFF MASTER
         [HttpGet("GetStaffMaster")]
-        public async Task<IActionResult> GetStaffMaster()
+        public async Task<IActionResult> GetStaffMaster(string status = "")
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await (from rs in _context.StaffManagementMaster
-                                  join gm in _context.VendorMaster on rs.VendorId equals gm.VendorId into gmJoin
-                                  from gm in gmJoin.DefaultIfEmpty() // Left join to include staff rows with VendorId = 0
-                                  where rs.IsActive == true
-                                        && (gm == null || gm.IsActive == true) // If there's no matching Vendor (gm is null), consider it as active
-                                        && rs.CompanyId == companyId
-                                        && rs.UserId == userId
-                                        && (rs.VendorId == 0 || rs.VendorId == gm.VendorId) // Include rows where VendorId is 0 or matches
-                                  select new
-                                  {
-                                      rs.StaffId,
-                                      rs.StaffName,
-                                      rs.StaffRole,
-                                      rs.PhoneNo,
-                                      rs.Salary,
-                                      rs.VendorId,
-                                      VendorName = gm != null ? gm.VendorName : "No Vendor"
-                                  }).ToListAsync();
+                var data = await _context.StaffManagementMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && (status != "" || bm.Department == status)).ToListAsync();
 
 
                 if (data.Count == 0)
@@ -2107,8 +2173,30 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var data = await _context.CompanyDetails.Where(bm => bm.IsActive).ToListAsync();
-
+                //var data = await _context.CompanyDetails.Where(bm => bm.IsActive).ToListAsync();
+                var data = await (from com in _context.CompanyDetails
+                                       join cluster in _context.ClusterMaster on com.ClusterId equals cluster.ClusterId
+                                       join landlord in _context.LandlordDetails on com.OwnerId equals landlord.LandlordId
+                                       where com.IsActive && cluster.IsActive && landlord.IsActive
+                                       select new
+                                       {
+                                            com.PropertyId,
+                                            com.CompanyName,
+                                            com.HotelTagline,
+                                            com.Country,
+                                            com.Gstin,
+                                            com.State,
+                                            com.City,
+                                            com.CompanyAddress,
+                                            com.Pincode,
+                                            com.ContactNo1,
+                                            com.Email,
+                                            com.PanNo,
+                                            com.ClusterId,
+                                            com.OwnerId,
+                                            cluster.ClusterName,
+                                            landlord.LandlordName                                          
+                                       }).ToListAsync();
                 if (data.Count == 0)
                 {
                     return Ok(new { Code = 404, Message = "Company details not found", Data = Array.Empty<object>() });
@@ -2204,16 +2292,16 @@ namespace hotel_api.Controllers
 
                         _context.PropertyImages.AddRange(propertyImages);
                     }
-                    DocumentHelper.CreateDocument(_context, "CP", companyId, financialYear, Constants.Constants.DocumentCancelPolicy, userId);
+                    DocumentHelper.CreateDocument(_context, "CP", savedObject.PropertyId, financialYear, Constants.Constants.DocumentCancelPolicy, userId);
 
-                    DocumentHelper.CreateDocument(_context, "RES", companyId, financialYear, Constants.Constants.DocumentReservation, userId);
+                    DocumentHelper.CreateDocument(_context, "RES", savedObject.PropertyId, financialYear, Constants.Constants.DocumentReservation, userId);
 
 
-                    DocumentHelper.CreateDocument(_context, "INV", companyId, financialYear, Constants.Constants.DocumentInvoice, userId);
+                    DocumentHelper.CreateDocument(_context, "INV", savedObject.PropertyId, financialYear, Constants.Constants.DocumentInvoice, userId);
 
-                    DocumentHelper.CreateDocument(_context, "KOT", companyId, financialYear, Constants.Constants.DocumentKot, userId);
+                    DocumentHelper.CreateDocument(_context, "KOT", savedObject.PropertyId, financialYear, Constants.Constants.DocumentKot, userId);
+                    DocumentHelper.CreateDocument(_context, "G", savedObject.PropertyId, financialYear, Constants.Constants.DocumentGroupCode, userId);
 
-                   
 
                     await _context.SaveChangesAsync();
 

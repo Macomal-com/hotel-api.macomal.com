@@ -60,6 +60,7 @@ namespace RepositoryModels.Repository
         public DbSet<ServicesStatus> ServicesStatus { get; set; }
         public DbSet<ReminderMaster> ReminderMaster { get; set; }
         public DbSet<ReminderHistoryMaster> ReminderHistoryMaster { get; set; }
+        public DbSet<VendorHistoryMaster> VendorHistoryMaster { get; set; }
 
         public DbSet<RoomCancelHistory> RoomCancelHistory { get; set; }
 

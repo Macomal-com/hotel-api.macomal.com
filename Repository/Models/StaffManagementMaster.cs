@@ -15,10 +15,10 @@ namespace Repository.Models
         [Key]
         public int StaffId { get; set; }
         public string StaffName { get; set; } = String.Empty;
-        public string StaffRole { get; set; } = String.Empty;
+        public string StaffDesignation { get; set; } = String.Empty;
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
-        public int VendorId { get; set; }
+        public string Department { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -28,10 +28,10 @@ namespace Repository.Models
     public class StaffManagementMasterDTO
     {
         public string StaffName { get; set; } = String.Empty;
-        public string StaffRole { get; set; } = String.Empty;
+        public string StaffDesignation { get; set; } = String.Empty;
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
-        public string VendorId { get; set; } = String.Empty;
+        public string Department { get; set; } = String.Empty;
     }
 
     public class StaffValidator : AbstractValidator<StaffManagementMaster>
