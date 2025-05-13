@@ -48,5 +48,24 @@ namespace hotel_api.Constants
 
             return previousDate;
         }
+
+
+        public static int FindEarlyCheckInHourDifference(string defaultTime, string checkInTime)
+        {
+            TimeSpan checkinTime = TimeSpan.Parse(checkInTime);
+            TimeSpan defaulttime = TimeSpan.Parse(defaultTime);
+
+            if (checkinTime < defaulttime)
+            {
+                TimeSpan difference = defaulttime - checkinTime;
+                int hoursDifference = (int)difference.TotalHours;
+                return hoursDifference;
+                
+            }
+            else
+            {
+                return -1;
+            }
+        }
     }
 }

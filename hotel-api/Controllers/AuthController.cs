@@ -141,7 +141,13 @@ namespace hotel_api.Controllers
                                 x.Email,
                                 x.CancelCalculatedBy,
                                 x.CancelMethod,
-                                x.CheckOutInvoice
+                                x.CheckOutInvoice,
+                                x.IsEarlyCheckInPolicyEnable,
+                                x.IsDefaultCheckInTimeApplicable,
+                                x.IsLateCheckOutPolicyEnable,
+                                x.IsDefaultCheckOutTimeApplicable,
+                                x.IsEmailNotification,
+                                x.IsWhatsappNotification
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -168,7 +174,13 @@ namespace hotel_api.Controllers
                                 x.Email,
                                 x.CancelCalculatedBy,
                                 x.CancelMethod,
-                                x.CheckOutInvoice
+                                x.CheckOutInvoice,
+                                x.IsEarlyCheckInPolicyEnable,
+                                x.IsDefaultCheckInTimeApplicable,
+                                x.IsLateCheckOutPolicyEnable,
+                                x.IsDefaultCheckOutTimeApplicable,
+                                x.IsEmailNotification,
+                                x.IsWhatsappNotification
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -200,7 +212,13 @@ namespace hotel_api.Controllers
                                                             prop.Email,
                                                             prop.CancelCalculatedBy,
                                                             prop.CancelMethod,
-                                                            prop.CheckOutInvoice
+                                                            prop.CheckOutInvoice,
+                                                            prop.IsEarlyCheckInPolicyEnable,
+                                                            prop.IsDefaultCheckInTimeApplicable,
+                                                            prop.IsLateCheckOutPolicyEnable,
+                                                            prop.IsDefaultCheckOutTimeApplicable,
+                                                            prop.IsEmailNotification,
+                                                            prop.IsWhatsappNotification
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -228,7 +246,13 @@ namespace hotel_api.Controllers
                                                             prop.Email,
                                                             prop.CancelCalculatedBy,
                                                             prop.CancelMethod,
-                                                            prop.CheckOutInvoice
+                                                            prop.CheckOutInvoice,
+                                                            prop.IsEarlyCheckInPolicyEnable,
+                                                            prop.IsDefaultCheckInTimeApplicable,
+                                                            prop.IsLateCheckOutPolicyEnable,
+                                                            prop.IsDefaultCheckOutTimeApplicable,
+                                                            prop.IsEmailNotification,
+                                                            prop.IsWhatsappNotification
                                                         }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });

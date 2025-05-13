@@ -79,6 +79,17 @@ namespace Repository.Models
         public decimal CancelAmount { get; set; }
         public DateTime CancelDate { get; set; } = new DateTime(1900, 01, 01);
         public string CheckOutInvoiceFormat { get; set; } = string.Empty;
+        public bool IsEarlyCheckIn { get; set; }
+        public string EarlyCheckInPolicyName { get; set; } = string.Empty;
+
+        public string EarlyCheckInDeductionBy { get; set; } = string.Empty;
+        public string EarlyCheckInApplicableOn { get; set; }
+        = string.Empty;
+
+        public int EarlyCheckInFromHour { get; set; }
+        public int EarlyCheckInToHour { get; set; }
+
+        public decimal EarlyCheckInCharges { get; set; }
 
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
@@ -125,7 +136,18 @@ namespace Repository.Models
         public decimal GstAmount { get; set; }
         public decimal TotalBookingAmount { get; set; }
         public string BookingSource { get; set; } = string.Empty;
-        
+        public bool IsEarlyCheckIn { get; set; }
+        public string EarlyCheckInPolicyName { get; set; } = string.Empty;
+
+        public string EarlyCheckInDeductionBy { get; set; } = string.Empty;
+        public string EarlyCheckInApplicableOn { get; set; }
+        = string.Empty;
+
+        public int EarlyCheckInFromHour { get; set; }
+        public int EarlyCheckInToHour { get; set; }
+
+        public decimal EarlyCheckInCharges { get; set; }
+
 
     }
 
@@ -186,6 +208,17 @@ namespace Repository.Models
         public string OriginalRoomCategoryName { get; set; } = string.Empty;
         public int OriginalRoomId { get; set; }
         public string OriginalRoomNo { get; set; } = string.Empty;
+        public bool IsEarlyCheckIn { get; set; }
+        public string EarlyCheckInPolicyName { get; set; } = string.Empty;
+
+        public string EarlyCheckInDeductionBy { get; set; } = string.Empty;
+        public string EarlyCheckInApplicableOn { get; set; }
+        = string.Empty;
+
+        public int EarlyCheckInFromHour { get; set; }
+        public int EarlyCheckInToHour { get; set; }
+
+        public decimal EarlyCheckInCharges { get; set; }
         public int OriginalPax { get; set; }
         [NotMapped]
         public string GuestName { get; set; } = string.Empty;

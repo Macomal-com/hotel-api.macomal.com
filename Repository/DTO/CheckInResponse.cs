@@ -16,6 +16,8 @@ namespace Repository.DTO
         public List<PaymentDetails>?  PaymentDetails { get; set; }
 
         public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
+
+        public bool IsSingleRoom { get; set; }
     }
 
     public class PaymentSummary

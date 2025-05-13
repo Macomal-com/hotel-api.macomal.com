@@ -17,7 +17,7 @@ namespace Repository.Models
         public string PolicyName { get; set; } = string.Empty;        
         public int FromHour { get; set; }
         public int ToHour { get; set; }
-        public double Amount { get; set; }
+        public decimal Amount { get; set; }
         public string Status { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }

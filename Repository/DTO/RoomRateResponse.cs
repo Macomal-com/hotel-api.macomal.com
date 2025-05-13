@@ -22,5 +22,31 @@ namespace Repository.DTO
 
         public List<BookedRoomRate> BookedRoomRates = new List<BookedRoomRate>();
 
+        public bool IsEarlyCheckIn { get; set; }
+        public string EarlyCheckInPolicyName { get; set; } = string.Empty;
+
+        public string EarlyCheckInDeductionBy { get; set; } = string.Empty;
+        public string EarlyCheckInApplicableOn { get; set; }
+        = string.Empty;
+
+        public int EarlyCheckInFromHour { get; set; } 
+        public int EarlyCheckInToHour { get; set; }
+
+        public decimal EarlyCheckInCharges { get; set; }
+    }
+
+    public class ExtraPolicyCharges
+    {
+        public bool IsEarlyCheckIn { get; set; }
+        public string EarlyCheckInPolicyName { get; set; } = string.Empty;
+
+        public string EarlyCheckInDeductionBy { get; set; } = string.Empty;
+        public string EarlyCheckInApplicableOn { get; set; }
+        = string.Empty;
+
+        public string EarlyCheckInFromHour { get; set; } = string.Empty;
+        public string EarlyCheckInToHour { get; set; } = string.Empty;
+
+        public decimal EarlyCheckInCharges { get; set; }
     }
 }
