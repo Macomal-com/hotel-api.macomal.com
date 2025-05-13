@@ -91,6 +91,18 @@ namespace Repository.Models
 
         public decimal EarlyCheckInCharges { get; set; }
 
+        public bool IsLateCheckOut { get; set; }
+        public string LateCheckOutPolicyName { get; set; } = string.Empty;
+
+        public string LateCheckOutDeductionBy { get; set; } = string.Empty;
+        public string LateCheckOutApplicableOn { get; set; }
+        = string.Empty;
+
+        public int LateCheckOutFromHour { get; set; }
+        public int LateCheckOutToHour { get; set; }
+
+        public decimal LateCheckOutCharges { get; set; }
+
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
 
@@ -148,7 +160,17 @@ namespace Repository.Models
 
         public decimal EarlyCheckInCharges { get; set; }
 
+        public bool IsLateCheckOut { get; set; }
+        public string LateCheckOutPolicyName { get; set; } = string.Empty;
 
+        public string LateCheckOutDeductionBy { get; set; } = string.Empty;
+        public string LateCheckOutApplicableOn { get; set; }
+        = string.Empty;
+
+        public int LateCheckOutFromHour { get; set; }
+        public int LateCheckOutToHour { get; set; }
+
+        public decimal LateCheckOutCharges { get; set; }
     }
 
     public class BookingDetailCheckInDTO
@@ -219,6 +241,18 @@ namespace Repository.Models
         public int EarlyCheckInToHour { get; set; }
 
         public decimal EarlyCheckInCharges { get; set; }
+        public bool IsLateCheckOut { get; set; }
+        public string LateCheckOutPolicyName { get; set; } = string.Empty;
+
+        public string LateCheckOutDeductionBy { get; set; } = string.Empty;
+        public string LateCheckOutApplicableOn { get; set; }
+        = string.Empty;
+
+        public int LateCheckOutFromHour { get; set; }
+        public int LateCheckOutToHour { get; set; }
+
+        public decimal LateCheckOutCharges { get; set; }
+        public decimal TotalServicesAmount { get; set; }
         public int OriginalPax { get; set; }
         [NotMapped]
         public string GuestName { get; set; } = string.Empty;

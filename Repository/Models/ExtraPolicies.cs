@@ -51,9 +51,14 @@ namespace Repository.Models
             RuleFor(x => x.Status)
                 .NotNull().WithMessage("Status is required")
                 .NotEmpty().WithMessage("Status is required");
+
+
+
             RuleFor(x => x.ToHour)
                 .NotNull().WithMessage("ToHour is required")
-                .NotEmpty().WithMessage("ToHour is required");
+                .NotEmpty().WithMessage("ToHour is required")
+                .GreaterThanOrEqualTo(0).WithMessage("ToHour value is not valid")
+                .LessThanOrEqualTo(24).WithMessage("ToHour value is not valid");
 
             RuleFor(x => x.DeductionBy)
                 .NotNull().WithMessage("DeductionBy is required")
@@ -80,13 +85,13 @@ namespace Repository.Models
         private async Task<bool> IsUniquePolicyName(ExtraPolicies cm, CancellationToken cancellationToken)
         {
 
-            return !await _context.ExtraPolicies.AnyAsync(x => x.PolicyName == cm.PolicyName && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            return !await _context.ExtraPolicies.AnyAsync(x => x.PolicyName == cm.PolicyName && x.IsActive == true && x.CompanyId == cm.CompanyId && x.Status == cm.Status, cancellationToken);
         }
 
 
         private async Task<bool> IsUniqueUpdatePolicyName(ExtraPolicies cm, CancellationToken cancellationToken)
         {
-            return !await _context.ExtraPolicies.AnyAsync(x => x.PolicyName == cm.PolicyName && x.PolicyId != cm.PolicyId && x.IsActive == true && x.CompanyId == cm.CompanyId, cancellationToken);
+            return !await _context.ExtraPolicies.AnyAsync(x => x.PolicyName == cm.PolicyName && x.PolicyId != cm.PolicyId && x.IsActive == true && x.CompanyId == cm.CompanyId && x.Status == cm.Status, cancellationToken);
         }
     }
 }

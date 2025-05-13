@@ -33,20 +33,19 @@ namespace Repository.DTO
         public int EarlyCheckInToHour { get; set; }
 
         public decimal EarlyCheckInCharges { get; set; }
-    }
 
-    public class ExtraPolicyCharges
-    {
-        public bool IsEarlyCheckIn { get; set; }
-        public string EarlyCheckInPolicyName { get; set; } = string.Empty;
+        public bool IsLateCheckOut { get; set; }
+        public string LateCheckOutPolicyName { get; set; } = string.Empty;
 
-        public string EarlyCheckInDeductionBy { get; set; } = string.Empty;
-        public string EarlyCheckInApplicableOn { get; set; }
+        public string LateCheckOutDeductionBy { get; set; } = string.Empty;
+        public string LateCheckOutApplicableOn { get; set; }
         = string.Empty;
 
-        public string EarlyCheckInFromHour { get; set; } = string.Empty;
-        public string EarlyCheckInToHour { get; set; } = string.Empty;
+        public int LateCheckOutFromHour { get; set; }
+        public int LateCheckOutToHour { get; set; }
 
-        public decimal EarlyCheckInCharges { get; set; }
+        public decimal LateCheckOutCharges { get; set; }
     }
+
+    
 }

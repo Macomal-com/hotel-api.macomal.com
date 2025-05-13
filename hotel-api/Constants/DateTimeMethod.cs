@@ -67,5 +67,24 @@ namespace hotel_api.Constants
                 return -1;
             }
         }
+
+
+        public static int FindLateCheckOutHourDifference(string defaultTime, string checkOutTime)
+        {
+            TimeSpan checkOuttime = TimeSpan.Parse(checkOutTime);
+            TimeSpan defaulttime = TimeSpan.Parse(defaultTime);
+
+            if (checkOuttime > defaulttime)
+            {
+                TimeSpan difference = checkOuttime - defaulttime;
+                int hoursDifference = (int)difference.TotalHours;
+                return hoursDifference;
+
+            }
+            else
+            {
+                return -1;
+            }
+        }
     }
 }

@@ -15,9 +15,28 @@ namespace Repository.DTO
         public GuestDetails? GuestDetails { get; set; }
         public List<PaymentDetails>?  PaymentDetails { get; set; }
 
-        public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
+        public PaymentCheckInSummary PaymentSummary { get; set; } = new PaymentCheckInSummary();
 
         public bool IsSingleRoom { get; set; }
+    }
+
+
+    public class PaymentCheckInSummary
+    {
+        public decimal RoomAmount { get; set; }
+        public decimal GstAmount { get; set; }
+        public decimal EarlyCheckIn { get; set; }
+        public decimal RoomServicesAmount { get; set; }
+
+        public decimal AgentServiceCharge { get; set; }
+
+        public decimal TotalAmount { get; set; }
+
+        
+        public decimal AdvanceAmount { get; set; }
+        public decimal ReceivedAmount { get; set; }
+        public decimal BalanceAmount { get; set; }
+        public decimal RefundAmount { get; set; }
     }
 
     public class PaymentSummary
@@ -48,6 +67,10 @@ namespace Repository.DTO
 
         //total tax = advance services tax + room service tax
         public decimal TotalTaxAmount { get; set; }
+
+        public decimal EarlyCheckIn { get; set; }
+
+        
     }
 
 
