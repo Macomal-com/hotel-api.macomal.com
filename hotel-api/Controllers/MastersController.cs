@@ -1282,15 +1282,17 @@ namespace hotel_api.Controllers
                         from history in _context.VendorHistoryMaster
                         join vendor in _context.VendorMaster on history.VendorId equals vendor.VendorId
                         join service in _context.VendorServiceMaster on history.ServiceId equals service.Id
+                        join staff in _context.StaffManagementMaster on history.GivenById equals staff.StaffId
                         where history.IsActive && history.CompanyId == companyId && history.UserId == userId
                         select new
                         {
                             history.Id,
-                            history.GivenBy,
+                            history.GivenById,
                             vendor.VendorName,
                             service.Name,
                             DueDate = history.GivenDate.ToString("dd MMMM, yyyy"),
-                            history.Remarks
+                            history.Remarks,
+                            staff.StaffName
                         }).ToListAsync();
 
                 if (data.Count == 0)
@@ -1310,51 +1312,263 @@ namespace hotel_api.Controllers
         public async Task<IActionResult> AddVendorHistoryMaster([FromBody] VendorHistoryMasterDTO vendor)
         {
             if (vendor == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+            {
+                return Ok(new
+                {
+                    Code = 400,
+                    Message = "Invalid data",
+                    Data = Array.Empty<object>()
+                });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-               
-
                 var cm = _mapper.Map<VendorHistoryMaster>(vendor);
-                var staff = new StaffManagementMaster{
-                    StaffName = cm.GivenBy,
-                    PhoneNo = cm.PhoneNo,
-                    Department = "Vendor",
-                    StaffDesignation = "",
-                    Salary = 0,
-                    IsActive = true,
-                    CreatedDate = DateTime.Now,
-                    UpdatedDate = DateTime.Now,
-                    UserId = userId,
-                    CompanyId = companyId
-                };
+
+                // If GivenById is 0, treat it as a new staff entry
+                if (cm.GivenById == 0 && !string.IsNullOrWhiteSpace(cm.GivenBy))
+                {
+                    var newStaff = new StaffManagementMaster
+                    {
+                        StaffName = cm.GivenBy,
+                        PhoneNo = cm.PhoneNo,
+                        Department = "Vendor",
+                        StaffDesignation = "",
+                        Salary = 0,
+                        VendorId = cm.VendorId,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserId = userId,
+                        CompanyId = companyId
+                    };
+
+                    var staffValidator = new StaffValidator(_context);
+                    var staffValidationResult = await staffValidator.ValidateAsync(newStaff);
+
+                    if (!staffValidationResult.IsValid)
+                    {
+                        var errors = staffValidationResult.Errors.Select(e => new
+                        {
+                            Field = e.PropertyName,
+                            Error = e.ErrorMessage
+                        });
+                        return Ok(new { Code = 202, Message = errors });
+                    }
+
+                    _context.StaffManagementMaster.Add(newStaff);
+                    await _context.SaveChangesAsync();
+
+                    cm.GivenById = newStaff.StaffId;
+                }
+
                 SetMastersDefault(cm, companyId, userId);
 
-                var validator = new VendorHistoryValidator(_context);
-                var result = await validator.ValidateAsync(cm);
-                if (!result.IsValid)
+                var vendorValidator = new VendorHistoryValidator(_context);
+                var vendorValidationResult = await vendorValidator.ValidateAsync(cm);
+
+                if (!vendorValidationResult.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var errors = vendorValidationResult.Errors.Select(e => new
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        Field = e.PropertyName,
+                        Error = e.ErrorMessage
+                    });
+                    return Ok(new { Code = 202, Message = errors });
                 }
+
                 _context.VendorHistoryMaster.Add(cm);
-                _context.StaffManagementMaster.Add(staff);
                 await _context.SaveChangesAsync();
-                return Ok(new { Code = 200, Message = "Service History created successfully" });
+
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, Message = "Service history created successfully." });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Optionally log the exception here: e.g., _logger.LogError(ex, "Failed to add vendor history");
+                return StatusCode(500, new
+                {
+                    Code = 500,
+                    Message = Constants.Constants.ErrorMessage
+                });
+            }
+        }
+
+        [HttpGet("GetVendorHistoryById/{Id}")]
+        public async Task<IActionResult> GetVendorHistoryById(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await (
+                        from history in _context.VendorHistoryMaster
+                        join vendor in _context.VendorMaster on history.VendorId equals vendor.VendorId
+                        join service in _context.VendorServiceMaster on history.ServiceId equals service.Id
+                        join staff in _context.StaffManagementMaster on history.GivenById equals staff.StaffId
+                        where history.IsActive && history.CompanyId == companyId && history.UserId == userId && history.Id == id
+                        select new
+                        {
+                            history.Id,
+                            history.GivenById,
+                            vendor.VendorName,
+                            history.VendorId,
+                            service.Name,
+                            history.ServiceId,
+                            DueDate = history.GivenDate.ToString("yyyy-MM-dd"),
+                            history.Remarks,
+                            GivenBy = staff.StaffName,
+                            staff.PhoneNo
+                        }).ToListAsync();
+
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Service not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Service fetched successfully", Data = data });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        [HttpPost("EditVendorHistory")]
+        public async Task<IActionResult> EditVendorHistory([FromBody] VendorHistoryMaster model)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            if (model == null)
+            {
+                return Ok(new { Code = 400, message = "Invalid request. Data is null.", data = new object() });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingProduct = await _context.VendorHistoryMaster
+                    .FirstOrDefaultAsync(u => u.Id == model.Id && u.IsActive == true);
+
+                if (existingProduct == null)
+                {
+                    return Ok(new { Code = 404, message = "Service does not exist.", data = new object() });
+                }
+
+                // Update existing fields
+                existingProduct.UpdatedDate = DateTime.Now;
+                existingProduct.ServiceId = model.ServiceId;
+                existingProduct.VendorId = model.VendorId;
+                existingProduct.GivenBy = model.GivenBy;
+                existingProduct.GivenDate = model.GivenDate;
+
+                if (model.GivenById == 0 && !string.IsNullOrWhiteSpace(model.GivenBy))
+                {
+                    var newStaff = new StaffManagementMaster
+                    {
+                        StaffName = model.GivenBy,
+                        PhoneNo = model.PhoneNo,
+                        Department = "Vendor",
+                        StaffDesignation = "",
+                        Salary = 0,
+                        VendorId = model.VendorId,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserId = userId,
+                        CompanyId = companyId
+                    };
+
+                    var staffValidator = new StaffValidator(_context);
+                    var staffValidationResult = await staffValidator.ValidateAsync(newStaff);
+
+                    if (!staffValidationResult.IsValid)
+                    {
+                        var errors = staffValidationResult.Errors.Select(e => new
+                        {
+                            Field = e.PropertyName,
+                            Error = e.ErrorMessage
+                        });
+
+                        return Ok(new { Code = 202, message = errors });
+                    }
+
+                    _context.StaffManagementMaster.Add(newStaff);
+                    await _context.SaveChangesAsync();
+
+                    // Update GivenById only after successful staff save
+                    existingProduct.GivenById = newStaff.StaffId;
+                }
+                else
+                {
+                    // Keep the existing GivenById if not creating a new one
+                    existingProduct.GivenById = model.GivenById;
+                }
+
+                _context.VendorHistoryMaster.Update(existingProduct);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, message = "Service updated successfully", data = new object() });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Optional: log the exception
+                return StatusCode(500, new { Code = 500, message = "An error occurred", data = new object() });
+            }
+        }
+
+        [HttpPost("DeleteVendorHistory/{id}")]
+        public async Task<IActionResult> DeleteVendorHistory(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            if (id == 0)
+            {
+                return Ok(new { Code = 400, message = "Invalid Id.", data = new object() });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingProduct = await _context.VendorHistoryMaster
+                    .FirstOrDefaultAsync(u => u.Id == id && u.IsActive == true);
+
+                if (existingProduct == null)
+                {
+                    return Ok(new { Code = 404, message = "Service does not exist.", data = new object() });
+                }
+
+                // Update existing fields
+                existingProduct.IsActive = false;
+
+                _context.VendorHistoryMaster.Update(existingProduct);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, message = "Service deleted successfully", data = new object() });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Optional: log the exception
+                return StatusCode(500, new { Code = 500, message = "An error occurred", data = new object() });
+            }
+        }
+
+
+
         //PAYMENT MODE
         [HttpGet("GetPaymentMode")]
         public async Task<IActionResult> GetPaymentMode()

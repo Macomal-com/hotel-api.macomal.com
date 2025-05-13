@@ -14,7 +14,7 @@ namespace Repository.Models
     {
         [Key]
         public int Id { get; set; }
-        public string GivenBy { get; set; } = String.Empty;
+        public int GivenById { get; set; }
         public int VendorId { get; set; }
         public int ServiceId { get; set; }
         public DateTime GivenDate  { get; set; }
@@ -26,16 +26,20 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         [NotMapped]
         public string PhoneNo { get; set; } = String.Empty;
+        [NotMapped]
+        public string GivenBy { get; set; } = String.Empty;
     }
     public class VendorHistoryMasterDTO
     {
-        public string GivenBy { get; set; } = String.Empty;
+        public int GivenById { get; set; }
         public int VendorId { get; set; }
         public int ServiceId { get; set; }
         public DateTime GivenDate { get; set; }
         [NotMapped]
         public string PhoneNo { get; set; } = String.Empty;
         public string Remarks { get; set; } = String.Empty;
+        [NotMapped]
+        public string GivenBy { get; set; } = String.Empty;
     }
 
     public class VendorHistoryValidator : AbstractValidator<VendorHistoryMaster>

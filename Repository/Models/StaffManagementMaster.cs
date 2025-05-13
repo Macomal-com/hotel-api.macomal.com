@@ -19,6 +19,7 @@ namespace Repository.Models
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
         public string Department { get; set; } = String.Empty;
+        public int VendorId { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -32,6 +33,7 @@ namespace Repository.Models
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
         public string Department { get; set; } = String.Empty;
+        public int VendorId { get; set; }
     }
 
     public class StaffValidator : AbstractValidator<StaffManagementMaster>
