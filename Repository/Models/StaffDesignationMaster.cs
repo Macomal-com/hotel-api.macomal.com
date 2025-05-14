@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 
 namespace Repository.Models
 {
-    public class DepartmentMaster
+    public class StaffDesignationMaster
     {
         [Key]
-        public int Id { get; set; }
+        public int Int { get; set; }
+        public int DepartmentId { get; set; }
         public string Name { get; set; } = String.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }

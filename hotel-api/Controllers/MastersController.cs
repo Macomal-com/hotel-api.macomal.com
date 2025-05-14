@@ -14,6 +14,7 @@ using System.Data;
 using System.Xml.XPath;
 using hotel_api.GeneralMethods;
 using Azure;
+using System.Xml.Linq;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -1340,11 +1341,16 @@ namespace hotel_api.Controllers
                 // If GivenById is 0, treat it as a new staff entry
                 if (cm.GivenById == 0 && !string.IsNullOrWhiteSpace(cm.GivenBy))
                 {
+                    var department = await _context.DepartmentMaster.Where(x => x.IsActive && x.Name == "Vendor" && x.CompanyId == companyId).FirstOrDefaultAsync();
+                    if(department == null)
+                    {
+                        return Ok(new { Code = 404, Message = "Vendor Department doesn't exist" });
+                    }
                     var newStaff = new StaffManagementMaster
                     {
                         StaffName = cm.GivenBy,
                         PhoneNo = cm.PhoneNo,
-                        Department = "Vendor",
+                        DepartmentId = department.Id,
                         StaffDesignation = "",
                         Salary = 0,
                         VendorId = cm.VendorId,
@@ -1481,7 +1487,7 @@ namespace hotel_api.Controllers
                     {
                         StaffName = model.GivenBy,
                         PhoneNo = model.PhoneNo,
-                        Department = "Vendor",
+                        DepartmentId = 0,
                         StaffDesignation = "",
                         Salary = 0,
                         VendorId = model.VendorId,
@@ -1695,17 +1701,39 @@ namespace hotel_api.Controllers
         [HttpGet("GetStaffMaster")]
         public async Task<IActionResult> GetStaffMaster(string status = "")
         {
-            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.StaffManagementMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && (status != "" || bm.Department == status)).ToListAsync();
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
+                int? vendorDepartmentId = null;
+
+                // Only check department if status is "Vendor"
+                if (status.Equals("Vendor", StringComparison.OrdinalIgnoreCase))
+                {
+                    var department = await _context.DepartmentMaster
+                        .Where(x => x.IsActive && x.CompanyId == companyId && x.Name == status)
+                        .FirstOrDefaultAsync();
+
+                    if (department == null)
+                    {
+                        return Ok(new { Code = 200, Message = "Department not found", Data = Array.Empty<object>() });
+                    }
+
+                    vendorDepartmentId = department.Id;
+                }
+
+                var data = await _context.StaffManagementMaster
+                    .Where(bm => bm.IsActive
+                                 && bm.CompanyId == companyId
+                                 && (vendorDepartmentId.HasValue & bm.DepartmentId == vendorDepartmentId))
+                    .ToListAsync();
 
                 if (data.Count == 0)
                 {
                     return Ok(new { Code = 200, Message = "Staff not found", Data = Array.Empty<object>() });
                 }
+
                 return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
             }
             catch (Exception ex)
@@ -1714,11 +1742,13 @@ namespace hotel_api.Controllers
             }
         }
 
+
+
         [HttpPost("AddStaffMaster")]
         public async Task<IActionResult> AddStaffMaster([FromBody] StaffManagementMasterDTO sm)
         {
             if (sm == null)
-                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+                return Ok(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
 
             try
             {
@@ -1726,6 +1756,11 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var cm = _mapper.Map<StaffManagementMaster>(sm);
+
+                var department = new DepartmentMaster
+                {
+                    Name = 
+                }
                 SetMastersDefault(cm, companyId, userId);
 
                 var validator = new StaffValidator(_context);
@@ -2524,7 +2559,16 @@ namespace hotel_api.Controllers
                     DocumentHelper.CreateDocument(_context, "KOT", savedObject.PropertyId, financialYear, Constants.Constants.DocumentKot, userId);
                     DocumentHelper.CreateDocument(_context, "G", savedObject.PropertyId, financialYear, Constants.Constants.DocumentGroupCode, userId);
 
-
+                    var department = new DepartmentMaster
+                    {
+                        Name = "Vendor",
+                        CompanyId = savedObject.PropertyId,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        IsActive = true,
+                        UserId = userId
+                    };
+                    _context.DepartmentMaster.Add(department);
                     await _context.SaveChangesAsync();
 
                     await transaction.CommitAsync();
@@ -3424,8 +3468,52 @@ namespace hotel_api.Controllers
         }
 
 
+        //DEPARTMENT MASTER
+        [HttpGet("GetDepartments")]
+        public async Task<IActionResult> GetDepartments()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.DepartmentMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
-        
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "No departments found.", Data = Array.Empty<object>() });
+                }
+                return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        //DEPARTMENT MASTER
+        [HttpGet("GetStaffDesignation")]
+        public async Task<IActionResult> GetStaffDesignation()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.StaffDesignationMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 200, Message = "No designations found.", Data = Array.Empty<object>() });
+                }
+                return Ok(new { Code = 200, Message = "Designations fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
 
         [HttpGet("GetGuestDetailsById/{id}")]
         public async Task<IActionResult> GetGuestDetailsById(int id)

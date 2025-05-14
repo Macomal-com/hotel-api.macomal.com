@@ -18,7 +18,7 @@ namespace Repository.Models
         public string StaffDesignation { get; set; } = String.Empty;
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
-        public string Department { get; set; } = String.Empty;
+        public int DepartmentId { get; set; }
         public int VendorId { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
@@ -32,7 +32,8 @@ namespace Repository.Models
         public string StaffDesignation { get; set; } = String.Empty;
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
-        public string Department { get; set; } = String.Empty;
+        public string DepartmentName { get; set; } = String.Empty;
+        public int DepartmentId { get; set; }
         public int VendorId { get; set; }
     }
 
