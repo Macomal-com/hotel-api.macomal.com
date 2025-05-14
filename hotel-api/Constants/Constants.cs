@@ -98,14 +98,14 @@ namespace hotel_api.Constants
         //extra policy
         public static string EARLYCHECKIN = "CheckIn";
         public static string LATECHECKOUT = "CheckOut";
-        public async static Task<string> AddFile(IFormFile file)
+        public async static Task<string> AddFile(IFormFile file, string path)
         {
             var fileExtension = Path.GetExtension(file.FileName).ToLower();
             if (!AllowedExtensions.Contains(fileExtension))
             {
                 return "";
             }
-            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads/ContractFiles");
+            var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), path);
             if (!Directory.Exists(uploadPath))
             {
                 Directory.CreateDirectory(uploadPath);

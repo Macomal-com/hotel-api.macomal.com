@@ -20,6 +20,9 @@ namespace Repository.Models
         public string Address { get; set; } = String.Empty;
         public string PhoneNumber { get; set; } = String.Empty;
         public double CommissionPercentage { get; set; }
+        public string IdType { get; set; } = String.Empty;
+        public string IdNumber { get; set; } = String.Empty;
+        public string FilePath { get; set; } = String.Empty;
         public DateTime CreatedDate { get; set; } = DateTime.Now;
         public DateTime UpdatedDate { get; set; } = DateTime.Now;
         public bool IsActive { get; set; }
@@ -35,6 +38,9 @@ namespace Repository.Models
         public string Address { get; set; } = String.Empty;
         public string PhoneNumber { get; set; } = String.Empty;
         public double CommissionPercentage { get; set; }
+        public string IdType { get; set; } = String.Empty;
+        public string IdNumber { get; set; } = String.Empty;
+        public string FilePath { get; set; } = String.Empty;
     }
 
     public class LandlordValidator : AbstractValidator<LandlordDetails>

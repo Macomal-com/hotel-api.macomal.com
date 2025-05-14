@@ -175,9 +175,9 @@ namespace Repository.Models
                .NotEmpty().WithMessage("Cluster is required")
                .NotNull().WithMessage("Cluster is required");
 
-            RuleFor(x => x.OwnerId)
-               .NotEmpty().WithMessage("Landlord is required")
-               .NotNull().WithMessage("Landlord is required");
+            //RuleFor(x => x.OwnerId)
+            //   .NotEmpty().WithMessage("Landlord is required")
+            //   .NotNull().WithMessage("Landlord is required");
 
             RuleFor(x => x.Gstin)
                .NotEmpty().WithMessage("GSTIN is required")
@@ -199,12 +199,6 @@ namespace Repository.Models
                .NotNull().WithMessage("Contanct No is required")
                .Length(10)
                    .WithMessage("Contact No length should be 10 digits");
-
-            RuleFor(x => x.PanNo)
-               .NotEmpty().WithMessage("PAN No is required")
-               .NotNull().WithMessage("PAN No is required")
-               .Length(10)
-                   .WithMessage("Pan No length should be 10 numbers");
             RuleFor(x => x)
                 .MustAsync(IsUniqueProperty)
                 .When(x => x.PropertyId == 0)

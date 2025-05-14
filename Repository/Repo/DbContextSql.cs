@@ -65,6 +65,7 @@ namespace RepositoryModels.Repository
         public DbSet<RoomCancelHistory> RoomCancelHistory { get; set; }
 
         public DbSet<EmailCredential> EmailCredential { get; set; }
+        public DbSet<DepartmentMaster> DepartmentMaster { get; set; }
 
         public DbSet<WhatsAppCredentials> WhatsAppCredentials { get; set; }
         public DbSet<HouseKeeping> HouseKeeping { get; set; }

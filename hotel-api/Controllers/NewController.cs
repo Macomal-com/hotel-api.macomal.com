@@ -1211,7 +1211,7 @@ namespace hotel_api.Controllers
                 if (file != null)
                 {
                     
-                    agentDetails.ContractFile = await Constants.Constants.AddFile(file);
+                    agentDetails.ContractFile = await Constants.Constants.AddFile(file, "Uploads/ContractFiles");
 
                 }
                 
@@ -1264,7 +1264,7 @@ namespace hotel_api.Controllers
                 agent.UpdatedDate = DateTime.Now;
                 if (file != null)
                 {
-                    agent.ContractFile = await Constants.Constants.AddFile(file);
+                    agent.ContractFile = await Constants.Constants.AddFile(file, "Uploads/ContractFiles");
 
                 }
 

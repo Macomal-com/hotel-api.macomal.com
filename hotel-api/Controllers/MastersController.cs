@@ -200,16 +200,16 @@ namespace hotel_api.Controllers
 
 
         [HttpPatch("PatchLandlordDetails/{id}")]
-        public async Task<IActionResult> PatchLandlordDetails(int id, [FromBody] JsonPatchDocument<LandlordDetails> patchDocument)
+        public async Task<IActionResult> PatchLandlordDetails(int id, [FromForm] string patchDoc, IFormFile? file)
         {
             try
             {
-                if (patchDocument == null)
+                if (patchDoc == null)
                 {
                     return Ok(new { Code = 500, Message = "Invalid Data" });
 
                 }
-
+                var patchDocument = JsonConvert.DeserializeObject<JsonPatchDocument<LandlordDetails>>(patchDoc);
                 var landlord = await _context.LandlordDetails.FindAsync(id);
 
                 if (landlord == null)
@@ -252,7 +252,11 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 202, Message = errors });
                     }
                     landlord.UpdatedDate = DateTime.Now;
+                    if (file != null)
+                    {
+                        landlord.FilePath = await Constants.Constants.AddFile(file, "Uploads/landlordIdentity");
 
+                    }
                     await _context.SaveChangesAsync();
 
                     return Ok(new { Code = 200, Message = "Landlord updated successfully" });
@@ -269,7 +273,7 @@ namespace hotel_api.Controllers
 
 
         [HttpPost("AddLandlordDetails")]
-        public async Task<IActionResult> AddLandlordDetails([FromBody] LandlordDetailsDTO landlord)
+        public async Task<IActionResult> AddLandlordDetails([FromForm] LandlordDetailsDTO landlord, IFormFile? file)
         {
             if (landlord == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
@@ -292,7 +296,10 @@ namespace hotel_api.Controllers
                     }).ToList();
                     return Ok(new { Code = 202, Message = errors });
                 }
-
+                if (file != null)
+                {
+                    cm.FilePath = await Constants.Constants.AddFile(file, "Uploads/landlordIdentity");
+                }
                 SetMastersDefault(cm, companyId, userId);
 
                 await _context.LandlordDetails.AddAsync(cm);
@@ -317,7 +324,7 @@ namespace hotel_api.Controllers
 
                 var data = await (from rs in _context.BuildingMaster
 
-                                  where rs.IsActive == true && rs.PropertyId == companyId && rs.UserId == userId
+                                  where rs.IsActive == true && rs.PropertyId == companyId
                                   select new
                                   {
                                       rs.BuildingId,
@@ -346,7 +353,7 @@ namespace hotel_api.Controllers
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.BuildingMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.BuildingId == id && x.CompanyId == companyId && x.UserId == userId);
+                var data = await _context.BuildingMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.BuildingId == id && x.CompanyId == companyId);
 
 
                 return data == null
@@ -467,7 +474,7 @@ namespace hotel_api.Controllers
                                   join building in _context.BuildingMaster on floor.BuildingId equals building.BuildingId into floorBuilding
                                   from buildingMas in floorBuilding.DefaultIfEmpty()
                                   join prop in _context.CompanyDetails on floor.PropertyId equals prop.PropertyId
-                                  where floor.IsActive == true && floor.PropertyId == companyId && floor.UserId == userId
+                                  where floor.IsActive == true && floor.PropertyId == companyId
                                   select new
                                   {
                                       FloorId = floor.FloorId,
@@ -499,7 +506,7 @@ namespace hotel_api.Controllers
                                   join building in _context.BuildingMaster on floor.BuildingId equals building.BuildingId into floorBuilding
                                   from buildingMas in floorBuilding.DefaultIfEmpty()
                                   join prop in _context.CompanyDetails on floor.PropertyId equals prop.PropertyId
-                                  where floor.IsActive == true && floor.PropertyId == companyId && floor.UserId == userId && floor.FloorId == id
+                                  where floor.IsActive == true && floor.PropertyId == companyId&& floor.FloorId == id
                                   select new
                                   {
                                       FloorId = floor.FloorId,
@@ -628,7 +635,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
                 string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
-                var data = await _context.GroupMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.GroupMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
                 var groupCode = await DocumentHelper.GetDocumentNo(_context, Constants.Constants.DocumentGroupCode, companyId, financialYear);
                 if (data.Count == 0)
                 {
@@ -652,7 +659,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.GroupMaster
-                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Group not found", Data = Array.Empty<object>() })
@@ -789,7 +796,7 @@ namespace hotel_api.Controllers
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.BedTypeMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.BedTypeMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -812,7 +819,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.BedTypeMaster
-                          .Where(x => x.BedTypeId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.BedTypeId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Bed Type not found", Data = Array.Empty<object>() })
@@ -908,7 +915,7 @@ namespace hotel_api.Controllers
                 var data = await (from rs in _context.SubGroupMaster
                                   join gm in _context.GroupMaster on rs.GroupId equals gm.Id
                                   where rs.IsActive == true && gm.IsActive == true &&
-                                  rs.CompanyId == companyId && rs.UserId == userId
+                                  rs.CompanyId == companyId
                                   select new
                                   {
                                       rs.SubGroupId,
@@ -972,7 +979,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.SubGroupMaster
-                          .Where(x => x.SubGroupId == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.SubGroupId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Sub Group not found", Data = Array.Empty<object>() })
@@ -1031,7 +1038,7 @@ namespace hotel_api.Controllers
                 var data = await (from rs in _context.ServicableMaster
                                   join gm in _context.GroupMaster on rs.GroupId equals gm.Id
                                   join sgm in _context.SubGroupMaster on rs.SubGroupId equals sgm.SubGroupId
-                                  where rs.IsActive == true && rs.CompanyId == companyId && rs.UserId == userId
+                                  where rs.IsActive == true && rs.CompanyId == companyId
                                   && gm.IsActive == true && sgm.IsActive == true
                                   select new
                                   {
@@ -1100,7 +1107,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.ServicableMaster
-                          .Where(x => x.ServiceId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.ServiceId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Service not found", Data = Array.Empty<object>() })
@@ -1158,7 +1165,7 @@ namespace hotel_api.Controllers
                 var data = await (from rs in _context.VendorMaster
                                   join gm in _context.VendorServiceMaster on rs.ServiceId equals gm.Id
                                   where rs.IsActive == true && gm.IsActive == true &&
-                                  rs.CompanyId == companyId && rs.UserId == userId
+                                  rs.CompanyId == companyId
                                   select new
                                   {
                                       rs.VendorId,
@@ -1224,7 +1231,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.VendorMaster
-                          .Where(x => x.VendorId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.VendorId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Vendor not found", Data = Array.Empty<object>() })
@@ -1283,7 +1290,7 @@ namespace hotel_api.Controllers
                         join vendor in _context.VendorMaster on history.VendorId equals vendor.VendorId
                         join service in _context.VendorServiceMaster on history.ServiceId equals service.Id
                         join staff in _context.StaffManagementMaster on history.GivenById equals staff.StaffId
-                        where history.IsActive && history.CompanyId == companyId && history.UserId == userId
+                        where history.IsActive && history.CompanyId == companyId
                         select new
                         {
                             history.Id,
@@ -1413,7 +1420,7 @@ namespace hotel_api.Controllers
                         join vendor in _context.VendorMaster on history.VendorId equals vendor.VendorId
                         join service in _context.VendorServiceMaster on history.ServiceId equals service.Id
                         join staff in _context.StaffManagementMaster on history.GivenById equals staff.StaffId
-                        where history.IsActive && history.CompanyId == companyId && history.UserId == userId && history.Id == id
+                        where history.IsActive && history.CompanyId == companyId && history.Id == id
                         select new
                         {
                             history.Id,
@@ -1577,7 +1584,7 @@ namespace hotel_api.Controllers
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.PaymentMode.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.PaymentMode.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1600,7 +1607,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.PaymentMode
-                          .Where(x => x.PaymentId == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.PaymentId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Payment Mode not found", Data = Array.Empty<object>() })
@@ -1750,7 +1757,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.StaffManagementMaster
-                          .Where(x => x.StaffId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.StaffId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
@@ -1807,7 +1814,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.GstMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.GstMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1831,7 +1838,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.GstMaster
-                          .Where(x => x.Id == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -1964,7 +1971,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.CommissionMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.CommissionMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -1988,7 +1995,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.CommissionMaster
-                          .Where(x => x.Id == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2125,7 +2132,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.UserDetails
-                          .Where(x => x.IsActive == true && x.UserId == id && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.IsActive == true && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2251,7 +2258,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.VendorServiceMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.VendorServiceMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -2275,7 +2282,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.VendorServiceMaster
-                          .Where(x => x.Id == id && x.IsActive && x.UserId == userId && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Vendor Service not found", Data = Array.Empty<object>() })
@@ -2390,9 +2397,10 @@ namespace hotel_api.Controllers
                 //var data = await _context.CompanyDetails.Where(bm => bm.IsActive).ToListAsync();
                 var data = await (from com in _context.CompanyDetails
                                        join cluster in _context.ClusterMaster on com.ClusterId equals cluster.ClusterId
-                                       join landlord in _context.LandlordDetails on com.OwnerId equals landlord.LandlordId
-                                       where com.IsActive && cluster.IsActive && landlord.IsActive
-                                       select new
+                                  join landlord in _context.LandlordDetails on com.OwnerId equals landlord.LandlordId into landlordJoin
+                                  from landlord in landlordJoin.DefaultIfEmpty()
+                                  where com.IsActive && cluster.IsActive && (landlord == null || landlord.IsActive)
+                                  select new
                                        {
                                             com.PropertyId,
                                             com.CompanyName,
@@ -2674,7 +2682,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.HourMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.HourMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -2698,7 +2706,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.HourMaster
-                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2839,7 +2847,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.ExtraPolicies.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.ExtraPolicies.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -2863,7 +2871,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.ExtraPolicies
-                          .Where(x => x.PolicyId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.PolicyId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2969,7 +2977,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.CancelPolicyMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.CancelPolicyMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -3016,7 +3024,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.CancelPolicyMaster
-                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -3131,7 +3139,7 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.ReminderMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.UserId == userId).ToListAsync();
+                var data = await _context.ReminderMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -3155,7 +3163,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.ReminderMaster
-                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -3262,7 +3270,7 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
                 var data = await (from history in _context.ReminderHistoryMaster
                                   join reminder in _context.ReminderMaster on history.ReminderId equals reminder.Id
-                                  where history.IsActive && history.CompanyId == companyId && history.UserId == userId
+                                  where history.IsActive && history.CompanyId == companyId
                                   select new
                                   {
                                       history.Id,
@@ -3295,7 +3303,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.ReminderHistoryMaster
-                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -3427,7 +3435,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.GuestDetails
-                          .Where(x => x.GuestId == id && x.IsActive && x.CompanyId == companyId && x.UserId == userId).FirstOrDefaultAsync();
+                          .Where(x => x.GuestId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
