@@ -131,11 +131,11 @@ namespace Repository.Models
         public bool IsDefaultCheckInTimeApplicable { get; set; }
 
         public bool IsDefaultCheckOutTimeApplicable { get; set; }
-        public string ReservationNotification { get; set; } = String.Empty;
-        public string CheckinNotification { get; set; } = String.Empty;
-        public string RoomShiftNotification { get; set; } = String.Empty;
-        public string CheckOutNotification { get; set; } = String.Empty;
-        public string CancelBookingNotification { get; set; } = String.Empty;
+        public bool ReservationNotification { get; set; }
+        public bool CheckinNotification { get; set; }
+        public bool RoomShiftNotification { get; set; }
+        public bool CheckOutNotification { get; set; }
+        public bool CancelBookingNotification { get; set; }
         public string CalculateRoomRates { get; set; } = String.Empty;
         public bool CheckoutWithoutBalance { get; set; }
     }
