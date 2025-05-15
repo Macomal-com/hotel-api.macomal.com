@@ -137,7 +137,7 @@ namespace Repository.Models
         public bool CheckOutNotification { get; set; }
         public bool CancelBookingNotification { get; set; }
         public string CalculateRoomRates { get; set; } = String.Empty;
-        public bool CheckoutWithoutBalance { get; set; }
+        public bool CheckoutWithBalance { get; set; }
     }
     public class CompanyDetailsDTO
     {
@@ -171,7 +171,7 @@ namespace Repository.Models
         public bool CheckOutNotification { get; set; }
         public bool CancelBookingNotification { get; set; }
         public string CalculateRoomRates { get; set; } = String.Empty;
-        public bool CheckoutWithoutBalance { get; set; }
+        public bool CheckoutWithBalance { get; set; }
     }
     public class PropertyDetailsValidator : AbstractValidator<CompanyDetails>
     {

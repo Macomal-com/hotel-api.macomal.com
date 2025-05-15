@@ -147,7 +147,13 @@ namespace hotel_api.Controllers
                                 x.IsLateCheckOutPolicyEnable,
                                 x.IsDefaultCheckOutTimeApplicable,
                                 x.IsEmailNotification,
-                                x.IsWhatsappNotification
+                                x.IsWhatsappNotification,
+                                x.CheckoutWithBalance,
+                                x.ReservationNotification,
+                                x.CheckinNotification,
+                                x.CheckOutNotification,
+                                x.RoomShiftNotification,
+                                x.CancelBookingNotification
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
@@ -180,7 +186,14 @@ namespace hotel_api.Controllers
                                 x.IsLateCheckOutPolicyEnable,
                                 x.IsDefaultCheckOutTimeApplicable,
                                 x.IsEmailNotification,
-                                x.IsWhatsappNotification
+                                x.IsWhatsappNotification,
+                                x.CheckoutWithBalance,
+                                x.CalculateRoomRates,
+                                x.ReservationNotification,
+                                x.CheckinNotification,
+                                x.CheckOutNotification,
+                                x.RoomShiftNotification,
+                                x.CancelBookingNotification
                             }).ToListAsync();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });

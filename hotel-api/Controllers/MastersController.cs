@@ -2551,7 +2551,7 @@ namespace hotel_api.Controllers
                 {
                     int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                     int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-                    string financialYear = (HttpContext.Request.Headers["FinancialYear"]).ToString();
+                    string financialYear = HttpContext.Request.Headers["FinancialYear"].ToString();
 
                     var cm = _mapper.Map<CompanyDetails>(companyDetails);
                     SetMastersDefault(cm, companyId, userId);
