@@ -131,7 +131,13 @@ namespace Repository.Models
         public bool IsDefaultCheckInTimeApplicable { get; set; }
 
         public bool IsDefaultCheckOutTimeApplicable { get; set; }
-
+        public string ReservationNotification { get; set; } = String.Empty;
+        public string CheckinNotification { get; set; } = String.Empty;
+        public string RoomShiftNotification { get; set; } = String.Empty;
+        public string CheckOutNotification { get; set; } = String.Empty;
+        public string CancelBookingNotification { get; set; } = String.Empty;
+        public string CalculateRoomRates { get; set; } = String.Empty;
+        public bool CheckoutWithoutBalance { get; set; }
     }
     public class CompanyDetailsDTO
     {
@@ -159,6 +165,13 @@ namespace Repository.Models
         public string CheckOutInvoice { get; set; } = string.Empty;
         public bool IsWhatsappNotification { get; set; }
         public bool IsEmailNotification { get; set; }
+        public string ReservationNotification { get; set; } = String.Empty;
+        public string CheckinNotification { get; set; } = String.Empty;
+        public string RoomShiftNotification { get; set; } = String.Empty;
+        public string CheckOutNotification { get; set; } = String.Empty;
+        public string CancelBookingNotification { get; set; } = String.Empty;
+        public string CalculateRoomRates { get; set; } = String.Empty;
+        public bool CheckoutWithoutBalance { get; set; }
     }
     public class PropertyDetailsValidator : AbstractValidator<CompanyDetails>
     {
