@@ -70,7 +70,7 @@ namespace Repository.DTO
 
         public decimal EarlyCheckIn { get; set; }
 
-        
+        public decimal LateCheckOut { get; set; }
     }
 
 

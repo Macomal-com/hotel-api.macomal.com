@@ -228,7 +228,9 @@ namespace hotel_api.Controllers
                         TransactionType = x.TransactionType
                     }).ToListAsync();
 
-                return Ok(new { Code = 200, Message = "Data get successfully", bookingno = bookingno, agentDetails = agentDetails, roomCategories = roomCategories, paymentModes = paymentModes });
+                var hours = await _context.HourMaster.Where(x => x.IsActive == true && x.CompanyId == companyId).ToListAsync();
+
+                return Ok(new { Code = 200, Message = "Data get successfully", bookingno = bookingno, agentDetails = agentDetails, roomCategories = roomCategories, paymentModes = paymentModes, hours = hours });
             }
             catch (Exception)
             {
@@ -237,12 +239,12 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("ReservationRoomRate")]
-        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate, string checkOutFormat, int noOfRooms, int noOfNights, string gstType, int hourId = 0, string checkInTime = "", string checkOutTime = "")
+        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateTime checkInDate, DateTime checkOutDate, int noOfRooms, int noOfNights, string gstType, int noOfHours = 0, string checkInTime = "", string checkOutTime = "")
         {
             try
             {
                 var roomRateResponse = new RoomRateResponse();             
-                var (code, message, response) = await CalculateRoomRateAsync(companyId, roomTypeId, checkInDate, checkOutDate, checkOutFormat, noOfRooms, noOfNights, gstType, hourId, checkInTime, checkOutTime);
+                var (code, message, response) = await CalculateRoomRateAsync(companyId, roomTypeId, checkInDate, checkOutDate,  noOfRooms, noOfNights, gstType, noOfHours, checkInTime, checkOutTime);
                 return Ok(new { Code = code, Message = message, Data = response });
 
             }
@@ -2058,6 +2060,12 @@ namespace hotel_api.Controllers
                 var response = new CheckOutResponse();
                 response.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
 
+                var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
+
+                if(property == null)
+                {
+                    return Ok(new { Code = 500, Message = "Property details not found" });
+                }
 
                 if (response.ReservationDetails == null)
                 {
@@ -2148,7 +2156,10 @@ namespace hotel_api.Controllers
                                                      AdvanceServices = _context.AdvanceServices.Where(x => x.IsActive == true && x.BookingId == booking.BookingId).ToList(),
                                                      IsEarlyCheckIn = booking.IsEarlyCheckIn,
                                                      EarlyCheckInPolicyName = booking.EarlyCheckInPolicyName,
-                                                     EarlyCheckInCharges = booking.EarlyCheckInCharges
+                                                     EarlyCheckInCharges = booking.EarlyCheckInCharges,
+                                                     IsLateCheckOut = booking.IsLateCheckOut,
+                                                     LateCheckOutPolicyName = booking.LateCheckOutPolicyName,
+                                                     LateCheckOutCharges = booking.LateCheckOutCharges
                                                  }).ToListAsync();
 
 
@@ -2361,6 +2372,11 @@ namespace hotel_api.Controllers
                         item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
 
                     }
+
+                    // calculate late checkout
+
+
+
                     item.TotalAmount = BookingCalulation.BookingTotalAmount(item);
                 }
 
@@ -4719,7 +4735,7 @@ namespace hotel_api.Controllers
         //CALCULATE ROOM RATE DATE WISE
         private async Task<(int Code, string Message, RoomRateResponse? Response)> CalculateRoomRateAsync(
             int companyId, int roomTypeId, DateTime checkInDate, DateTime checkOutDate,
-            string checkOutFormat, int noOfRooms, int noOfNights, string gstType, int hourId, string checkInTime, string checkOutTime)
+            int noOfRooms, int noOfNights, string gstType, int noOfHours, string checkInTime, string checkOutTime)
         {
             var roomRateResponse = new RoomRateResponse();
 
@@ -4745,44 +4761,71 @@ namespace hotel_api.Controllers
             //if checkout format is sameday
             if (property.CheckOutFormat == Constants.Constants.SameDayFormat)
             {
-                var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourId).FirstOrDefaultAsync();
+                var hourObject = await _context.HourMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.Hour == noOfHours);
+              
+                
+                var roomRates = hourObject == null ? null : await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourObject.Id).FirstOrDefaultAsync();
                 if (roomRates == null)
                 {
-                    return (400, "No Room Rates found", roomRateResponse);
-
-                }
-                else
-                {
-                    roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRates.RoomRate);
-
-                    var roomRateDate = new BookedRoomRate();
-                    roomRateDate.BookingDate = checkInDate;
-                    roomRateDate.GstType = gstType;
-                    if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                    //get rates of that check in date 
+                    //1. find custom rates
+                    var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= checkInDate && x.ToDate >= checkInDate) && x.RoomTypeId == roomTypeId).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
+                    if(customRoomRates == null)
                     {
-                        var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, roomRateResponse.BookingAmount);
-                        if (gstRangeMaster == null)
+                        //fetch standard rates
+                        var standardRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId).FirstOrDefaultAsync();
+                        if (standardRates == null)
                         {
-                            roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+
+                            return (400, "No Room Rates found", roomRateResponse);
+
                         }
                         else
                         {
-                            roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
+                            roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(standardRates.RoomRate);
                         }
                     }
                     else
                     {
+                        roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(customRoomRates.RoomRate);
+                    }
+
+
+                }
+                //hour based rates
+                else
+                {
+                    roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRates.RoomRate);
+                    
+                }
+
+                var roomRateDate = new BookedRoomRate();
+                roomRateDate.BookingDate = checkInDate;
+                roomRateDate.GstType = gstType;
+                if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                {
+                    var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, roomRateResponse.BookingAmount);
+                    if (gstRangeMaster == null)
+                    {
                         roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
                     }
-                    (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateDate.GstPercentage, gstType);
-                    roomRateResponse.BookingAmount = roomRateDate.RoomRate;
-
-                    roomRateDate.CGST = Constants.Calculation.CalculateCGST(roomRateDate.GstPercentage);
-                    roomRateDate.CGSTAmount = Constants.Calculation.CalculateCGST(roomRateDate.GstAmount);
-                    roomRateDate.SGST = roomRateDate.CGST;
-                    roomRateDate.SGSTAmount = roomRateDate.CGSTAmount;
-                    roomRateResponse.BookedRoomRates.Add(roomRateDate);
+                    else
+                    {
+                        roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
+                    }
                 }
+                else
+                {
+                    roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                }
+                (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateDate.GstPercentage, gstType);
+                roomRateResponse.BookingAmount = roomRateDate.RoomRate;
+
+                roomRateDate.CGST = Constants.Calculation.CalculateCGST(roomRateDate.GstPercentage);
+                roomRateDate.CGSTAmount = Constants.Calculation.CalculateCGST(roomRateDate.GstAmount);
+                roomRateDate.SGST = roomRateDate.CGST;
+                roomRateDate.SGSTAmount = roomRateDate.CGSTAmount;
+                roomRateResponse.BookedRoomRates.Add(roomRateDate);
             }
             
             //checkout format - 24 hours/ night
@@ -5126,6 +5169,7 @@ namespace hotel_api.Controllers
                 summary.TotalTaxAmount = summary.TotalTaxAmount + item.GstAmount + item.ServicesTaxAmount;
 
                 summary.EarlyCheckIn = summary.EarlyCheckIn + item.EarlyCheckInCharges;
+                summary.LateCheckOut = summary.LateCheckOut + item.LateCheckOutCharges;
             }
             summary.AgentServiceCharge = reservationDetails.AgentServiceCharge;
             summary.AgentServiceGst = reservationDetails.AgentServiceGstAmount;
