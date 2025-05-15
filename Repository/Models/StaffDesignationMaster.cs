@@ -10,7 +10,7 @@ namespace Repository.Models
     public class StaffDesignationMaster
     {
         [Key]
-        public int Int { get; set; }
+        public int Id { get; set; }
         public int DepartmentId { get; set; }
         public string Name { get; set; } = String.Empty;
         public bool IsActive { get; set; }

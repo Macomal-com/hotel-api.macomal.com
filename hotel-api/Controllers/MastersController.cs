@@ -15,6 +15,7 @@ using System.Xml.XPath;
 using hotel_api.GeneralMethods;
 using Azure;
 using System.Xml.Linq;
+using System.Diagnostics.Metrics;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -1351,7 +1352,7 @@ namespace hotel_api.Controllers
                         StaffName = cm.GivenBy,
                         PhoneNo = cm.PhoneNo,
                         DepartmentId = department.Id,
-                        StaffDesignation = "",
+                        DesignationId = 0,
                         Salary = 0,
                         VendorId = cm.VendorId,
                         IsActive = true,
@@ -1488,7 +1489,7 @@ namespace hotel_api.Controllers
                         StaffName = model.GivenBy,
                         PhoneNo = model.PhoneNo,
                         DepartmentId = 0,
-                        StaffDesignation = "",
+                        DesignationId = 0,
                         Salary = 0,
                         VendorId = model.VendorId,
                         IsActive = true,
@@ -1730,14 +1731,22 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    data = await _context.StaffManagementMaster
-                        .Where(bm => bm.IsActive
-                                     && bm.CompanyId == companyId
-                                    && bm.VendorId == 0)
-                        .ToListAsync();
-                }
-                    
+                    var staffData = await (from bm in _context.StaffManagementMaster
+                                           join department in _context.DepartmentMaster on bm.DepartmentId equals department.Id
+                                           join designation in _context.StaffDesignationMaster on bm.DesignationId equals designation.Id
+                                           where bm.IsActive && bm.CompanyId == companyId && bm.VendorId == 0
+                                           select new
+                                           {
+                                               bm.StaffId,
+                                               bm.StaffName,
+                                               Department = department.Name,
+                                               Designation = designation.Name,
+                                               bm.PhoneNo,
+                                               bm.Salary
+                                           }).ToListAsync();
+                    return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = staffData });
 
+                }
                 if (data.Count == 0)
                 {
                     return Ok(new { Code = 200, Message = "Staff not found", Data = Array.Empty<object>() });
@@ -1765,6 +1774,7 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var cm = _mapper.Map<StaffManagementMaster>(sm);
+                var departmentId = 0;
                 if(cm.DepartmentId == 0)
                 {
                     var department = new DepartmentMaster
@@ -1784,6 +1794,32 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 404, Message = "Could't find department" });
                     }
                     cm.DepartmentId = savedObj.Id;
+                    departmentId = savedObj.Id;
+                }
+                else
+                {
+                    departmentId = cm.DepartmentId;
+                }
+                if (cm.DesignationId == 0)
+                {
+                    var designation = new StaffDesignationMaster
+                    {
+                        Name = sm.StaffDesignation,
+                        DepartmentId = departmentId,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        CompanyId = companyId,
+                        UserId = userId
+                    };
+                    _context.StaffDesignationMaster.Add(designation);
+                    await _context.SaveChangesAsync();
+                    var savedObj = await _context.StaffDesignationMaster.Where(x => x.Name == sm.StaffDesignation && x.CompanyId == companyId).FirstOrDefaultAsync();
+                    if (savedObj == null)
+                    {
+                        return Ok(new { Code = 404, Message = "Could't find designation" });
+                    }
+                    cm.DesignationId = savedObj.Id;
                 }
                 SetMastersDefault(cm, companyId, userId);
                 var validator = new StaffValidator(_context);
@@ -1814,8 +1850,21 @@ namespace hotel_api.Controllers
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.StaffManagementMaster
-                          .Where(x => x.StaffId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
+                var data = await (from bm in _context.StaffManagementMaster
+                                       join department in _context.DepartmentMaster on bm.DepartmentId equals department.Id
+                                       join designation in _context.StaffDesignationMaster on bm.DesignationId equals designation.Id
+                                       where bm.IsActive && bm.CompanyId == companyId && bm.StaffId == id
+                                       select new
+                                       {
+                                           bm.StaffId,
+                                           bm.StaffName,
+                                           bm.DepartmentId,
+                                           bm.DesignationId,
+                                           Department = department.Name,
+                                           staffDesignation = designation.Name,
+                                           bm.PhoneNo,
+                                           bm.Salary
+                                       }).ToListAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Staff not found", Data = Array.Empty<object>() })
@@ -3499,14 +3548,14 @@ namespace hotel_api.Controllers
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                var data = await _context.DepartmentMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.DepartmentMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId && bm.Name != "Vendor").ToListAsync();
 
 
                 if (data.Count == 0)
                 {
                     return Ok(new { Code = 200, Message = "No departments found.", Data = Array.Empty<object>() });
                 }
-                return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = data });
+                return Ok(new { Code = 200, Message = "Departments fetched successfully", Data = data });
             }
             catch (Exception ex)
             {

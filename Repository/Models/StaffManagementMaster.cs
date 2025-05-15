@@ -15,7 +15,7 @@ namespace Repository.Models
         [Key]
         public int StaffId { get; set; }
         public string StaffName { get; set; } = String.Empty;
-        public string StaffDesignation { get; set; } = String.Empty;
+        public int DesignationId { get; set; }
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
         public int DepartmentId { get; set; }
@@ -29,6 +29,7 @@ namespace Repository.Models
     public class StaffManagementMasterDTO
     {
         public string StaffName { get; set; } = String.Empty;
+        public int DesignationId { get; set; }
         public string StaffDesignation { get; set; } = String.Empty;
         public string PhoneNo { get; set; } = String.Empty;
         public double Salary { get; set; }
