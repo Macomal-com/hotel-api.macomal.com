@@ -1707,6 +1707,7 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 int? vendorDepartmentId = null;
+                List<StaffManagementMaster> data = null;
 
                 // Only check department if status is "Vendor"
                 if (status.Equals("Vendor", StringComparison.OrdinalIgnoreCase))
@@ -1721,13 +1722,21 @@ namespace hotel_api.Controllers
                     }
 
                     vendorDepartmentId = department.Id;
+                    data = await _context.StaffManagementMaster
+                       .Where(bm => bm.IsActive
+                                    && bm.CompanyId == companyId
+                                   && bm.DepartmentId == vendorDepartmentId)
+                       .ToListAsync();
                 }
-
-                var data = await _context.StaffManagementMaster
-                    .Where(bm => bm.IsActive
-                                 && bm.CompanyId == companyId
-                                 && (vendorDepartmentId.HasValue & bm.DepartmentId == vendorDepartmentId))
-                    .ToListAsync();
+                else
+                {
+                    data = await _context.StaffManagementMaster
+                        .Where(bm => bm.IsActive
+                                     && bm.CompanyId == companyId
+                                    && bm.VendorId == 0)
+                        .ToListAsync();
+                }
+                    
 
                 if (data.Count == 0)
                 {
@@ -1756,13 +1765,27 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var cm = _mapper.Map<StaffManagementMaster>(sm);
-
-                var department = new DepartmentMaster
+                if(cm.DepartmentId == 0)
                 {
-                    Name = 
+                    var department = new DepartmentMaster
+                    {
+                        Name = sm.Department,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        CompanyId = companyId,
+                        UserId = userId
+                    };
+                    _context.DepartmentMaster.Add(department);
+                    await _context.SaveChangesAsync();
+                    var savedObj = await _context.DepartmentMaster.Where(x => x.Name == sm.Department && x.CompanyId == companyId).FirstOrDefaultAsync();
+                    if (savedObj == null)
+                    {
+                        return Ok(new { Code = 404, Message = "Could't find department" });
+                    }
+                    cm.DepartmentId = savedObj.Id;
                 }
                 SetMastersDefault(cm, companyId, userId);
-
                 var validator = new StaffValidator(_context);
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
