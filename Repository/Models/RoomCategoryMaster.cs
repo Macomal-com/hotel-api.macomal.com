@@ -4,6 +4,7 @@ using RepositoryModels.Repository;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -28,6 +29,8 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         public int DefaultPax { get; set; }
         public int ExtraBed { get; set; }
+        [NotMapped]
+        public bool ChangeDetails { get; set; }
 
     }
     public class RoomCategoryMasterDTO

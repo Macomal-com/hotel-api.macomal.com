@@ -6,8 +6,10 @@ using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
 using Repository.Models;
+using Repository.RequestDTO;
 using RepositoryModels.Repository;
 using System.ComponentModel.Design;
 using System.Data;
@@ -146,30 +148,49 @@ namespace hotel_api.Controllers
         }
 
 
-        [HttpPatch("PatchRoomCategoryMaster/{id}")]
-        public async Task<IActionResult> PatchRoomCategoryMaster(int id, [FromBody] JsonPatchDocument<RoomCategoryMaster> patchDocument)
+        [HttpPost("EditRoomCategoryMaster")]
+        public async Task<IActionResult> PatchRoomCategoryMaster([FromBody] RoomCategoryMaster model)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                if (patchDocument == null)
+                if (model == null)
                 {
-                    return Ok(new { Code = 500, Message = "Invalid Data" });
-
+                    return Ok(new { Code = 400, message = "Invalid request. Data is null.", data = new object() });
                 }
 
-                var roomCat = await _context.RoomCategoryMaster.FindAsync(id);
+                var roomCat = await _context.RoomCategoryMaster.FindAsync(model.Id);
 
                 if (roomCat == null)
                 {
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
-
-                patchDocument.ApplyTo(roomCat, ModelState);
-                if (roomCat.IsActive == false)
+                var validator = new RoomCategoryValidator(_context);
+                if (!model.ChangeDetails)
                 {
-                    var validator = new RoomCategoryDeleteValidator(_context);
+                    // Create new with updated data (from patched `roomCat`)
+                    roomCat.IsActive = false;
+                    roomCat.UpdatedDate = DateTime.Now;
 
-                    var result = await validator.ValidateAsync(roomCat);
+                    var newRoomCat = new RoomCategoryMaster
+                    {
+                        Type = model.Type,
+                        Description = model.Description,
+                        MinPax = model.MinPax,
+                        MaxPax = model.MaxPax,
+                        BedTypeId = model.BedTypeId,
+                        NoOfRooms = model.NoOfRooms,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserId = roomCat.UserId,
+                        CompanyId = roomCat.CompanyId,
+                        DefaultPax = model.DefaultPax,
+                        ExtraBed = model.ExtraBed
+                    };
+                    var result = await validator.ValidateAsync(newRoomCat);
+
                     if (!result.IsValid)
                     {
                         var errors = result.Errors.Select(x => new
@@ -179,17 +200,30 @@ namespace hotel_api.Controllers
                         }).ToList();
                         return Ok(new { Code = 202, message = errors });
                     }
-
-                    roomCat.UpdatedDate = DateTime.Now;
-
+                    _context.RoomCategoryMaster.Update(roomCat);
+                    await _context.RoomCategoryMaster.AddAsync(newRoomCat);
                     await _context.SaveChangesAsync();
 
-                    return Ok(new { Code = 200, Message = "Room Category deleted successfully" });
+                    return Ok(new { Code = 200, Message = "Room Category updated successfully" });
                 }
+                
                 else
                 {
-                    var validator = new RoomCategoryValidator(_context);
+                    roomCat.Type = model.Type;
+                    roomCat.Description = model.Description;
+                    roomCat.MinPax = model.MinPax;
+                    roomCat.MaxPax = model.MaxPax;
+                    roomCat.NoOfRooms = model.NoOfRooms;
+                    roomCat.IsActive = true;
+                    roomCat.UserId = roomCat.UserId;
+                    roomCat.CompanyId = roomCat.CompanyId;
+                    roomCat.DefaultPax = model.DefaultPax;
+                    roomCat.ExtraBed = model.ExtraBed;
+                    roomCat.UpdatedDate = DateTime.Now;
+                    roomCat.BedTypeId = model.BedTypeId == 0 ? null : model.BedTypeId;
+
                     var result = await validator.ValidateAsync(roomCat);
+
                     if (!result.IsValid)
                     {
                         var errors = result.Errors.Select(x => new
@@ -199,23 +233,74 @@ namespace hotel_api.Controllers
                         }).ToList();
                         return Ok(new { Code = 202, Message = errors });
                     }
-                    roomCat.BedTypeId = roomCat.BedTypeId == 0 ? null : roomCat.BedTypeId;
+
+                    _context.RoomCategoryMaster.Update(roomCat);
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Room Category updated successfully" });
                 }
-               
-                roomCat.UpdatedDate = DateTime.Now;
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Room Category updated successfully" });
             }
-            catch(Exception ex)
+            catch (Exception)
             {
-
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
-           
         }
 
+        [HttpPost("DeleteRoomCategoryMaster/{id}")]
+        public async Task<IActionResult> DeleteRoomCategoryMaster(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            if (id == 0)
+            {
+                return Ok(new { Code = 400, message = "Invalid Id.", data = new object() });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingProduct = await _context.RoomCategoryMaster
+                    .FirstOrDefaultAsync(u => u.Id == id && u.IsActive == true);
+
+                if (existingProduct == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+                var validator = new RoomCategoryDeleteValidator(_context);
+                var result = await validator.ValidateAsync(existingProduct);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    return Ok(new { Code = 202, Message = errors });
+                }
+                if (existingProduct == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 404, message = "Category does not exist.", data = new object() });
+                }
+
+                // Update existing fields
+                existingProduct.IsActive = false;
+
+                _context.RoomCategoryMaster.Update(existingProduct);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, message = "Category deleted successfully", data = new object() });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Optional: log the exception
+                return StatusCode(500, new { Code = 500, message = "An error occurred", data = new object() });
+            }
+        }
 
         [HttpGet("GetRoomMaster")]
         public async Task<IActionResult> GetRoomMaster()
@@ -264,7 +349,6 @@ namespace hotel_api.Controllers
             }
         }
 
-
         [HttpPost("AddRoomMaster")]
         public async Task<IActionResult> AddRoomMaster([FromBody] RoomMasterDTO room)
         {
@@ -303,29 +387,75 @@ namespace hotel_api.Controllers
             }
         }
 
-        [HttpPatch("PatchRoomMaster/{id}")]
-        public async Task<IActionResult> PatchRoomMaster(int id, [FromBody] JsonPatchDocument<RoomMaster> patchDocument)
+        [HttpPost("EditRoomMaster")]
+        public async Task<IActionResult> EditRoomMaster([FromBody] RoomMaster model)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
             try
             {
-                if (patchDocument == null)
+                if (model == null)
                 {
                     return Ok(new { Code = 500, Message = "Invalid Data" });
-
                 }
 
-                var room = await _context.RoomMaster.FindAsync(id);
+                var room = await _context.RoomMaster.FindAsync(model.RoomId);
 
                 if (room == null)
                 {
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
-
-                patchDocument.ApplyTo(room, ModelState);
-                if(room.IsActive == true)
+                var validator = new RoomMasterValidator(_context);
+                if (!model.ChangeDetails)
                 {
-                    var validator = new RoomMasterValidator(_context);
+                    // Create new with updated data (from patched `roomCat`)
+                    room.IsActive = false;
+                    room.UpdatedDate = DateTime.Now;
+
+                    var newRoom = new RoomMaster
+                    {
+                        FloorId = model.FloorId,
+                        BuildingId = model.BuildingId,
+                        PropertyId = model.PropertyId,
+                        RoomNo = model.RoomNo,
+                        RoomTypeId = model.RoomTypeId,
+                        Description = model.Description,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserId = userId,
+                        CompanyId = companyId,
+                    };
+                    var result = await validator.ValidateAsync(newRoom);
+
+                    if (!result.IsValid)
+                    {
+                        var errors = result.Errors.Select(x => new
+                        {
+                            Error = x.ErrorMessage,
+                            Field = x.PropertyName
+                        }).ToList();
+                        return Ok(new { Code = 202, message = errors });
+                    }
+                    _context.RoomMaster.Update(room);
+                    await _context.RoomMaster.AddAsync(newRoom);
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Room updated successfully" });
+                }
+
+                else
+                {
+                    room.FloorId = model.FloorId;
+                    room.BuildingId = model.BuildingId;
+                    room.PropertyId = model.PropertyId;
+                    room.RoomNo = model.RoomNo;
+                    room.RoomTypeId = model.RoomTypeId;
+                    room.Description = model.Description;
+                    room.UpdatedDate = DateTime.Now;
+
                     var result = await validator.ValidateAsync(room);
+
                     if (!result.IsValid)
                     {
                         var errors = result.Errors.Select(x => new
@@ -335,26 +465,62 @@ namespace hotel_api.Controllers
                         }).ToList();
                         return Ok(new { Code = 202, Message = errors });
                     }
-                }
-                
-                room.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
 
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Room updated successfully" });
+                    _context.RoomMaster.Update(room);
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Room updated successfully" });
+                }
             }
             catch(Exception ex)
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("DeleteRoomMaster/{id}")]
+        public async Task<IActionResult> DeleteRoomMaster(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            if (id == 0)
+            {
+                return Ok(new { Code = 400, message = "Invalid Id.", data = new object() });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var existingProduct = await _context.RoomMaster
+                    .FirstOrDefaultAsync(u => u.RoomId == id && u.IsActive == true);
+
+                if (existingProduct == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
+                
+                if (existingProduct == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 404, message = "Room does not exist.", data = new object() });
+                }
+
+                // Update existing fields
+                existingProduct.IsActive = false;
+
+                _context.RoomMaster.Update(existingProduct);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, message = "Service deleted successfully", data = new object() });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Optional: log the exception
+                return StatusCode(500, new { Code = 500, message = "An error occurred", data = new object() });
             }
         }
 

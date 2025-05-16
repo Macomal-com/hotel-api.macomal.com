@@ -1560,6 +1560,7 @@ namespace hotel_api.Controllers
 
                 if (existingProduct == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 404, message = "Service does not exist.", data = new object() });
                 }
 
