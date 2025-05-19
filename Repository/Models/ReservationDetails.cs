@@ -53,7 +53,8 @@ namespace Repository.Models
 
         public int PrimaryGuestId { get; set; }
 
-        
+        public int RoomsCount { get; set; }
+        public decimal TransactionAmout { get; set; }
 
     }
 

@@ -36,7 +36,7 @@ namespace hotel_api.Constants
         public static string Inclusive = "Inclusive";
         public static string Exclusive = "Exclusive";
 
-        //gst masters
+        //gst type masters 
         public static string Reservation = "Reservation";
         public static string Booking = "Booking";
         public static string Agent = "Agent";
@@ -90,6 +90,10 @@ namespace hotel_api.Constants
         //cancel deduction by
         public static string DeductionByAmount = "Amount";
         public static string DeductionByPercentage = "Percentage";
+
+        //calculate room rates
+        public static string CheckInRoomRates = "Consolidated";
+        public static string DayWiseRoomRates = "DayWise";
 
         //image 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };

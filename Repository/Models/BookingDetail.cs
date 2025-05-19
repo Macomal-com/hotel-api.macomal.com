@@ -28,7 +28,7 @@ namespace Repository.Models
         public string CheckoutFormat { get; set; } = string.Empty;
         public int NoOfNights { get; set; }
         public int NoOfHours { get; set; }
-        public int HourId { get; set; }        
+        
         
         public int RoomCount { get; set; }
         public int Pax { get; set; }
@@ -103,6 +103,12 @@ namespace Repository.Models
 
         public decimal LateCheckOutCharges { get; set; }
 
+        public string DiscountType { get; set; } = string.Empty;
+
+        public decimal DiscountPercentage { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal BookingAmountWithoutDiscount { get; set; }
+
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
 
@@ -132,7 +138,7 @@ namespace Repository.Models
         public string RoomCategoryName { get; set; } = string.Empty;
         public int NoOfNights { get; set; }
         public int NoOfHours { get; set; }
-        public int HourId { get; set; }
+     
         public string GstType { get; set; } = string.Empty;
 
         public int NoOfRooms { get; set; }
@@ -171,6 +177,14 @@ namespace Repository.Models
         public int LateCheckOutToHour { get; set; }
 
         public decimal LateCheckOutCharges { get; set; }
+
+        public string DiscountType { get; set; } = string.Empty;
+
+       
+
+        public decimal DiscountPercentage { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal BookingAmountWithoutDiscount { get; set; }
     }
 
     public class BookingDetailCheckInDTO
@@ -191,7 +205,7 @@ namespace Repository.Models
         public string CheckOutFormat { get; set; } = string.Empty;
         public int NoOfNights { get; set; }
         public int NoOfHours { get; set; }
-        public int HourId { get; set; }
+
 
         public string Status { get; set; } = string.Empty;
         public string Remarks { get; set; } = string.Empty;

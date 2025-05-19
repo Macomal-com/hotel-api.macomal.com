@@ -44,6 +44,12 @@ namespace Repository.Models
         public decimal CGSTAmount { get; set; }
         public decimal SGST { get; set; }
         public decimal SGSTAmount { get; set; }
+
+        public string DiscountType { get; set; } = string.Empty;
+
+        public decimal DiscountPercentage { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal RoomRateWithoutDiscount { get; set; }
     }
 
 }

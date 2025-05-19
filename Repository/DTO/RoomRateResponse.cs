@@ -45,6 +45,12 @@ namespace Repository.DTO
         public int LateCheckOutToHour { get; set; }
 
         public decimal LateCheckOutCharges { get; set; }
+
+        public string DiscountType { get; set; } = string.Empty;
+
+        public decimal DiscountPercentage { get; set; }
+        public decimal DiscountAmount { get; set; }
+        public decimal BookingAmountWithoutDiscount { get; set; }
     }
 
     

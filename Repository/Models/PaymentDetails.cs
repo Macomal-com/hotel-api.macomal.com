@@ -38,6 +38,10 @@ namespace Repository.Models
         public decimal PaymentLeft { get; set; }
         public int CompanyId { get; set; }
 
+        public decimal TransactionCharges { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
+        public decimal TransactionAmount { get; set; }
+
         [NotMapped]
         public string RoomNo { get; set; } = string.Empty;
 
@@ -65,6 +69,8 @@ namespace Repository.Models
         public string PaymentReferenceNo { get; set; } = string.Empty;
         public decimal PaymentAmount { get; set; }
         public string PaymentFormat { get; set; } = string.Empty;
+        public decimal TransactionCharges { get; set; }
+        public string TransactionType { get; set; } = string.Empty;
     }
 
 }

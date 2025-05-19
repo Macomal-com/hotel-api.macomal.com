@@ -25,6 +25,8 @@ namespace Repository.Models
         public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
         public int CompanyId { get; set; }
+
+
     }
     public class PaymentModeDTO
     {
