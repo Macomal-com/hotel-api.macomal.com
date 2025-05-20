@@ -51,6 +51,9 @@ namespace Repository.DTO
         public decimal DiscountPercentage { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal BookingAmountWithoutDiscount { get; set; }
+        public decimal DiscountTotalAmount { get; set; }
+
+        public string CalculateRoomRates { get; set; } = string.Empty;
     }
 
     

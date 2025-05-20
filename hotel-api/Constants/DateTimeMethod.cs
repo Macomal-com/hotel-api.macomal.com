@@ -9,25 +9,38 @@ namespace hotel_api.Constants
             return date.ToString("dd-MM-yyyy hh:mm tt");
         }
 
-        public static DateTime ConvertToDateTime(DateTime date, string time)
+        public static DateTime ConvertToDateTime(DateOnly date, string time)
         {
             if (time.Length == 5) time += ":00"; // Add seconds if missing
             return DateTime.ParseExact((date.ToString("yyyy-MM-dd")) + " " + time, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         }
 
-        public static (DateTime, string) GetAMinuteAfter(DateTime date, string time)
+        public static (DateOnly, string) GetAMinuteAfter(DateOnly date, string time)
         {
+            DateTime dateTime = ConvertToDateTime(date, time);
+            dateTime = dateTime.AddMinutes(1);
 
-            DateTime previousDate = ConvertToDateTime(date, time);
-            previousDate = previousDate.AddMinutes(1);
+            DateOnly newDate = DateOnly.FromDateTime(dateTime);
+            string newTime = dateTime.ToString("HH:mm");
 
-            return (Convert.ToDateTime(previousDate.ToString("yyyy-MM-dd")), previousDate.ToString("HH:mm"));
+            return (newDate, newTime);
         }
 
-        public static (DateTime, string) GetDateTime(DateTime date)
+        public static (DateOnly, string) GetAMinuteBefore(DateOnly date, string time)
         {
-            DateTime datePart = date.Date;
-            string timePart = date.TimeOfDay.ToString(); ;
+            DateTime dateTime = ConvertToDateTime(date, time);
+            dateTime = dateTime.AddMinutes(-1);
+
+            DateOnly newDate = DateOnly.FromDateTime(dateTime);
+            string newTime = dateTime.ToString("HH:mm");
+
+            return (newDate, newTime);
+        }
+
+        public static (DateOnly, string) GetDateTime(DateTime date)
+        {
+            DateOnly datePart = DateOnly.FromDateTime(date);
+            string timePart = date.TimeOfDay.ToString(@"hh\:mm\:ss");
 
             return (datePart, timePart);
         }
@@ -41,12 +54,9 @@ namespace hotel_api.Constants
             return (datePart, timePart);
         }
 
-        public static DateTime GetADayBefore(DateTime date)
+        public static DateOnly GetADayBefore(DateOnly date)
         {
-
-            DateTime previousDate = date.AddDays(-1);
-
-            return previousDate;
+            return date.AddDays(-1);
         }
 
 
@@ -85,6 +95,18 @@ namespace hotel_api.Constants
             {
                 return -1;
             }
+        }
+
+        public static int GetDifferenceInMinutes(DateOnly startDate, string startTime, DateOnly endDate, string endTime)
+        {
+            var start = DateTime.Parse($"{startDate:yyyy-MM-dd}T{startTime}");
+            var end = DateTime.Parse($"{endDate:yyyy-MM-dd}T{endTime}");
+
+
+            return (int)Math.Round((end - start).TotalMinutes);
+
+          
+
         }
     }
 }

@@ -9,9 +9,9 @@ namespace Repository.Models
     public class RoomAvailability : ICommonProperties
     {
         public int Id { get; set; }
-        public DateTime CheckInDate { get; set; }
+        public DateOnly CheckInDate { get; set; }
         public string CheckInTime { get; set; } = string.Empty;
-        public DateTime CheckOutDate { get; set; }
+        public DateOnly CheckOutDate { get; set; }
         public string CheckOutTime { get; set; } = string.Empty;
         public DateTime CheckInDateTime { get; set; }
         public DateTime CheckOutDateTime { get; set; }

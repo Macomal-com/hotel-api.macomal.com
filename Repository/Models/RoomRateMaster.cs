@@ -38,8 +38,8 @@ namespace Repository.Models
         public decimal RoomRate { get; set; }
         public int Gst { get; set; }
         public decimal Discount { get; set; }
-        public DateTime FromDate { get; set; }
-        public DateTime ToDate { get; set; }
+        public DateOnly FromDate { get; set; }
+        public DateOnly ToDate { get; set; }
         public string RateType { get; set; } = string.Empty;
         public int WeekendDay { get; set; }
         public bool IsActive { get; set; }
@@ -59,8 +59,8 @@ namespace Repository.Models
         public int Gst { get; set; }
         public decimal Discount { get; set; }
 
-        public DateTime? FromDate { get; set; }
-        public DateTime? ToDate { get; set; }
+        public DateOnly? FromDate { get; set; }
+        public DateOnly? ToDate { get; set; }
         public string RateType { get; set; } = string.Empty;
         public int WeekendDay { get; set; } 
         public string GstTaxType { get; set; } = string.Empty;

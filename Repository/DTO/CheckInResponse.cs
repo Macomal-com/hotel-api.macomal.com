@@ -10,7 +10,7 @@ namespace Repository.DTO
     public class CheckInResponse
     {
         public ReservationDetails? ReservationDetails { get; set; }
-        public List<BookingDetailCheckInDTO>? BookingDetailCheckInDTO { get; set; }
+        public List<BookingDetail>? BookingDetails { get; set; }
        
         public GuestDetails? GuestDetails { get; set; }
         public List<PaymentDetails>?  PaymentDetails { get; set; }
@@ -26,8 +26,9 @@ namespace Repository.DTO
         public decimal RoomAmount { get; set; }
         public decimal GstAmount { get; set; }
         public decimal EarlyCheckIn { get; set; }
+        public decimal LateCheckOut { get; set; }
         public decimal RoomServicesAmount { get; set; }
-
+        public decimal TransactionCharges { get; set; }
         public decimal AgentServiceCharge { get; set; }
 
         public decimal TotalAmount { get; set; }
@@ -37,6 +38,8 @@ namespace Repository.DTO
         public decimal ReceivedAmount { get; set; }
         public decimal BalanceAmount { get; set; }
         public decimal RefundAmount { get; set; }
+
+        
     }
 
     public class PaymentSummary

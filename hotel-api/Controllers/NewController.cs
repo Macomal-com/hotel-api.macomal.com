@@ -635,7 +635,7 @@ namespace hotel_api.Controllers
                     else if(item.RateType == Constants.Constants.Weekend)
                     {
                         DayOfWeek currentDay = GetDayName(item.WeekendDay);
-                        List<DateTime> dayDates = GetDayDates(item.FromDate ?? Constants.Constants.DefaultDate, item.ToDate ?? Constants.Constants.DefaultDate
+                        List<DateOnly> dayDates = GetDayDates(item.FromDate ?? Constants.Constants.DefaultDate, item.ToDate ?? Constants.Constants.DefaultDate
                             , currentDay);
                         foreach(var date in dayDates)
                         {
@@ -824,7 +824,7 @@ namespace hotel_api.Controllers
                     else if (item.RateType == Constants.Constants.Weekend)
                     {
                         DayOfWeek currentDay = GetDayName(item.WeekendDay);
-                        List<DateTime> dayDates = GetDayDates(item.FromDate ?? Constants.Constants.DefaultDate, item.ToDate ?? Constants.Constants.DefaultDate
+                        List<DateOnly> dayDates = GetDayDates(item.FromDate ?? Constants.Constants.DefaultDate, item.ToDate ?? Constants.Constants.DefaultDate
                             , currentDay);
 
                         foreach (var date in dayDates)
@@ -992,34 +992,37 @@ namespace hotel_api.Controllers
 
         }
 
-        private  List<DateTime> GetDayDates(DateTime startDate, DateTime endDate, DayOfWeek weekDay)
+        private List<DateOnly> GetDayDates(DateOnly startDate, DateOnly endDate, DayOfWeek weekDay)
         {
             if (startDate == Constants.Constants.DefaultDate || endDate == Constants.Constants.DefaultDate)
             {
-                return new List<DateTime>();
+                return new List<DateOnly>();
             }
-            List<DateTime> dates = new List<DateTime>();
-            // Find the first Monday in the range
-            DateTime currentDate = startDate;
+
+            List<DateOnly> dates = new List<DateOnly>();
+
+            // Find the first occurrence of the specified day of the week in the range
+            DateOnly currentDate = startDate;
 
             while (currentDate.DayOfWeek != weekDay)
             {
                 currentDate = currentDate.AddDays(1);
                 if (currentDate > endDate)
                 {
-                    break;
+                    return dates;
                 }
             }
 
-            // Add all Mondays within the range
+            // Add all matching days within the range
             while (currentDate <= endDate)
             {
                 dates.Add(currentDate);
-                currentDate = currentDate.AddDays(7); // Move to next Monday
+                currentDate = currentDate.AddDays(7);
             }
 
             return dates;
         }
+
         [HttpGet("GetRoomRates")]
         public async Task<IActionResult> GetRoomRates()
         {

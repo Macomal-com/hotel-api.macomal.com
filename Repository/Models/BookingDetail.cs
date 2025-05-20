@@ -19,9 +19,9 @@ namespace Repository.Models
         public int RoomId { get; set; }
         public int RoomTypeId { get; set; }
         
-        public DateTime CheckInDate { get; set; } 
+        public DateOnly CheckInDate { get; set; } 
         public string CheckInTime { get; set; } = string.Empty;
-        public DateTime CheckOutDate { get; set; }
+        public DateOnly CheckOutDate { get; set; }
         public string CheckOutTime { get; set; } = string.Empty;
         public DateTime CheckInDateTime { get; set; }
         public DateTime CheckOutDateTime { get; set; }
@@ -59,11 +59,11 @@ namespace Repository.Models
         public decimal TotalBookingAmount { get; set; }
         public string BookingSource { get; set; } = string.Empty;
 
-        public DateTime ReservationDate { get; set; }
+        public DateOnly ReservationDate { get; set; }
         public string ReservationTime { get; set; } = string.Empty;
         public DateTime ReservationDateTime { get; set; }
 
-        public DateTime InitialCheckOutDate { get; set; }
+        public DateOnly InitialCheckOutDate { get; set; }
         public string InitialCheckOutTime { get; set; } = string.Empty;
         public DateTime InitialCheckOutDateTime { get; set; }
         public decimal ServicesAmount { get; set; }
@@ -107,7 +107,14 @@ namespace Repository.Models
 
         public decimal DiscountPercentage { get; set; }
         public decimal DiscountAmount { get; set; }
+
+        public decimal DiscountTotalAmount { get; set; }
         public decimal BookingAmountWithoutDiscount { get; set; }
+
+        public string CalculateRoomRates { get; set; } = string.Empty;
+
+        [NotMapped]
+        public bool IsCheckIn { get; set; }
 
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
@@ -130,9 +137,9 @@ namespace Repository.Models
 
     public class BookingDetailDTO
     {
-        public DateTime CheckInDate { get; set; }
+        public DateOnly CheckInDate { get; set; }
         public string CheckInTime { get; set; } = string.Empty;
-        public DateTime CheckOutDate { get; set; }
+        public DateOnly CheckOutDate { get; set; }
         public string CheckOutTime { get; set; } = string.Empty;
         public int RoomTypeId { get; set; }
         public string RoomCategoryName { get; set; } = string.Empty;
@@ -180,11 +187,12 @@ namespace Repository.Models
 
         public string DiscountType { get; set; } = string.Empty;
 
-       
 
+        public decimal DiscountTotalAmount { get; set; }
         public decimal DiscountPercentage { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal BookingAmountWithoutDiscount { get; set; }
+        public string CalculateRoomRates { get; set; } = string.Empty;
     }
 
     public class BookingDetailCheckInDTO

@@ -19,9 +19,9 @@ namespace Repository.RequestDTO
         public string ShiftRoomNo { get; set; } = string.Empty;
 
         public int ShiftRoomTypeId { get; set; } 
-        public DateTime ShiftDate { get; set; } = new DateTime(1900, 01, 01);
+        public DateOnly ShiftDate { get; set; } = new DateOnly(1900, 01, 01);
 
-        public DateTime ExtendedDate { get; set; } = new DateTime(1900, 01, 01);
+        public DateOnly ExtendedDate { get; set; } = new DateOnly(1900, 01, 01);
     }
 
     public class ShiftExtentRequestValidator : AbstractValidator<ShiftExtentRequest>

@@ -32,7 +32,7 @@ namespace Repository.Models
 
         public string GstType { get; set; } = string.Empty;
 
-        public DateTime BookingDate { get; set; }
+        public DateOnly BookingDate { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
 

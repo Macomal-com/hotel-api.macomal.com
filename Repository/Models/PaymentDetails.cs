@@ -15,7 +15,7 @@ namespace Repository.Models
         public int PaymentId { get; set; }
         public int BookingId { get; set; }
         public string ReservationNo { get; set; } = string.Empty;
-        public DateTime PaymentDate { get; set; }
+        public DateOnly PaymentDate { get; set; }
         public string PaymentMethod { get; set; } = string.Empty;
         public string TransactionId { get; set; } = string.Empty;
         public string PaymentStatus { get; set; } = string.Empty;
@@ -60,7 +60,7 @@ namespace Repository.Models
     public class PaymentDetailsDTO
     {
 
-        public DateTime PaymentDate { get; set; }
+        public DateOnly PaymentDate { get; set; }
         public string PaymentMethod { get; set; } = string.Empty;
         public string TransactionId { get; set; } = string.Empty;
         public string PaymentStatus { get; set; } = string.Empty;
