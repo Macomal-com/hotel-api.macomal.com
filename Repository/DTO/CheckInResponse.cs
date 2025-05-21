@@ -42,6 +42,38 @@ namespace Repository.DTO
         
     }
 
+
+    public class PaymentCheckOutSummary
+    {
+        public decimal TotalRooms { get; set; }
+        public decimal BookingAmount { get; set; }
+        public decimal GstAmount { get; set; }
+        public decimal TotalBookingAmount { get; set; }
+        public decimal EarlyCheckIn { get; set; }
+        public decimal LateCheckOut { get; set; }
+
+        public decimal ServicesAmount { get; set; }
+        public decimal ServiceAmountGst { get; set; }
+        public decimal TotalServiceAmount { get; set; }
+
+        public decimal TransactionsAmount { get; set; }
+
+        
+
+        //total tax = advance services tax + room service tax
+        public decimal TotalTaxAmount { get; set; }
+        public decimal AgentServiceCharge { get; set; } //Agent Service
+        public decimal AgentServiceGst { get; set; } //Agent GST
+        public decimal AgentServiceTotal { get; set; } //Agent Total Service  //agent service charge + agent service gst
+        public decimal TotalBill { get; set; }
+        public decimal AdvanceAmount { get; set; } //Advance
+        public decimal ReceivedAmount { get; set; }//Amount Adjusted
+        public decimal BalanceAmount { get; set; }//Balance
+        public decimal RefundAmount { get; set; }//Refund
+
+        public decimal ResidualAmount { get; set; }
+
+    }
     public class PaymentSummary
     {
         public decimal TotalRoomAmount { get; set; } //Room Amount

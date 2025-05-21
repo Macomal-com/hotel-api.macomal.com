@@ -12,14 +12,14 @@ namespace Repository.DTO
         public ReservationDetails? ReservationDetails { get; set; }
         public List<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
       
-        public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
+        public PaymentCheckOutSummary PaymentSummary { get; set; } = new PaymentCheckOutSummary();
         public GuestDetails? GuestDetails { get; set; }
         public string InvoiceNo { get; set; } = string.Empty;
 
         public List<PaymentDetails> PaymentDetails = new List<PaymentDetails>();
 
-        public DateOnly InvoiceDate { get; set; }
-
+        public DateOnly InvoiceDate { get; set; } = DateOnly.FromDateTime(DateTime.Now)
+;
         public string InvoiceName { get; set; } = string.Empty;
     }
 }

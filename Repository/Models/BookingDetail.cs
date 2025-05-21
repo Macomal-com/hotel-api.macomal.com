@@ -112,9 +112,12 @@ namespace Repository.Models
         public decimal BookingAmountWithoutDiscount { get; set; }
 
         public string CalculateRoomRates { get; set; } = string.Empty;
+        public decimal TransactionCharges { get; set; } 
+        public decimal AgentServiceCharge { get; set; }
 
+        public decimal ResidualAmount { get; set; }
         [NotMapped]
-        public bool IsCheckIn { get; set; }
+        public bool IsSelectedValue { get; set; }
 
         [NotMapped]
         public string RoomTypeName { get; set; } = string.Empty;
