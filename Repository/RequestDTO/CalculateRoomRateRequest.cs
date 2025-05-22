@@ -14,6 +14,14 @@ namespace Repository.RequestDTO
         public ReservationDetails ReservationDetails { get; set; } = new ReservationDetails();
 
         //public DateTime EarlyCheckOutDate { get; set; }
+
+        public DateOnly InvoiceDate { get; set; } = DateOnly.FromDateTime(DateTime.Now)
+;
+        public string InvoiceNo { get; set; } = string.Empty;
+
+        public string CheckOutDiscountType { get; set; } = string.Empty;
+
+        public decimal CheckOutDiscount { get; set; }
     }
 
 

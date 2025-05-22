@@ -21,5 +21,11 @@ namespace Repository.DTO
         public DateOnly InvoiceDate { get; set; } = DateOnly.FromDateTime(DateTime.Now)
 ;
         public string InvoiceName { get; set; } = string.Empty;
+
+        public string CheckOutDiscountType { get; set; } = string.Empty;
+
+        public decimal CheckOutDiscount { get; set; }
+
+        
     }
 }

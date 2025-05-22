@@ -116,6 +116,15 @@ namespace Repository.Models
         public decimal AgentServiceCharge { get; set; }
 
         public decimal ResidualAmount { get; set; }
+
+        public string CheckOutDiscountType { get; set; } = string.Empty;
+
+        public decimal CheckOutDiscountPercentage { get; set; }
+
+        public decimal CheckOutDiscoutAmount { get; set; }
+
+        public decimal TotalAmountWithOutDiscount { get; set; }
+
         [NotMapped]
         public bool IsSelectedValue { get; set; }
 

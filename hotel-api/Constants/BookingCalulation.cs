@@ -45,7 +45,7 @@ namespace hotel_api.Constants
 
         public static decimal BookingTotalAmount(BookingDetail booking)
         {
-            return booking.BookingAmount + booking.GstAmount + booking.TotalServicesAmount + booking.EarlyCheckInCharges + booking.LateCheckOutCharges;
+            return (booking.BookingAmount + booking.GstAmount + booking.TotalServicesAmount + booking.EarlyCheckInCharges + booking.LateCheckOutCharges) - booking.CheckOutDiscoutAmount;
         }
     }
 }

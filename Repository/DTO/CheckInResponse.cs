@@ -65,13 +65,23 @@ namespace Repository.DTO
         public decimal AgentServiceCharge { get; set; } //Agent Service
         public decimal AgentServiceGst { get; set; } //Agent GST
         public decimal AgentServiceTotal { get; set; } //Agent Total Service  //agent service charge + agent service gst
+        public decimal TotalAmount { get; set; }
+
         public decimal TotalBill { get; set; }
+
+        public decimal TotalAmountPaid { get; set; }
         public decimal AdvanceAmount { get; set; } //Advance
         public decimal ReceivedAmount { get; set; }//Amount Adjusted
         public decimal BalanceAmount { get; set; }//Balance
         public decimal RefundAmount { get; set; }//Refund
 
         public decimal ResidualAmount { get; set; }
+
+        public string CheckOutDiscountType { get; set; } = string.Empty;
+
+        public decimal CheckOutDiscountPercentage { get; set; }
+
+        public decimal CheckOutDiscoutAmount { get; set; }
 
     }
     public class PaymentSummary

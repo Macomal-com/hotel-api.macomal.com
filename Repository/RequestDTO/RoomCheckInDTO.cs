@@ -12,7 +12,7 @@ namespace Repository.RequestDTO
         public List<int> rooms { get; set; } = new List<int>();
         public GuestDetails GuestDetails { get; set; } = new GuestDetails();
         public bool IsSingleRoom { get; set; }
-        public bool IsCheckIn { get; set; }
+        public bool IsSelectedValue { get; set; }
 
         public string ReservationNo { get; set; } = string.Empty;
     }
