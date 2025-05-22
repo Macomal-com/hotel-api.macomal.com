@@ -18,6 +18,7 @@
         public static bool DEFAULTCHECKOUT = false;
         public static bool WHATSAPPNOTIFICATIONENABLE = false;
         public static bool EMAILNOTIFICATIONENABLE = false;
+        public static string CALCULATEROOMRATES = "Daywise";
 
     }
 }

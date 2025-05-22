@@ -2591,6 +2591,13 @@ namespace hotel_api.Controllers
                     savedObject.IsEmailNotification = Constants.PropertyConstants.EMAILNOTIFICATIONENABLE;
                     savedObject.IsDefaultCheckInTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKIN;
                     savedObject.IsDefaultCheckOutTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKOUT;
+                    savedObject.CalculateRoomRates = Constants.PropertyConstants.CALCULATEROOMRATES;
+                    savedObject.ReservationNotification = false;
+                    savedObject.CheckinNotification = false;
+                    savedObject.RoomShiftNotification = false;
+                    savedObject.CheckOutNotification = false;
+                    savedObject.CancelBookingNotification = false;
+
                     if (files != null || files?.Length != 0)
                     {
                         var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
@@ -2642,8 +2649,23 @@ namespace hotel_api.Controllers
                         UserId = userId
                     };
                     _context.DepartmentMaster.Add(department);
-                    await _context.SaveChangesAsync();
 
+                    var mode = new PaymentMode
+                    {
+                        PaymentModeName = "Cash",
+                        ProviderContact = "",
+                        ProviderEmail = "",
+                        TransactionCharges = 0,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserId = userId,
+                        CompanyId = savedObject.PropertyId,
+                        TransactionType = ""
+                    };
+                    _context.PaymentMode.Add(mode);
+
+                    await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
                     return Ok(new { Code = 200, Message = "Property created successfully" });
