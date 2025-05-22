@@ -84,8 +84,8 @@ namespace hotel_api.Constants
             string format = "yyyy/MM/dd'T'HH:mm";
             var culture = CultureInfo.InvariantCulture;
 
-            DateTime checkInDateTime = DateTime.ParseExact($"{checkIn:yyyy/MM/dd}T{checkInTime}", format, culture);
-            DateTime checkOutDateTime = DateTime.ParseExact($"{checkOut:yyyy/MM/dd}T{checkOutTime}", format, culture);
+            DateTime checkInDateTime = DateTime.ParseExact($"{checkIn:yyyy/MM/dd}T{checkInTime.Substring(0, 5)}", format, culture);
+            DateTime checkOutDateTime = DateTime.ParseExact($"{checkOut:yyyy/MM/dd}T{checkOutTime.Substring(0, 5)}", format, culture);
 
             TimeSpan diff = checkOutDateTime - checkInDateTime;
 
