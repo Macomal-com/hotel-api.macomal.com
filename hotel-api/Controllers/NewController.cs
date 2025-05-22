@@ -138,15 +138,9 @@ namespace hotel_api.Controllers
                 await _context.RoomCategoryMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
 
-
-                var savedObject = await _context.RoomCategoryMaster.FirstOrDefaultAsync(c => c.Type == cm.Type && c.IsActive == true);
-                if (savedObject == null)
-                {
-                    return Ok(new { Code = 404, Message = "Data Not Found!" });
-                }
                 var roomRate = new RoomRateMaster
                 {
-                    RoomTypeId = savedObject.Id,
+                    RoomTypeId = cm.Id,
                     RoomRate = 0,
                     Gst = 0,
                     Discount = 0,
