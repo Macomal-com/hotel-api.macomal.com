@@ -1062,7 +1062,9 @@ namespace hotel_api.Controllers
                                                             UpdatedDate = x.UpdatedDate,
                                                             CompanyId = x.CompanyId,
                                                             RoomNo = rm != null ? rm.RoomNo : "",
-                                                            TransactionAmount = x.TransactionAmount
+                                                            TransactionAmount = x.TransactionAmount,
+                                                            TransactionType = x.TransactionType,
+                                                            TransactionCharges = x.TransactionCharges
                                                         }).ToListAsync();
 
 
@@ -1427,7 +1429,8 @@ namespace hotel_api.Controllers
                             payment.PaymentFormat = paymentDetails.PaymentFormat;
                             payment.RefundAmount = paymentDetails.RefundAmount;
                             payment.PaymentAmount = paymentDetails.PaymentAmount;
-                            
+                            payment.TransactionType = paymentDetails.TransactionType;
+                           
 
                             transactionCharges = transactionCharges - payment.TransactionAmount;
 
@@ -1443,7 +1446,11 @@ namespace hotel_api.Controllers
                                 }
                                 
                             }
-                            payment.PaymentLeft = paymentDetails.PaymentAmount - payment.TransactionAmount;
+                            else
+                            {
+                                payment.TransactionAmount = 0;
+                            }
+                                payment.PaymentLeft = paymentDetails.PaymentAmount - payment.TransactionAmount;
                             transactionCharges = transactionCharges + payment.TransactionAmount;
                             payment.UpdatedDate = currentDate;
                         }
@@ -2578,7 +2585,9 @@ namespace hotel_api.Controllers
                                                      UpdatedDate = pay.UpdatedDate,
                                                      CompanyId = pay.CompanyId,
                                                      RoomNo = roommaster != null ? roommaster.RoomNo : "",
-                                                     TransactionAmount = pay.TransactionAmount
+                                                     TransactionAmount = pay.TransactionAmount,
+                                                     TransactionType = pay.TransactionType,
+                                                     TransactionCharges = pay.TransactionCharges
                                                  }).ToListAsync();
 
                
@@ -2619,7 +2628,16 @@ namespace hotel_api.Controllers
                             {
                                 foreach(var item in response.BookingDetails)
                                 {
-                                    refundAmouts[item.BookingId] = refundAmouts[item.BookingId] + equallydivide;
+                                    if (refundAmouts.ContainsKey(item.BookingId))
+                                    {
+                                        refundAmouts[item.BookingId] = refundAmouts[item.BookingId] + equallydivide;
+                                    }
+                                    else
+                                    {
+
+                                        refundAmouts.Add(item.BookingId, equallydivide);
+
+                                    }
                                 }
                             }
                             else
@@ -2878,7 +2896,9 @@ namespace hotel_api.Controllers
                                                      UpdatedDate = pay.UpdatedDate,
                                                      CompanyId = pay.CompanyId,
                                                      RoomNo = roommaster != null ? roommaster.RoomNo : "",
-                                                     TransactionAmount = pay.TransactionAmount
+                                                     TransactionAmount = pay.TransactionAmount,
+                                                     TransactionType = pay.TransactionType,
+                                                     TransactionCharges = pay.TransactionCharges
                                                  }).ToListAsync();
 
 
@@ -2923,7 +2943,7 @@ namespace hotel_api.Controllers
 
 
                         var eachRoomRate = item.BookedRoomRates.Where(x => x.BookingId == item.BookingId && (item.NoOfNights == 1
-                        ? x.BookingDate == item.CheckOutDate : x.BookingDate < item.CheckOutDate)).OrderBy(x => x.BookingDate).ToList();
+                        ? x.BookingDate == item.CheckInDate : x.BookingDate < item.CheckOutDate)).OrderBy(x => x.BookingDate).ToList();
 
 
 

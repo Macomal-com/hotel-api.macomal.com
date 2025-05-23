@@ -11,7 +11,7 @@
         public static bool APPROVERESERVATION = false;
         public static string CANCELMETHOD = "Datewise";
         public static string CANCELCALCULATEBY = "Percentage";
-        public static string CHECKOUTINVOICE = "Reservation";
+        public static string CHECKOUTINVOICE = "Room Wise";
         public static bool EARLYCHECKINPOLICY = false;
         public static bool LATECHECKOUTOLICY = false;
         public static bool DEFAULTCHECKIN = false;
