@@ -11,5 +11,8 @@ namespace Repository.DTO
     {
         public BookingDetailCheckInDTO? BookingDetail { get; set; } 
         public PaymentSummary PaymentSummary { get; set; } = new PaymentSummary();
+
+
+
     }
 }

@@ -108,5 +108,18 @@ namespace hotel_api.Constants
           
 
         }
+
+        public static (DateOnly CheckoutDate, string CheckoutTime) CalculateCheckoutDateTimeOnHour(DateTime checkInDateTime, int hoursToAdd)
+        {
+            
+            DateTime checkOut = checkInDateTime.AddHours(hoursToAdd);
+
+            DateOnly checkoutDate = DateOnly.FromDateTime(checkOut); // Correctly convert DateTime to DateOnly
+            string checkoutTime = checkOut.ToString("HH:mm");         // Format time as string
+
+            return (checkoutDate, checkoutTime);
+        }
+
+
     }
 }

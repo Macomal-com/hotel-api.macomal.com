@@ -1667,7 +1667,13 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 202, Message = errors });
                 }
 
-               
+                var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
+                if(property == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 202, Message = "Property not found" });
+                }
+
                 //room shift
                 if (request.Type == "Shift")
                 {
@@ -1677,16 +1683,6 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "Booking not found" });
                     }
-
-                    //check new room available or not
-                    string isRoomAvailable = await CheckRoomAvailable(request.ShiftDate, Constants.Constants.DayStartTime, booking.CheckOutDate, booking.CheckOutTime, request.ShiftRoomTypeId, request.ShiftRoomId);
-
-                    if (isRoomAvailable != "success")
-                    {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 400, Message = isRoomAvailable });
-                    }
-
 
                     var newBooking = new BookingDetail
                     {
@@ -1702,7 +1698,7 @@ namespace hotel_api.Controllers
                         CheckoutFormat = booking.CheckoutFormat,
                         NoOfNights = booking.NoOfNights,
                         NoOfHours = booking.NoOfHours,
-                        
+                        GstType = booking.GstType,
                         RoomCount = booking.RoomCount,
                         Pax = booking.Pax,
                         Status = booking.Status,
@@ -1712,6 +1708,7 @@ namespace hotel_api.Controllers
                         CreatedDate = currentDate, // new booking timestamp
                         UpdatedDate = currentDate,
                         IsActive = true,
+                        BookingSource = booking.BookingSource,
                         PrimaryGuestId = booking.PrimaryGuestId,
                         InitialBalanceAmount = booking.InitialBalanceAmount,
                         BalanceAmount = booking.BalanceAmount,
@@ -1722,12 +1719,12 @@ namespace hotel_api.Controllers
                         InvoiceDate = booking.InvoiceDate,
                         InvoiceNo = booking.InvoiceNo,
                         UserId = userId, // assume you have userId available
-                        GstType = booking.GstType,
+
                         CompanyId = booking.CompanyId,
                         BookingAmount = booking.BookingAmount,
                         GstAmount = booking.GstAmount,
                         TotalBookingAmount = booking.TotalBookingAmount,
-                        BookingSource = booking.BookingSource,
+
                         ReservationDate = booking.ReservationDate,
                         ReservationTime = booking.ReservationTime,
                         ReservationDateTime = booking.ReservationDateTime,
@@ -1739,8 +1736,67 @@ namespace hotel_api.Controllers
                         TotalAmountWithOutDiscount = booking.TotalAmountWithOutDiscount,
                         AgentAdvanceAmount = booking.AgentAdvanceAmount,
                         InvoiceName = booking.InvoiceName,
-                        BillTo = booking.BillTo
+                        BillTo = booking.BillTo,
+                        TotalServicesAmount = booking.TotalServicesAmount,
+                        ServicesTaxAmount = booking.ServicesTaxAmount,
+                        CancelAmount = booking.CancelAmount,
+                        CancelDate = booking.CancelDate,
+                        CheckOutInvoiceFormat = booking.CheckOutInvoiceFormat,
+                        IsEarlyCheckIn = booking.IsEarlyCheckIn,
+                        EarlyCheckInPolicyName = booking.EarlyCheckInPolicyName,
+                        EarlyCheckInApplicableOn = booking.EarlyCheckInApplicableOn,
+                        EarlyCheckInFromHour = booking.EarlyCheckInFromHour,
+                        EarlyCheckInToHour = booking.EarlyCheckInToHour,
+                        EarlyCheckInCharges = booking.EarlyCheckInCharges,
+                        IsLateCheckOut = booking.IsLateCheckOut,
+                        LateCheckOutPolicyName = booking.LateCheckOutPolicyName,
+                        LateCheckOutDeductionBy = booking.LateCheckOutDeductionBy,
+                        LateCheckOutApplicableOn = booking.LateCheckOutApplicableOn,
+                        LateCheckOutFromHour = booking.LateCheckOutFromHour,
+                        LateCheckOutToHour = booking.LateCheckOutToHour,
+                        LateCheckOutCharges = booking.LateCheckOutCharges,
+                        DiscountType = booking.DiscountType,
+                        DiscountPercentage = booking.DiscountPercentage,
+                        DiscountAmount = booking.DiscountAmount,
+                        BookingAmountWithoutDiscount = booking.BookingAmountWithoutDiscount,
+                        DiscountTotalAmount = booking.DiscountTotalAmount,
+                        CalculateRoomRates = booking.CalculateRoomRates,
+                        TransactionCharges = booking.TransactionCharges,
+                        AgentServiceCharge = booking.AgentServiceCharge,
+                        ResidualAmount = booking.ResidualAmount,
+                        CheckOutDiscountType = booking.CheckOutDiscountType,
+                        CheckOutDiscountPercentage = booking.CheckOutDiscountPercentage,
+                        CheckOutDiscoutAmount = booking.CheckOutDiscoutAmount,
+
                     };
+
+                    if (booking.CheckoutFormat == Constants.Constants.SameDayFormat)
+                    {
+                        string isRoomAvailable = await CheckRoomAvailable(booking.ReservationDate, booking.ReservationTime, booking.CheckOutDate, booking.CheckOutTime, request.ShiftRoomTypeId, request.ShiftRoomId);
+
+                        if (isRoomAvailable != "success")
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = isRoomAvailable });
+                        }
+                    }
+                    else
+                    {
+                        //check new room available or not
+                        string isRoomAvailable = await CheckRoomAvailable(request.ShiftDate, Constants.Constants.DayStartTime, booking.CheckOutDate, booking.CheckOutTime, request.ShiftRoomTypeId, request.ShiftRoomId);
+
+                        if (isRoomAvailable != "success")
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = isRoomAvailable });
+                        }
+
+                    }
+
+
+
+
+
 
                     //update new booking object
                     newBooking.RoomId = request.ShiftRoomId;
@@ -1755,50 +1811,82 @@ namespace hotel_api.Controllers
                     booking.UpdatedDate = currentDate;
                     _context.BookingDetail.Update(booking);
 
-
-                    //calculate no of nights
-                    int nights = Constants.Calculation.CalculateNights(request.ShiftDate, booking.CheckOutDate);
-
-                    //calculate room rates
-                    var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
-                    if (code != 200)
+                    if(newBooking.CheckoutFormat == Constants.Constants.SameDayFormat)
                     {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 400, Message = message });
-                    }
-
-                    var bookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == request.BookingId).OrderBy(x => x.BookingDate).ToListAsync();
-                    if (bookedRoomRates.Count == 0)
-                    {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 400, Message = "No room rates found" });
-                    }
-                    foreach (var item in bookedRoomRates)
-                    {
-                        if (item.BookingDate >= request.ShiftDate)
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, booking.ReservationDate, booking.CheckOutDate, 1, 0, booking.GstType, booking.NoOfHours, booking.ReservationTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+                        if (code != 200)
                         {
-                            _context.BookedRoomRates.Remove(item);
-
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = message });
                         }
-                        else
+
+                        var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToListAsync();
+
+                        _context.BookedRoomRates.RemoveRange(roomRates);
+
+                        foreach (var item in response.BookedRoomRates)
                         {
                             item.BookingId = newBooking.BookingId;
-                            item.UpdatedDate = currentDate;
-                            _context.BookedRoomRates.Update(item);
+                            item.RoomId = newBooking.RoomId;
+                            item.ReservationNo = newBooking.ReservationNo;
+                            Constants.Constants.SetMastersDefault(item, companyId, userId, currentDate);
+                            await _context.BookedRoomRates.AddAsync(item);
 
                         }
+                        await _context.SaveChangesAsync();
                     }
-
-                    foreach (var item in response.BookedRoomRates)
+                    else
                     {
-                        item.BookingId = newBooking.BookingId;
-                        item.RoomId = newBooking.RoomId;
-                        item.ReservationNo = newBooking.ReservationNo;
-                        Constants.Constants.SetMastersDefault(item, companyId, userId, currentDate);
-                        await _context.BookedRoomRates.AddAsync(item);
+                        //calculate no of nights
+                        int nights = Constants.Calculation.FindNightsAndHours(request.ShiftDate, Constants.Constants.DayStartTime, booking.CheckOutDate, booking.CheckOutTime, booking.CheckoutFormat);
+
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, 1, nights, booking.GstType, booking.NoOfHours, Constants.Constants.DayStartTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+
+                        //calculate room rates
+                        //var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
+                        if (code != 200)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = message });
+                        }
+
+                        var bookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == request.BookingId).OrderBy(x => x.BookingDate).ToListAsync();
+                        if (bookedRoomRates.Count == 0)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = "No room rates found" });
+                        }
+                        foreach (var item in bookedRoomRates)
+                        {
+                            if (item.BookingDate >= request.ShiftDate)
+                            {
+                                _context.BookedRoomRates.Remove(item);
+
+                            }
+                            else
+                            {
+                                item.BookingId = newBooking.BookingId;
+                                item.UpdatedDate = currentDate;
+                                _context.BookedRoomRates.Update(item);
+
+                            }
+                        }
+                        foreach (var item in response.BookedRoomRates)
+                        {
+                            item.BookingId = newBooking.BookingId;
+                            item.RoomId = newBooking.RoomId;
+                            item.ReservationNo = newBooking.ReservationNo;
+                            Constants.Constants.SetMastersDefault(item, companyId, userId, currentDate);
+                            await _context.BookedRoomRates.AddAsync(item);
+
+                        }
+                        await _context.SaveChangesAsync();
+
+                       
 
                     }
-                    await _context.SaveChangesAsync();
+
+
                     var newbookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == newBooking.BookingId).OrderBy(x => x.BookingDate).ToListAsync();
 
                     (newBooking.BookingAmount, newBooking.GstAmount, newBooking.TotalBookingAmount) = CalculateTotalBookedRoomRate(newbookedRoomRates);
@@ -1806,6 +1894,7 @@ namespace hotel_api.Controllers
                     newBooking.TotalAmount = BookingCalulation.BookingTotalAmount(newBooking);
                     newBooking.TotalAmountWithOutDiscount = newBooking.TotalAmount;
                     _context.BookingDetail.Update(newBooking);
+
 
 
                     //roomavailability
@@ -1816,29 +1905,63 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 400, Message = "No room availability found" });
                     }
 
-                    roomAvailaibility.CheckOutDate = DateTimeMethod.GetADayBefore(request.ShiftDate);
-                    roomAvailaibility.CheckOutTime = Constants.Constants.DayEndTime;
-                    roomAvailaibility.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
-                    roomAvailaibility.RoomStatus = Constants.Constants.Dirty;
-                    roomAvailaibility.UpdatedDate = currentDate;
-                    _context.RoomAvailability.Update(roomAvailaibility);
+                    if(newBooking.CheckoutFormat == Constants.Constants.SameDayFormat)
+                    {
+                        
+                        roomAvailaibility.RoomStatus = Constants.Constants.Dirty;
+                        roomAvailaibility.UpdatedDate = currentDate;
+                        _context.RoomAvailability.Update(roomAvailaibility);
 
+                    }
+                    else
+                    {
+                        roomAvailaibility.CheckOutDate = DateTimeMethod.GetADayBefore(request.ShiftDate);
+                        roomAvailaibility.CheckOutTime = Constants.Constants.DayEndTime;
+                        roomAvailaibility.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
+                        roomAvailaibility.RoomStatus = Constants.Constants.Dirty;
+                        roomAvailaibility.UpdatedDate = currentDate;
+                        _context.RoomAvailability.Update(roomAvailaibility);
 
-                    //create new room availability
-                    var newRoomAvailability = new RoomAvailability();
-                    newRoomAvailability.CheckInDate = request.ShiftDate;
-                    newRoomAvailability.CheckInTime = Constants.Constants.DayStartTime;
-                    newRoomAvailability.CheckInDateTime = DateTimeMethod.ConvertToDateTime(newRoomAvailability.CheckInDate, newRoomAvailability.CheckInTime);
-                    newRoomAvailability.CheckOutDate = booking.CheckOutDate;
-                    newRoomAvailability.CheckOutTime = booking.CheckOutTime;
-                    newRoomAvailability.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(newRoomAvailability.CheckOutDate, newRoomAvailability.CheckOutTime);
-                    newRoomAvailability.ReservationNo = request.ReservationNo;
-                    newRoomAvailability.BookingId = newBooking.BookingId;
-                    newRoomAvailability.RoomId = newBooking.RoomId;
-                    newRoomAvailability.RoomStatus = newBooking.Status;
-                    newRoomAvailability.RoomTypeId = newBooking.RoomTypeId;
-                    Constants.Constants.SetMastersDefault(newRoomAvailability, companyId, userId, currentDate);
-                    await _context.RoomAvailability.AddAsync(newRoomAvailability);
+                    }
+
+                    if (booking.CheckoutFormat == Constants.Constants.SameDayFormat)
+                    {
+                        //create new room availability
+                        var newRoomAvailability = new RoomAvailability();
+                        newRoomAvailability.CheckInDate = newBooking.ReservationDate;
+                        newRoomAvailability.CheckInTime = newBooking.ReservationTime;
+                        newRoomAvailability.CheckInDateTime = newBooking.ReservationDateTime;
+                        newRoomAvailability.CheckOutDate = newBooking.CheckOutDate;
+                        newRoomAvailability.CheckOutTime = newBooking.CheckOutTime;
+                        newRoomAvailability.CheckOutDateTime = newBooking.CheckOutDateTime;
+                        newRoomAvailability.ReservationNo = booking.ReservationNo;
+                        newRoomAvailability.BookingId = newBooking.BookingId;
+                        newRoomAvailability.RoomId = newBooking.RoomId;
+                        newRoomAvailability.RoomStatus = newBooking.Status;
+                        newRoomAvailability.RoomTypeId = newBooking.RoomTypeId;
+                        Constants.Constants.SetMastersDefault(newRoomAvailability, companyId, userId, currentDate);
+                        await _context.RoomAvailability.AddAsync(newRoomAvailability);
+                    }
+                    else
+                    {
+                        //create new room availability
+                        var newRoomAvailability = new RoomAvailability();
+                        newRoomAvailability.CheckInDate = request.ShiftDate;
+                        newRoomAvailability.CheckInTime = Constants.Constants.DayStartTime;
+                        newRoomAvailability.CheckInDateTime = DateTimeMethod.ConvertToDateTime(newRoomAvailability.CheckInDate, newRoomAvailability.CheckInTime);
+                        newRoomAvailability.CheckOutDate = booking.CheckOutDate;
+                        newRoomAvailability.CheckOutTime = booking.CheckOutTime;
+                        newRoomAvailability.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(newRoomAvailability.CheckOutDate, newRoomAvailability.CheckOutTime);
+                        newRoomAvailability.ReservationNo = request.ReservationNo;
+                        newRoomAvailability.BookingId = newBooking.BookingId;
+                        newRoomAvailability.RoomId = newBooking.RoomId;
+                        newRoomAvailability.RoomStatus = newBooking.Status;
+                        newRoomAvailability.RoomTypeId = newBooking.RoomTypeId;
+                        Constants.Constants.SetMastersDefault(newRoomAvailability, companyId, userId, currentDate);
+                        await _context.RoomAvailability.AddAsync(newRoomAvailability);
+                    }
+
+                       
 
 
                     //advance services
@@ -1846,21 +1969,37 @@ namespace hotel_api.Controllers
 
                     if (advanceServices.Count > 0)
                     {
-                        foreach (var service in advanceServices)
+                        if(newBooking.CheckoutFormat == Constants.Constants.SameDayFormat)
                         {
-                            if (service.ServiceDate >= request.ShiftDate)
+                            foreach (var service in advanceServices)
                             {
-                                service.BookingId = newBooking.BookingId;
                                 service.RoomId = newBooking.RoomId;
-                            }
-                            else
-                            {
-                                service.BookingId = newBooking.BookingId;
-                            }
-                            service.UpdatedDate = currentDate;
-                            _context.AdvanceServices.Update(service);
+                                    service.BookingId = newBooking.BookingId;
+                                
+                                service.UpdatedDate = currentDate;
+                                _context.AdvanceServices.Update(service);
 
+                            }
                         }
+                        else
+                        {
+                            foreach (var service in advanceServices)
+                            {
+                                if (service.ServiceDate >= request.ShiftDate)
+                                {
+                                    service.BookingId = newBooking.BookingId;
+                                    service.RoomId = newBooking.RoomId;
+                                }
+                                else
+                                {
+                                    service.BookingId = newBooking.BookingId;
+                                }
+                                service.UpdatedDate = currentDate;
+                                _context.AdvanceServices.Update(service);
+
+                            }
+                        }
+                            
                     }
 
 
@@ -1941,44 +2080,98 @@ namespace hotel_api.Controllers
                     DateOnly tempDate = DateOnly.FromDateTime(DateTime.Now);
                     string tempTime = "";
                     (tempDate, tempTime) = DateTimeMethod.GetAMinuteAfter(booking.CheckOutDate, booking.CheckOutTime);
-
-                    string isRoomAvailable = await CheckRoomAvailable(tempDate, tempTime, request.ExtendedDate, booking.CheckOutTime, booking.RoomTypeId, booking.RoomId);
-
-                    if (isRoomAvailable != "success")
+                    if (booking.CheckoutFormat == Constants.Constants.SameDayFormat)
                     {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 400, Message = isRoomAvailable });
+                        //calculate checkout date
+                        (booking.CheckOutDate, booking.CheckOutTime) = Constants.DateTimeMethod.CalculateCheckoutDateTimeOnHour(booking.ReservationDateTime, request.ExtendHour);
+
+                        string isRoomAvailable = await CheckRoomAvailable(tempDate, tempTime, booking.CheckOutDate, booking.CheckOutTime, booking.RoomTypeId, booking.RoomId);
+
+                        if (isRoomAvailable != "success")
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = isRoomAvailable });
+                        }
+
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.ReservationDate, booking.CheckOutDate, 1, 0, booking.GstType, request.ExtendHour, booking.ReservationTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+
+                        if (code != 200)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = message });
+                        }
+
+                        var roomRates = await _context.BookedRoomRates.Where(x => x.BookingId == booking.BookingId && x.IsActive == true && x.CompanyId == companyId).ToListAsync();
+
+                        _context.BookedRoomRates.RemoveRange(roomRates);
+                       
+
+                        foreach (var item in response.BookedRoomRates)
+                        {
+                            item.BookingId = booking.BookingId;
+                            item.RoomId = booking.RoomId;
+                            item.ReservationNo = booking.ReservationNo;
+                            Constants.Constants.SetMastersDefault(item, companyId, userId, currentDate);
+                            await _context.BookedRoomRates.AddAsync(item);
+                        }
+                        await _context.SaveChangesAsync();
+
+                        booking.NoOfHours = request.ExtendHour;
+                        booking.InitialCheckOutDate = booking.CheckOutDate;
+                        booking.InitialCheckOutTime = booking.CheckOutTime;
+                        booking.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                        booking.InitialCheckOutDateTime = booking.CheckOutDateTime;
+
                     }
-
-                    //calculate nights
-                    int nights = Constants.Calculation.CalculateNights(booking.CheckOutDate, request.ExtendedDate);
-
-                    var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
-                    if (code != 200)
+                    else
                     {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 400, Message = message });
-                    }
+                        string isRoomAvailable = await CheckRoomAvailable(tempDate, tempTime, request.ExtendedDate, booking.CheckOutTime, booking.RoomTypeId, booking.RoomId);
 
-                    foreach (var item in response.BookedRoomRates)
-                    {
-                        item.BookingId = booking.BookingId;
-                        item.RoomId = booking.RoomId;
-                        item.ReservationNo = booking.ReservationNo;
-                        Constants.Constants.SetMastersDefault(item, companyId, userId, currentDate);
-                        await _context.BookedRoomRates.AddAsync(item);
+                        if (isRoomAvailable != "success")
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = isRoomAvailable });
+                        }
+
+                        //calculate nights
+                        int nights = Constants.Calculation.FindNightsAndHours(booking.CheckOutDate, booking.CheckOutTime, request.ExtendedDate, booking.CheckOutTime, booking.CheckoutFormat);
+
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, 1, nights, booking.GstType, 0, booking.CheckOutTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage :  booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+
+                        //var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
+                        if (code != 200)
+                        {
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 400, Message = message });
+                        }
+
+                        foreach (var item in response.BookedRoomRates)
+                        {
+                            item.BookingId = booking.BookingId;
+                            item.RoomId = booking.RoomId;
+                            item.ReservationNo = booking.ReservationNo;
+                            Constants.Constants.SetMastersDefault(item, companyId, userId, currentDate);
+                            await _context.BookedRoomRates.AddAsync(item);
+                        }
+                        await _context.SaveChangesAsync();
+
+                        booking.CheckOutDate = request.ExtendedDate;
+                        booking.InitialCheckOutDate = request.ExtendedDate;
+                        booking.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                        booking.InitialCheckOutDateTime = booking.CheckOutDateTime;
                     }
-                    await _context.SaveChangesAsync();
+                    
+
+                    
+
+                    
 
                     var newbookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).OrderBy(x => x.BookingDate).ToListAsync();
 
                     (booking.BookingAmount, booking.GstAmount, booking.TotalBookingAmount) = CalculateTotalBookedRoomRate(newbookedRoomRates);
                     booking.TotalAmount = BookingCalulation.BookingTotalAmount(booking);
                     booking.TotalAmountWithOutDiscount = booking.TotalAmount;
-                    booking.CheckOutDate = request.ExtendedDate;
-                    booking.InitialCheckOutDate = request.ExtendedDate;
-                    booking.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
-                    booking.InitialCheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
+                   
                     booking.UpdatedDate = currentDate;
                     _context.BookingDetail.Update(booking);
                     await _context.SaveChangesAsync();
@@ -1990,9 +2183,9 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "No room availability found" });
                     }
-
-                    roomAvailaibility.CheckOutDate = request.ExtendedDate;
-                    roomAvailaibility.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(roomAvailaibility.CheckOutDate, roomAvailaibility.CheckOutTime);
+                    roomAvailaibility.CheckOutTime = booking.CheckOutTime;
+                    roomAvailaibility.CheckOutDate = booking.CheckOutDate;
+                    roomAvailaibility.CheckOutDateTime = booking.CheckOutDateTime;
                     roomAvailaibility.UpdatedDate = currentDate;
                     _context.RoomAvailability.Update(roomAvailaibility);
 
@@ -3510,39 +3703,51 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var response = new CheckInRoomData();
+               
                
                 if (bookingId == 0)
                 {
                     return Ok(new { code = 400, Message = "Invalid data" });
                 }
 
-                response.BookingDetail = await (from booking in _context.BookingDetail
-                                                join room in _context.RoomMaster on booking.RoomId equals room.RoomId
+                var BookingDetail = await (from booking in _context.BookingDetail
+                                                join bookrooms in _context.RoomMaster on booking.RoomId equals bookrooms.RoomId
                                                 join guest in _context.GuestDetails on booking.GuestId equals guest.GuestId
-                                                join type in _context.RoomCategoryMaster on booking.RoomTypeId equals type.Id
+                                                join category in _context.RoomCategoryMaster on booking.RoomTypeId equals category.Id
                                                 where booking.IsActive == true && booking.CompanyId == companyId && booking.BookingId == bookingId
-                                                select new BookingDetailCheckInDTO
+                                                select new BookingDetail
                                                 {
                                                     BookingId = booking.BookingId,
                                                     GuestId = booking.GuestId,
-                                                    GuestName = guest.GuestName,
-                                                    GuestPhone = guest.PhoneNumber,
                                                     RoomId = booking.RoomId,
                                                     RoomTypeId = booking.RoomTypeId,
-                                                    CheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
+                                                    CheckInDate = booking.CheckInDate,
                                                     CheckInTime = booking.CheckInTime,
-                                                    CheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
+                                                    CheckOutDate = booking.CheckOutDate,
                                                     CheckOutTime = booking.CheckOutTime,
                                                     CheckInDateTime = booking.CheckInDateTime,
                                                     CheckOutDateTime = booking.CheckOutDateTime,
+                                                    CheckoutFormat = booking.CheckoutFormat,
                                                     NoOfNights = booking.NoOfNights,
                                                     NoOfHours = booking.NoOfHours,
-                                                   
+                                                    RoomCount = booking.RoomCount,
                                                     Pax = booking.Pax,
                                                     Status = booking.Status,
                                                     Remarks = booking.Remarks,
                                                     ReservationNo = booking.ReservationNo,
+                                                    BookingDate = booking.BookingDate,
+                                                    CreatedDate = booking.CreatedDate,
+                                                    UpdatedDate = booking.UpdatedDate,
+                                                    IsActive = booking.IsActive,
+                                                    PrimaryGuestId = booking.PrimaryGuestId,
+                                                    InitialBalanceAmount = booking.InitialBalanceAmount,
+                                                    BalanceAmount = booking.BalanceAmount,
+                                                    AdvanceAmount = booking.AdvanceAmount,
+                                                    ReceivedAmount = booking.ReceivedAmount,
+                                                    AdvanceReceiptNo = booking.AdvanceReceiptNo,
+                                                    RefundAmount = booking.RefundAmount,
+                                                    InvoiceDate = booking.InvoiceDate,
+                                                    InvoiceNo = booking.InvoiceNo,
                                                     UserId = booking.UserId,
                                                     GstType = booking.GstType,
                                                     CompanyId = booking.CompanyId,
@@ -3550,20 +3755,64 @@ namespace hotel_api.Controllers
                                                     GstAmount = booking.GstAmount,
                                                     TotalBookingAmount = booking.TotalBookingAmount,
                                                     BookingSource = booking.BookingSource,
-                                                    ReservationDate = booking.ReservationDate.ToString("yyyy-MM-dd"),
+                                                    ReservationDate = booking.ReservationDate,
                                                     ReservationTime = booking.ReservationTime,
                                                     ReservationDateTime = booking.ReservationDateTime,
-                                                    RoomCategoryName = type.Type,
-                                                    RoomNo = room.RoomNo,
+                                                    InitialCheckOutDate = booking.InitialCheckOutDate,
+                                                    InitialCheckOutTime = booking.InitialCheckOutTime,
+                                                    InitialCheckOutDateTime = booking.InitialCheckOutDateTime,
+                                                    ServicesAmount = booking.ServicesAmount,
                                                     TotalAmount = booking.TotalAmount,
-                                                    
-                                                    ServicesAmount = booking.ServicesAmount
+                                                    TotalAmountWithOutDiscount = booking.TotalAmountWithOutDiscount,
+                                                    AgentAdvanceAmount = booking.AgentAdvanceAmount,
+                                                    InvoiceName = booking.InvoiceName,
+                                                    BillTo = booking.BillTo,
+                                                    TotalServicesAmount = booking.TotalServicesAmount,
+                                                    ServicesTaxAmount = booking.ServicesTaxAmount,
+                                                    CancelAmount = booking.CancelAmount,
+                                                    CancelDate = booking.CancelDate,
+                                                    CheckOutInvoiceFormat = booking.CheckOutInvoiceFormat,
+                                                    IsEarlyCheckIn = booking.IsEarlyCheckIn,
+                                                    EarlyCheckInPolicyName = booking.EarlyCheckInPolicyName,
+                                                    EarlyCheckInDeductionBy = booking.EarlyCheckInDeductionBy,
+                                                    EarlyCheckInApplicableOn = booking.EarlyCheckInApplicableOn,
+                                                    EarlyCheckInFromHour = booking.EarlyCheckInFromHour,
+                                                    EarlyCheckInToHour = booking.EarlyCheckInToHour,
+                                                    EarlyCheckInCharges = booking.EarlyCheckInCharges,
+                                                    IsLateCheckOut = booking.IsLateCheckOut,
+                                                    LateCheckOutPolicyName = booking.LateCheckOutPolicyName,
+                                                    LateCheckOutDeductionBy = booking.LateCheckOutDeductionBy,
+                                                    LateCheckOutApplicableOn = booking.LateCheckOutApplicableOn,
+                                                    LateCheckOutFromHour = booking.LateCheckOutFromHour,
+                                                    LateCheckOutToHour = booking.LateCheckOutToHour,
+                                                    LateCheckOutCharges = booking.LateCheckOutCharges,
+                                                    DiscountType = booking.DiscountType,
+                                                    DiscountPercentage = booking.DiscountPercentage,
+                                                    DiscountAmount = booking.DiscountAmount,
+                                                    DiscountTotalAmount = booking.DiscountTotalAmount,
+                                                    BookingAmountWithoutDiscount = booking.BookingAmountWithoutDiscount,
+                                                    CalculateRoomRates = booking.CalculateRoomRates,
+                                                    IsSelectedValue = false,
+                                                    // NotMapped fields
+                                                    RoomTypeName = category.Type == null ? "" : category.Type,
+                                                    RoomNo = bookrooms.RoomNo == null ? "" : bookrooms.RoomNo
                                                 }).FirstOrDefaultAsync();
 
-                if (response.BookingDetail == null)
+                
+
+
+                if (BookingDetail == null)
                 {
                     return Ok(new { Code = 400, Message = "No booking found" });
                 }
+
+                
+                var response = new 
+                {
+                    BookingDetail = BookingDetail,
+                    Hours = BookingDetail.CheckoutFormat == Constants.Constants.SameDayFormat ? await _context.HourMaster.Where(x=>x.IsActive == true && x.CompanyId == companyId).ToListAsync() : new List<HourMaster>()
+
+                };
                 return Ok(new { Code = 200, Message = "Data fetched", data = response });
 
             }
@@ -3574,6 +3823,9 @@ namespace hotel_api.Controllers
         }
 
         
+        
+
+
         [HttpGet("GetBookingsForCancel")]
         public async Task<IActionResult> GetBookingsForCancel(string reservationNo, int guestId, string cancelMethod, string calculatedBy)
         {
