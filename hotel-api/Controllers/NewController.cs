@@ -222,7 +222,7 @@ namespace hotel_api.Controllers
                     await _context.RoomCategoryMaster.AddAsync(newRoomCat);
                     await _context.SaveChangesAsync();
 
-                    return Ok(new { Code = 200, Message = "Room Category updated successfully" });
+                    return Ok(new { Code = 200, Message = "Room Category deleted successfully" });
                 }
                 
                 else

@@ -58,19 +58,19 @@ namespace Repository.Models
                 .NotEmpty().WithMessage("Policy Description is required")
                 .NotNull().WithMessage("Policy Description is required");
 
-            RuleFor(x => x.CancellationTime)
-               .NotEmpty().WithMessage("Cancellation Time is required")
-               .NotNull().WithMessage("Cancellation Time is required");
+            //RuleFor(x => x.CancellationTime)
+            //   .NotEmpty().WithMessage("Cancellation Time is required")
+            //   .NotNull().WithMessage("Cancellation Time is required");
 
-            RuleFor(x => x.MaxRoom)
-                .NotNull().WithMessage("Max Room is required")
-                .NotEmpty().WithMessage("Max Room is required")
-                .GreaterThan(0).WithMessage("Max Room is required");
+            //RuleFor(x => x.MaxRoom)
+            //    .NotNull().WithMessage("Max Room is required")
+            //    .NotEmpty().WithMessage("Max Room is required")
+            //    .GreaterThan(0).WithMessage("Max Room is required");
 
-            RuleFor(x => x.MinRoom)
-                .NotNull().WithMessage("Min Room is required")
-                .NotEmpty().WithMessage("Min Room is required")
-                .GreaterThan(0).WithMessage("Min Room is required");
+            //RuleFor(x => x.MinRoom)
+            //    .NotNull().WithMessage("Min Room is required")
+            //    .NotEmpty().WithMessage("Min Room is required")
+            //    .GreaterThan(0).WithMessage("Min Room is required");
 
             RuleFor(x => x)
                 .MustAsync(IsUniquePolicyCode)

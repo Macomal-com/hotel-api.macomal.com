@@ -683,6 +683,7 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string financialYear = HttpContext.Request.Headers["FinancialYear"].ToString();
 
                 var cm = _mapper.Map<GroupMaster>(group);
                 cm.IGST = cm.GST;
@@ -703,7 +704,7 @@ namespace hotel_api.Controllers
                 }
 
 
-
+                var response = await DocumentHelper.UpdateDocumentNo(_context, Constants.Constants.DocumentGroupCode, companyId, financialYear);
                 await _context.GroupMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
 
