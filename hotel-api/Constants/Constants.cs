@@ -135,5 +135,23 @@ namespace hotel_api.Constants
             model.UserId = userId;
         }
 
+
+        public static CancelPolicyMaster CreateDefaultCancelPolicyMaster()
+        {
+            return new CancelPolicyMaster
+            {
+                PolicyCode = "CP/DEF/001",
+                DeductionBy = DeductionByAmount,
+                ChargesApplicableOn = "",
+                DeductionAmount = 0,
+                CancellationTime = "Hour",
+                FromTime = 0,
+                ToTime = 0,
+                MinRoom = 0,
+                MaxRoom = 0,
+                PolicyDescription = "Cancellation of booking"
+            };
+        }
+
     }
 }

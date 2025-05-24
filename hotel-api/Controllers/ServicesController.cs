@@ -285,6 +285,7 @@ namespace hotel_api.Controllers
             bookingDetail.TotalServicesAmount = totalServiceAmount;
            
             bookingDetail.TotalAmount = BookingCalulation.BookingTotalAmount(bookingDetail);
+            bookingDetail.TotalAmountWithOutDiscount = bookingDetail.TotalAmount;
 
             _context.BookingDetail.Update(bookingDetail);
             await _context.SaveChangesAsync();

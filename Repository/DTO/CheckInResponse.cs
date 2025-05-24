@@ -128,20 +128,23 @@ namespace Repository.DTO
 
         public CancelSummary CancelSummary { get; set; } = new CancelSummary();
         public string InvoiceNo { get; set; } = string.Empty;
-        public DateOnly InvoiceDate { get; set; }
+        public DateOnly InvoiceDate { get; set; } = DateOnly.FromDateTime(DateTime.Now);
         public string InvoiceName { get; set; } = string.Empty;
-
-        public bool IsAllCancel { get; set; } 
+        public DateTime CancelDate { get; set; } = DateTime.Now;
+        public bool IsAllCancel { get; set; }
+   
     }
 
     public class CancelSummary
     {
+        public int TotalRooms { get; set; }
         public decimal AgentAmount { get; set; }
+        public decimal TransactionCharges { get; set; }
         public decimal AdvanceAmount { get; set; }
         public decimal ReceivedAmount { get; set; }
         public decimal TotalPaid { get; set; }
 
-        public decimal TotalRooms { get; set; }
+        
 
         public decimal CancelAmount { get; set; }
         public decimal BalanceAmount { get; set; }

@@ -22,6 +22,8 @@ namespace Repository.RequestDTO
         public string CheckOutDiscountType { get; set; } = string.Empty;
 
         public decimal CheckOutDiscount { get; set; }
+
+       
     }
 
 
@@ -33,7 +35,6 @@ namespace Repository.RequestDTO
 
         public DateTime CancelDate { get; set; }
 
-        public string cancelMethod { get; set; } = string.Empty;
-        public string calculatedBy { get; set; } = string.Empty;
+        public string InvoiceNo { get; set; } = string.Empty;
     }
 }

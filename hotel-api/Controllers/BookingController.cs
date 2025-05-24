@@ -20,6 +20,7 @@ using Repository.DTO;
 using Repository.Models;
 using Repository.RequestDTO;
 using RepositoryModels.Repository;
+using System;
 using System.ComponentModel.Design;
 using System.Data;
 using System.Globalization;
@@ -2454,7 +2455,7 @@ namespace hotel_api.Controllers
                                                  join roomType in _context.RoomCategoryMaster on booking.RoomTypeId equals roomType.Id
                                                  join guest in _context.GuestDetails
                                                  on booking.GuestId equals guest.GuestId
-                                                 where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == reservationNo && booking.Status == Constants.Constants.CheckIn
+                                                 where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == reservationNo && booking.Status == Constants.Constants.CheckIn orderby booking.TotalAmount
                                                  select new BookingDetail
                                                  {
                                                      BookingId = booking.BookingId,
@@ -2598,7 +2599,7 @@ namespace hotel_api.Controllers
 
                 response.PaymentSummary = await CalculateSummaryForCheckOut(response.ReservationDetails, response.BookingDetails, response.PaymentDetails, isAllRoomCheckOut);
 
-                CalculateCheckOutInvoice(response.BookingDetails, response.PaymentDetails);
+                CalculateInvoice(response.BookingDetails, response.PaymentDetails, Constants.Constants.CheckOut);
 
                 foreach (var item in response.BookingDetails)
                 {
@@ -2608,112 +2609,11 @@ namespace hotel_api.Controllers
 
                 if(allBookingsCount == response.BookingDetails.Count)
                 {
-                    Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
-                    //calculate refund
-                    foreach (var pay in response.PaymentDetails)
-                    {
-
-                        if (pay.RoomId == 0 && pay.BookingId == 0)
-                        {
-                            pay.IsReceived = true;
-                            pay.RefundAmount = pay.PaymentLeft;
-                            pay.PaymentLeft = 0;
-
-                            decimal equallydivide = 0;
-                            if (pay.RefundAmount > 0)
-                            {
-                                equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count == 0 ? response.BookingDetails.Count : pay.InvoiceHistories.Count);
-                            }
-                            if(pay.InvoiceHistories.Count == 0)
-                            {
-                                foreach(var item in response.BookingDetails)
-                                {
-                                    if (refundAmouts.ContainsKey(item.BookingId))
-                                    {
-                                        refundAmouts[item.BookingId] = refundAmouts[item.BookingId] + equallydivide;
-                                    }
-                                    else
-                                    {
-
-                                        refundAmouts.Add(item.BookingId, equallydivide);
-
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                foreach (var invoice in pay.InvoiceHistories)
-                                {
-                                    if (pay.RefundAmount > 0)
-                                    {
-                                        invoice.RefundAmount = equallydivide;
-                                        invoice.PaymentLeft = 0;
-
-                                        if (refundAmouts.ContainsKey(invoice.BookingId))
-                                        {
-                                            refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
-                                        }
-                                        else
-                                        {
-                                            refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
-                                        }
-                                    }
-
-
-
-                                }
-                            }
-                                
-
-                        }
-
-
-                    }
-
-                    foreach (var kvp in refundAmouts)
-                    {
-                        foreach (var item in response.BookingDetails)
-                        {
-                            if (item.BookingId == kvp.Key)
-                            {
-                                item.RefundAmount = kvp.Value;
-                            }
-                        }
-
-
-                    }
+                    SetRefundAmount(response.PaymentDetails, response.BookingDetails);
                 }
                 else
                 {
-                    Dictionary<int, decimal> residualAmount = new Dictionary<int, decimal>();
-                    //calculate refund
-                    foreach (var pay in response.PaymentDetails)
-                    {
-
-                        if (pay.RoomId == 0 && pay.BookingId == 0)
-                        {
-
-
-
-
-                            decimal equallydivide = 0;
-                            if (pay.PaymentLeft > 0)
-                            {
-                                equallydivide = EquallyDivideValue(pay.PaymentLeft, response.BookingDetails.Count);
-                            }
-
-                            foreach (var item in response.BookingDetails)
-                            {
-                                item.ResidualAmount += equallydivide;
-
-
-                            }
-
-                        }
-
-
-                    }
-
+                    SetResidualAmount(response.PaymentDetails, response.BookingDetails);
                 }
 
 
@@ -2768,7 +2668,7 @@ namespace hotel_api.Controllers
                                                             join roomType in _context.RoomCategoryMaster on booking.RoomTypeId equals roomType.Id
                                                             join guest in _context.GuestDetails
                                                             on booking.GuestId equals guest.GuestId
-                                                            where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == request.ReservationDetails.ReservationNo && bookingIdList.Contains(booking.BookingId)
+                                                            where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == request.ReservationDetails.ReservationNo && bookingIdList.Contains(booking.BookingId) orderby booking.TotalAmount
                                                             select new BookingDetail
                                                             {
                                                                 BookingId = booking.BookingId,
@@ -3039,6 +2939,7 @@ namespace hotel_api.Controllers
                             item.CheckOutDiscoutAmount = request.CheckOutDiscount;
                         }
                     }
+                    
 
                     item.TotalAmount = BookingCalulation.BookingTotalAmount(item);
                 }
@@ -3049,10 +2950,10 @@ namespace hotel_api.Controllers
                 response.BookingDetails = bookings;
                 response.PaymentSummary = paymentSummary;
 
-                
 
 
-                CalculateCheckOutInvoice(response.BookingDetails, response.PaymentDetails);
+
+                CalculateInvoice(response.BookingDetails, response.PaymentDetails, Constants.Constants.CheckOut);
 
                
 
@@ -3067,97 +2968,11 @@ namespace hotel_api.Controllers
 
                 if (isAllRoomCheckOut)
                 {
-                    Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
-                    //calculate refund
-                    foreach (var pay in response.PaymentDetails)
-                    {
-
-                        if (pay.RoomId == 0 && pay.BookingId == 0)
-                        {
-                            pay.IsReceived = true;
-                            pay.RefundAmount = pay.PaymentLeft;
-                            pay.PaymentLeft = 0;
-
-                            decimal equallydivide = 0;
-                            if (pay.RefundAmount > 0)
-                            {
-                                equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count == 0 ? response.BookingDetails.Count : pay.InvoiceHistories.Count);
-                            }
-                            if (pay.InvoiceHistories.Count == 0)
-                            {
-                                foreach (var item in response.BookingDetails)
-                                {
-                                    refundAmouts[item.BookingId] = refundAmouts[item.BookingId] + equallydivide;
-                                }
-                            }
-                            foreach (var invoice in pay.InvoiceHistories)
-                            {
-                                if (pay.RefundAmount > 0)
-                                {
-                                    invoice.RefundAmount = equallydivide;
-                                    invoice.PaymentLeft = 0;
-
-                                    if (refundAmouts.ContainsKey(invoice.BookingId))
-                                    {
-                                        refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
-                                    }
-                                    else
-                                    {
-                                        refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
-                                    }
-                                }
-
-
-
-                            }
-                        }
-
-
-                    }
-
-                    foreach (var kvp in refundAmouts)
-                    {
-                        foreach (var item in response.BookingDetails)
-                        {
-                            if (item.BookingId == kvp.Key)
-                            {
-                                item.RefundAmount = kvp.Value;
-                            }
-                        }
-
-
-                    }
+                    SetRefundAmount(response.PaymentDetails, response.BookingDetails);
                 }
                 else
                 {
-                    Dictionary<int, decimal> residualAmount = new Dictionary<int, decimal>();
-                    //calculate refund
-                    foreach (var pay in response.PaymentDetails)
-                    {
-
-                        if (pay.RoomId == 0 && pay.BookingId == 0)
-                        {
-                           
-                            
-                            
-
-                            decimal equallydivide = 0;
-                            if (pay.PaymentLeft > 0)
-                            {
-                                equallydivide = EquallyDivideValue(pay.PaymentLeft, response.BookingDetails.Count);
-                            }
-
-                            foreach(var item in response.BookingDetails)
-                            {
-                                item.ResidualAmount += equallydivide;
-
-
-                            }
-                           
-                        }
-
-
-                    }
+                    SetResidualAmount(response.PaymentDetails, response.BookingDetails);
 
                    
                 }
@@ -3195,8 +3010,8 @@ namespace hotel_api.Controllers
         }
         
         
-        //CHECKOUT INVOICE CALCULATION
-        private void CalculateCheckOutInvoice(List<BookingDetail> bookings, List<PaymentDetails> payments)
+        //INVOICE CALCULATION
+        private void CalculateInvoice(List<BookingDetail> bookings, List<PaymentDetails> payments, string status)
         {
             //set room payment if room wise payment
             foreach (var booking in bookings)
@@ -3206,7 +3021,7 @@ namespace hotel_api.Controllers
                     if (pay.RoomId == booking.RoomId && pay.BookingId == booking.BookingId)
                     {
                         
-                        decimal balance = CalculateCheckOutBalanceBooking(booking);
+                        decimal balance = status == Constants.Constants.CheckOut ?  CalculateCheckOutBalanceBooking(booking) : CalculateBalanceCancelAmount(booking);
                         //amount left in room
                         if (balance > 0)
                         {
@@ -3258,7 +3073,8 @@ namespace hotel_api.Controllers
             //agent advance allocation
             if (agentAdvance > 0)
             {
-                int roomCounts = GetBalanceRoomCount(bookings);
+                int roomCounts = status == Constants.Constants.CheckOut ?  GetBalanceRoomCount(bookings) : GetBalanceCancelCount(bookings)
+;
                 if (roomCounts == 0)
                 {
                     return;
@@ -3270,7 +3086,7 @@ namespace hotel_api.Controllers
                 for (int i = 0; i < bookings.Count; i++)
                 {
                     int paymentIndex = 0;
-                    decimal balance = CalculateCheckOutBalanceBooking(bookings[i]);
+                    decimal balance = status == Constants.Constants.CheckOut ?  CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                     if (balance > 0)
                     {
                         decimal currentBalance = 0;
@@ -3331,7 +3147,7 @@ namespace hotel_api.Controllers
             //advance allocation
             if (advanceAmount > 0)
             {
-                int roomCounts = GetBalanceRoomCount(bookings);
+                int roomCounts = status == Constants.Constants.CheckOut ?  GetBalanceRoomCount(bookings) : GetBalanceCancelCount(bookings);
                 if (roomCounts == 0)
                 {
                     return;
@@ -3343,7 +3159,7 @@ namespace hotel_api.Controllers
                 for (int i = 0; i < bookings.Count; i++)
                 {
                     int paymentIndex = 0;
-                    decimal balance = CalculateCheckOutBalanceBooking(bookings[i]);
+                    decimal balance = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                     if (balance > 0)
                     {
                         decimal currentBalance = 0;
@@ -3405,7 +3221,7 @@ namespace hotel_api.Controllers
             //receive amount
             if (receivedAmount > 0)
             {
-                int roomCounts = GetBalanceRoomCount(bookings);
+                int roomCounts = status == Constants.Constants.CheckOut ?  GetBalanceRoomCount(bookings) : GetBalanceCancelCount(bookings);
                 if (roomCounts == 0)
                 {
                     return;
@@ -3417,7 +3233,7 @@ namespace hotel_api.Controllers
                 for (int i = 0; i < bookings.Count; i++)
                 {
                     int paymentIndex = 0;
-                    decimal balance = CalculateCheckOutBalanceBooking(bookings[i]);
+                    decimal balance = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                     if (balance > 0)
                     {
                         decimal currentBalance = 0;
@@ -3847,7 +3663,7 @@ namespace hotel_api.Controllers
 
 
         [HttpGet("GetBookingsForCancel")]
-        public async Task<IActionResult> GetBookingsForCancel(string reservationNo, int guestId, string cancelMethod, string calculatedBy)
+        public async Task<IActionResult> GetBookingsForCancel(string reservationNo, int guestId)
         {
             try
             {
@@ -3869,6 +3685,12 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, message = "Document number not found.", data = getbookingno });
                 }
                 cancelBookingResponse.InvoiceNo = getbookingno;
+
+                var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
+                if(property == null)
+                {
+                    return Ok(new { Code = 400, message = "Property not found", data = getbookingno });
+                }
 
                 cancelBookingResponse.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
                 if (cancelBookingResponse.ReservationDetails == null)
@@ -3909,122 +3731,137 @@ namespace hotel_api.Controllers
                                             BookingId = booking.BookingId,
                                             GuestId = booking.GuestId,
                                             RoomId = booking.RoomId,
-                                            RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
                                             RoomTypeId = booking.RoomTypeId,
-                                            RoomTypeName = category.Type,
+                                            CheckInDate = booking.CheckInDate,
+                                            CheckInTime = booking.CheckInTime,
+                                            CheckOutDate = booking.CheckOutDate,
+                                            CheckOutTime = booking.CheckOutTime,
                                             CheckInDateTime = booking.CheckInDateTime,
                                             CheckOutDateTime = booking.CheckOutDateTime,
-                                            ReservationDateTime = booking.ReservationDateTime,
+                                            CheckoutFormat = booking.CheckoutFormat,
                                             NoOfNights = booking.NoOfNights,
+                                            NoOfHours = booking.NoOfHours,
+                                            RoomCount = booking.RoomCount,
+                                            Pax = booking.Pax,
                                             Status = booking.Status,
+                                            Remarks = booking.Remarks,
                                             ReservationNo = booking.ReservationNo,
-                                            ReservationDate = booking.ReservationDate,
+                                            BookingDate = booking.BookingDate,
+                                            CreatedDate = booking.CreatedDate,
+                                            UpdatedDate = booking.UpdatedDate,
+                                            IsActive = booking.IsActive,
+                                            PrimaryGuestId = booking.PrimaryGuestId,
+                                            InitialBalanceAmount = booking.InitialBalanceAmount,
+                                            BalanceAmount = booking.BalanceAmount,
                                             AdvanceAmount = booking.AdvanceAmount,
                                             ReceivedAmount = booking.ReceivedAmount,
                                             AdvanceReceiptNo = booking.AdvanceReceiptNo,
-                                            CancelAmount = booking.CancelAmount,
-                                            TotalBookingAmount = booking.TotalBookingAmount,
+                                            RefundAmount = booking.RefundAmount,
+                                            
+                                            InvoiceNo = cancelBookingResponse.InvoiceNo,
+                                            UserId = booking.UserId,
+                                            GstType = booking.GstType,
+                                            CompanyId = booking.CompanyId,
                                             BookingAmount = booking.BookingAmount,
                                             GstAmount = booking.GstAmount,
-                                            InvoiceNo = cancelBookingResponse.InvoiceNo,
+                                            TotalBookingAmount = booking.TotalBookingAmount,
+                                            BookingSource = booking.BookingSource,
+                                            ReservationDate = booking.ReservationDate,
+                                            ReservationTime = booking.ReservationTime,
+                                            ReservationDateTime = booking.ReservationDateTime,
+                                            InitialCheckOutDate = booking.InitialCheckOutDate,
+                                            InitialCheckOutTime = booking.InitialCheckOutTime,
+                                            InitialCheckOutDateTime = booking.InitialCheckOutDateTime,
+                                            ServicesAmount = booking.ServicesAmount,
+                                            TotalAmount = booking.TotalAmount,
+                                            TotalAmountWithOutDiscount = booking.TotalAmountWithOutDiscount,
+
+                                            AgentAdvanceAmount = booking.AgentAdvanceAmount,
+                                            InvoiceName = booking.InvoiceName,
+                                            BillTo = booking.BillTo,
+                                            TotalServicesAmount = booking.TotalServicesAmount,
+                                            ServicesTaxAmount = booking.ServicesTaxAmount,
+                                            CancelAmount = booking.CancelAmount,
                                             CancelDate = cancelDateTime,
-                                            Pax=booking.Pax,
-                                            GuestDetails = guest
+                                            CheckOutInvoiceFormat = booking.CheckOutInvoiceFormat,
+                                            IsEarlyCheckIn = booking.IsEarlyCheckIn,
+                                            EarlyCheckInPolicyName = booking.EarlyCheckInPolicyName,
+                                            EarlyCheckInDeductionBy = booking.EarlyCheckInDeductionBy,
+                                            EarlyCheckInApplicableOn = booking.EarlyCheckInApplicableOn,
+                                            EarlyCheckInFromHour = booking.EarlyCheckInFromHour,
+                                            EarlyCheckInToHour = booking.EarlyCheckInToHour,
+                                            EarlyCheckInCharges = booking.EarlyCheckInCharges,
+                                            IsLateCheckOut = booking.IsLateCheckOut,
+                                            LateCheckOutPolicyName = booking.LateCheckOutPolicyName,
+                                            LateCheckOutDeductionBy = booking.LateCheckOutDeductionBy,
+                                            LateCheckOutApplicableOn = booking.LateCheckOutApplicableOn,
+                                            LateCheckOutFromHour = booking.LateCheckOutFromHour,
+                                            LateCheckOutToHour = booking.LateCheckOutToHour,
+                                            LateCheckOutCharges = booking.LateCheckOutCharges,
+                                            DiscountType = booking.DiscountType,
+                                            DiscountPercentage = booking.DiscountPercentage,
+                                            DiscountAmount = booking.DiscountAmount,
+                                            DiscountTotalAmount = booking.DiscountTotalAmount,
+                                            BookingAmountWithoutDiscount = booking.BookingAmountWithoutDiscount,
+                                            CalculateRoomRates = booking.CalculateRoomRates,
+                                            TransactionCharges = booking.TransactionCharges,
+                                            IsSelectedValue = true,
+                                           
+                                            // NotMapped fields
+                                            RoomTypeName = category.Type,
+                                            RoomNo = bookrooms == null ?  "" : bookrooms.RoomNo,
+                                            BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                            GuestDetails = _context.GuestDetails.FirstOrDefault(x=>x.IsActive == true && x.GuestId == booking.GuestId) ?? guest,
+                                            AdvanceServices = _context.AdvanceServices.Where(x => x.IsActive == true && x.BookingId == booking.BookingId).ToList(),
                                         }
                                     ).ToList();
+
+                //check all rooms cancel
+                bookingDetails = bookingDetails.Where(x => x.AdvanceServices.Count == 0).ToList();
                 cancelBookingResponse.IsAllCancel = allBookings.Count == bookingDetails.Count;
 
-                foreach (var item in bookingDetails)
-                {
-                    item.BookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId).ToListAsync();
-                }
-
+                
 
                 List<PaymentDetails> paymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.PaymentLeft > 0 && x.ReservationNo == reservationNo).ToListAsync();
 
 
-                List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == calculatedBy).ToListAsync();
+                List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == property.CancelCalculatedBy).ToListAsync();
 
-                if (cancelPolicies.Count == 0)
-                {
-                    return Ok(new { Code = 400, Message = "No cancel policy found" });
-                }
-                bool flag = CalculateCancelAmount(bookingDetails, cancelMethod, cancelPolicies, cancelDateTime);
+
+                
+
+                bool flag = CalculateCancelAmount(bookingDetails, property.CancelMethod, cancelPolicies, cancelDateTime);
                 if (flag == false)
                 {
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
-
+                bookingDetails = bookingDetails.OrderBy(x => x.CancelAmount).ToList();
                 CancelSummary cancelSummary = new CancelSummary();
 
                 cancelBookingResponse.CancelSummary = CalculatePaymentSummary(cancelSummary, paymentDetails,bookingDetails);
 
-                CalculateCancelInvoice(bookingDetails, paymentDetails);
+               
+
+                CalculateInvoice(bookingDetails, paymentDetails, Constants.Constants.Cancel);
 
                 foreach (var item in bookingDetails)
                 {
                     item.BalanceAmount = CalculateBalanceCancelAmount(item);
                 }
 
+               
+
+                if (cancelBookingResponse.IsAllCancel)
+                {
+                    SetRefundAmount(paymentDetails, bookingDetails);
+                }
+                else
+                {
+                    SetResidualAmount(paymentDetails, bookingDetails);
+                }
+
                 cancelBookingResponse.CancelSummary = CalculateCancelSummary(cancelSummary, bookingDetails);
 
-                //if (cancelBookingResponse.IsAllCancel)
-                //{
-                //    Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
-                //    //calculate refund
-                //    foreach (var pay in paymentDetails)
-                //    {
-
-                //        if (pay.RoomId == 0 && pay.BookingId == 0)
-                //        {
-                //            pay.IsReceived = true;
-                //            pay.RefundAmount = pay.PaymentLeft;
-                //            pay.PaymentLeft = 0;
-
-                //            decimal equallydivide = 0;
-                //            if (pay.RefundAmount > 0)
-                //            {
-                //                equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count);
-                //            }
-                //            foreach (var invoice in pay.InvoiceHistories)
-                //            {
-                //                if (pay.RefundAmount > 0)
-                //                {
-                //                    invoice.RefundAmount = equallydivide;
-                //                    invoice.PaymentLeft = 0;
-
-                //                    if (refundAmouts.ContainsKey(invoice.BookingId))
-                //                    {
-                //                        refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
-                //                    }
-                //                    else
-                //                    {
-                //                        refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
-                //                    }
-                //                }
-
-
-
-                //            }
-                //        }
-
-
-                //    }
-
-                //    foreach (var kvp in refundAmouts)
-                //    {
-                //        foreach (var item in bookingDetails)
-                //        {
-                //            if (item.BookingId == kvp.Key)
-                //            {
-                //                item.RefundAmount = kvp.Value;
-                //            }
-                //        }
-
-
-                //    }
-                //}
-              
                 cancelBookingResponse.bookingDetails = bookingDetails;
                 cancelBookingResponse.PaymentDetails = paymentDetails;
 
@@ -4045,7 +3882,8 @@ namespace hotel_api.Controllers
             {
 
                 var cancelBookingResponse = new CancelBookingResponse();
-                if (string.IsNullOrWhiteSpace(request.ReservationNo) || request.CancelDate == null || request.CancelDate == new DateTime(1900, 01, 01) || string.IsNullOrWhiteSpace(request.cancelMethod) || string.IsNullOrWhiteSpace(request.calculatedBy))
+                cancelBookingResponse.CancelDate = request.CancelDate;
+                if (string.IsNullOrWhiteSpace(request.ReservationNo) || request.CancelDate == null || request.CancelDate == new DateTime(1900, 01, 01))
                 {
                     return Ok(new { Code = 500, Message = "Invalid data" });
                 }
@@ -4054,7 +3892,13 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 200, Message = "Bookings fetched successfully", data = cancelBookingResponse });
                 }
-               
+
+                var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
+                if (property == null)
+                {
+                    return Ok(new { Code = 400, message = "Property not found"});
+                }
+
                 var statusList = new List<string> { Constants.Constants.Pending, Constants.Constants.Confirmed, Constants.Constants.CheckIn };
 
 
@@ -4080,55 +3924,111 @@ namespace hotel_api.Controllers
                                               && booking.ReservationNo == request.ReservationNo
                                               && request.BookingIds.Contains(booking.BookingId)
 
-                                        select new BookingDetail
-                                        {
-                                            BookingId = booking.BookingId,
-                                            GuestId = booking.GuestId,
-                                            RoomId = booking.RoomId,
-                                            RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
-                                            RoomTypeId = booking.RoomTypeId,
-                                            RoomTypeName = category.Type,
-                                            CheckInDateTime = booking.CheckInDateTime,
-                                            CheckOutDateTime = booking.CheckOutDateTime,
-                                            ReservationDateTime = booking.ReservationDateTime,
-                                            NoOfNights = booking.NoOfNights,
-                                            Status = booking.Status,
-                                            ReservationNo = booking.ReservationNo,
-                                            ReservationDate = booking.ReservationDate,
-                                            AdvanceAmount = booking.AdvanceAmount,
-                                            ReceivedAmount = booking.ReceivedAmount,
-                                            AdvanceReceiptNo = booking.AdvanceReceiptNo,
-                                            CancelAmount = booking.CancelAmount,
-                                            TotalBookingAmount = booking.TotalBookingAmount,
-                                            BookingAmount = booking.BookingAmount,
-                                            GstAmount = booking.GstAmount,
-                                            InvoiceNo = cancelBookingResponse.InvoiceNo,
-                                            CancelDate = request.CancelDate,
-                                            GuestDetails = guest,
-                                            Pax = booking.Pax,
-                                        }
+                                      select new BookingDetail
+                                      {
+                                          BookingId = booking.BookingId,
+                                          GuestId = booking.GuestId,
+                                          RoomId = booking.RoomId,
+                                          RoomTypeId = booking.RoomTypeId,
+                                          CheckInDate = booking.CheckInDate,
+                                          CheckInTime = booking.CheckInTime,
+                                          CheckOutDate = booking.CheckOutDate,
+                                          CheckOutTime = booking.CheckOutTime,
+                                          CheckInDateTime = booking.CheckInDateTime,
+                                          CheckOutDateTime = booking.CheckOutDateTime,
+                                          CheckoutFormat = booking.CheckoutFormat,
+                                          NoOfNights = booking.NoOfNights,
+                                          NoOfHours = booking.NoOfHours,
+                                          RoomCount = booking.RoomCount,
+                                          Pax = booking.Pax,
+                                          Status = booking.Status,
+                                          Remarks = booking.Remarks,
+                                          ReservationNo = booking.ReservationNo,
+                                          BookingDate = booking.BookingDate,
+                                          CreatedDate = booking.CreatedDate,
+                                          UpdatedDate = booking.UpdatedDate,
+                                          IsActive = booking.IsActive,
+                                          PrimaryGuestId = booking.PrimaryGuestId,
+                                          InitialBalanceAmount = booking.InitialBalanceAmount,
+                                          BalanceAmount = booking.BalanceAmount,
+                                          AdvanceAmount = booking.AdvanceAmount,
+                                          ReceivedAmount = booking.ReceivedAmount,
+                                          AdvanceReceiptNo = booking.AdvanceReceiptNo,
+                                          RefundAmount = booking.RefundAmount,
+
+                                          InvoiceNo = request.InvoiceNo,
+                                          UserId = booking.UserId,
+                                          GstType = booking.GstType,
+                                          CompanyId = booking.CompanyId,
+                                          BookingAmount = booking.BookingAmount,
+                                          GstAmount = booking.GstAmount,
+                                          TotalBookingAmount = booking.TotalBookingAmount,
+                                          BookingSource = booking.BookingSource,
+                                          ReservationDate = booking.ReservationDate,
+                                          ReservationTime = booking.ReservationTime,
+                                          ReservationDateTime = booking.ReservationDateTime,
+                                          InitialCheckOutDate = booking.InitialCheckOutDate,
+                                          InitialCheckOutTime = booking.InitialCheckOutTime,
+                                          InitialCheckOutDateTime = booking.InitialCheckOutDateTime,
+                                          ServicesAmount = booking.ServicesAmount,
+                                          TotalAmount = booking.TotalAmount,
+                                          TotalAmountWithOutDiscount = booking.TotalAmountWithOutDiscount,
+
+                                          AgentAdvanceAmount = booking.AgentAdvanceAmount,
+                                          InvoiceName = booking.InvoiceName,
+                                          BillTo = booking.BillTo,
+                                          TotalServicesAmount = booking.TotalServicesAmount,
+                                          ServicesTaxAmount = booking.ServicesTaxAmount,
+                                          CancelAmount = booking.CancelAmount,
+                                          CancelDate = request.CancelDate,
+                                          CheckOutInvoiceFormat = booking.CheckOutInvoiceFormat,
+                                          IsEarlyCheckIn = booking.IsEarlyCheckIn,
+                                          EarlyCheckInPolicyName = booking.EarlyCheckInPolicyName,
+                                          EarlyCheckInDeductionBy = booking.EarlyCheckInDeductionBy,
+                                          EarlyCheckInApplicableOn = booking.EarlyCheckInApplicableOn,
+                                          EarlyCheckInFromHour = booking.EarlyCheckInFromHour,
+                                          EarlyCheckInToHour = booking.EarlyCheckInToHour,
+                                          EarlyCheckInCharges = booking.EarlyCheckInCharges,
+                                          IsLateCheckOut = booking.IsLateCheckOut,
+                                          LateCheckOutPolicyName = booking.LateCheckOutPolicyName,
+                                          LateCheckOutDeductionBy = booking.LateCheckOutDeductionBy,
+                                          LateCheckOutApplicableOn = booking.LateCheckOutApplicableOn,
+                                          LateCheckOutFromHour = booking.LateCheckOutFromHour,
+                                          LateCheckOutToHour = booking.LateCheckOutToHour,
+                                          LateCheckOutCharges = booking.LateCheckOutCharges,
+                                          DiscountType = booking.DiscountType,
+                                          DiscountPercentage = booking.DiscountPercentage,
+                                          DiscountAmount = booking.DiscountAmount,
+                                          DiscountTotalAmount = booking.DiscountTotalAmount,
+                                          BookingAmountWithoutDiscount = booking.BookingAmountWithoutDiscount,
+                                          CalculateRoomRates = booking.CalculateRoomRates,
+                                          TransactionCharges = booking.TransactionCharges,
+                                          IsSelectedValue = true,
+
+                                          // NotMapped fields
+                                          RoomTypeName = category.Type,
+                                          RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
+                                          BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                          GuestDetails = _context.GuestDetails.FirstOrDefault(x => x.IsActive == true && x.GuestId == booking.GuestId) ?? guest,
+                                          AdvanceServices = _context.AdvanceServices.Where(x => x.IsActive == true && x.BookingId == booking.BookingId).ToList(),
+                                      }
                                     ).ToList();
 
+
+                bookingDetails = bookingDetails.Where(x => x.AdvanceServices.Count == 0).ToList();
 
                 cancelBookingResponse.IsAllCancel = allbookingDetails.Count == bookingDetails.Count ? true : false;
                
 
-                foreach (var item in bookingDetails)
-                {
-                    item.BookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId).ToListAsync();
-                }
-
+                
 
                 List<PaymentDetails> paymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.PaymentLeft > 0 && x.ReservationNo == request.ReservationNo).ToListAsync();
 
 
-                List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == request.calculatedBy).ToListAsync();
+                List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == property.CancelCalculatedBy).ToListAsync();
 
-                if (cancelPolicies.Count == 0)
-                {
-                    return Ok(new { Code = 400, Message = "No cancel policy found" });
-                }
-                bool flag = CalculateCancelAmount(bookingDetails, request.cancelMethod, cancelPolicies, request.CancelDate);
+               
+                bool flag = CalculateCancelAmount(bookingDetails, property.CancelMethod, cancelPolicies, request.CancelDate);
                 if (flag == false)
                 {
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
@@ -4136,74 +4036,27 @@ namespace hotel_api.Controllers
 
                 CancelSummary cancelSummary = new CancelSummary();
                 cancelBookingResponse.CancelSummary = CalculatePaymentSummary(cancelSummary, paymentDetails, bookingDetails);
-
-                CalculateCancelInvoice(bookingDetails, paymentDetails);
+                bookingDetails = bookingDetails.OrderBy(x => x.CancelAmount).ToList();
+                CalculateInvoice(bookingDetails, paymentDetails, Constants.Constants.Cancel);
 
                 foreach (var item in bookingDetails)
                 {
                     item.BalanceAmount = CalculateBalanceCancelAmount(item);
                 }
 
-                cancelBookingResponse.CancelSummary = CalculateCancelSummary(cancelSummary, bookingDetails);
+               
 
 
-                Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
-                //calculate refund
                 if (cancelBookingResponse.IsAllCancel)
                 {
-                    foreach (var pay in paymentDetails)
-                    {
-
-                        if (pay.RoomId == 0 && pay.BookingId == 0)
-                        {
-                            pay.IsReceived = true;
-                            pay.RefundAmount = pay.PaymentLeft;
-                            pay.PaymentLeft = 0;
-
-                            decimal equallydivide = 0;
-                            if (pay.RefundAmount > 0)
-                            {
-                                equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count);
-                            }
-                            foreach (var invoice in pay.InvoiceHistories)
-                            {
-                                if (pay.RefundAmount > 0)
-                                {
-                                    invoice.RefundAmount = equallydivide;
-                                    invoice.PaymentLeft = 0;
-
-                                    if (refundAmouts.ContainsKey(invoice.BookingId))
-                                    {
-                                        refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
-                                    }
-                                    else
-                                    {
-                                        refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
-                                    }
-                                }
-
-
-
-                            }
-                        }
-
-
-                    }
-
-                    foreach (var kvp in refundAmouts)
-                    {
-                        foreach (var item in bookingDetails)
-                        {
-                            if (item.BookingId == kvp.Key)
-                            {
-                                item.RefundAmount = kvp.Value;
-                            }
-                        }
-
-
-                    }
-
+                    SetRefundAmount(paymentDetails, bookingDetails);
                 }
+                else
+                {
+                    SetResidualAmount(paymentDetails, bookingDetails);
+                }
+
+                cancelBookingResponse.CancelSummary = CalculateCancelSummary(cancelSummary, bookingDetails);
 
                 cancelBookingResponse.bookingDetails = bookingDetails;
                 cancelBookingResponse.PaymentDetails = paymentDetails;
@@ -4221,11 +4074,130 @@ namespace hotel_api.Controllers
             }
         }
 
+        private void SetRefundAmount(List<PaymentDetails> paymentDetails, List<BookingDetail> bookingDetails)
+        {
+            Dictionary<int, decimal> refundAmouts = new Dictionary<int, decimal>();
+            //calculate refund
+            foreach (var pay in paymentDetails)
+            {
+
+                if (pay.RoomId == 0 && pay.BookingId == 0)
+                {
+                    pay.IsReceived = true;
+                    pay.RefundAmount = pay.PaymentLeft;
+                    pay.PaymentLeft = 0;
+
+                    decimal equallydivide = 0;
+                    if (pay.RefundAmount > 0)
+                    {
+                        equallydivide = EquallyDivideValue(pay.RefundAmount, pay.InvoiceHistories.Count == 0 ? bookingDetails.Count : pay.InvoiceHistories.Count);
+                    }
+                    if (pay.InvoiceHistories.Count == 0)
+                    {
+                        foreach (var item in bookingDetails)
+                        {
+                            if (refundAmouts.ContainsKey(item.BookingId))
+                            {
+                                refundAmouts[item.BookingId] = refundAmouts[item.BookingId] + equallydivide;
+                            }
+                            else
+                            {
+                                refundAmouts.Add(item.BookingId, equallydivide);
+                            }
+                        }
+                    }
+                    foreach (var invoice in pay.InvoiceHistories)
+                    {
+                        if (pay.RefundAmount > 0)
+                        {
+                            invoice.RefundAmount = equallydivide;
+                            invoice.PaymentLeft = 0;
+
+                            if (refundAmouts.ContainsKey(invoice.BookingId))
+                            {
+                                refundAmouts[invoice.BookingId] = refundAmouts[invoice.BookingId] + invoice.RefundAmount;
+                            }
+                            else
+                            {
+                                refundAmouts.Add(invoice.BookingId, invoice.RefundAmount);
+                            }
+                        }
+
+
+
+                    }
+                }
+
+
+            }
+
+            foreach (var kvp in refundAmouts)
+            {
+                foreach (var item in bookingDetails)
+                {
+                    if (item.BookingId == kvp.Key)
+                    {
+                        item.RefundAmount = kvp.Value;
+                    }
+                }
+
+
+            }
+        }
+
+        private void SetResidualAmount(List<PaymentDetails> paymentDetails, List<BookingDetail> bookingDetails)
+        {
+            Dictionary<int, decimal> residualAmount = new Dictionary<int, decimal>();
+            //calculate refund
+            foreach (var pay in paymentDetails)
+            {
+
+                if (pay.RoomId == 0 && pay.BookingId == 0)
+                {
+
+
+
+
+                    decimal equallydivide = 0;
+                    if (pay.PaymentLeft > 0)
+                    {
+                        equallydivide = EquallyDivideValue(pay.PaymentLeft, bookingDetails.Count);
+                    }
+
+                    foreach (var item in bookingDetails)
+                    {
+                        item.ResidualAmount += equallydivide;
+
+
+                    }
+
+                }
+
+
+            }
+
+        }
 
         //CANCEL BOOKING INVOICE CANCELLATION
         private bool CalculateCancelAmount(List<BookingDetail> bookings, string cancelMethod, List<CancelPolicyMaster> cancelPolicies, DateTime cancelDate)
         {
             bool flag = true;
+
+            if(cancelPolicies.Count == 0)
+            {
+
+                foreach(var item in bookings)
+                {
+                    int noOfHours = NoOfHours(cancelDate, item.ReservationDateTime);
+                    item.CancelAmount = 0;
+                    CancelPolicyMaster cancelPolicy = Constants.Constants.CreateDefaultCancelPolicyMaster(); ;
+
+                    item.RoomCancelHistory.Add(CreateRoomCancelHistory(item, cancelPolicy, cancelDate, bookings.Count, noOfHours, item.ReservationDateTime, item.CancelAmount, cancelMethod));
+                }
+                return true;
+
+            }
+
             if (cancelMethod == Constants.Constants.DateWiseCancel)
             {
                 foreach (var item in bookings)
@@ -4249,7 +4221,7 @@ namespace hotel_api.Controllers
                             else
                             {
                                 //find room rate for that date
-                                BookedRoomRate dateWiseRate = item.BookedRoomRates.FirstOrDefault(x => Convert.ToDateTime(x.BookingDate).Date == dateTime.Date);
+                                BookedRoomRate dateWiseRate = item.BookedRoomRates.FirstOrDefault(x =>x.BookingDate == DateOnly.FromDateTime(dateTime));
                                 if (dateWiseRate == null)
                                 {
                                     flag = false;
@@ -4317,9 +4289,9 @@ namespace hotel_api.Controllers
                     }
                     else
                     {
-                        item.CancelAmount = item.CancelAmount + 0;
-
-                        
+                        item.CancelAmount =  0;
+                        CancelPolicyMaster defaultCancelPolicy = Constants.Constants.CreateDefaultCancelPolicyMaster(); ;
+                        item.RoomCancelHistory.Add(CreateRoomCancelHistory(item, defaultCancelPolicy, cancelDate, bookings.Count, noOfHours, item.ReservationDateTime, item.CancelAmount, cancelMethod));
                     }
                 }
             }
@@ -4358,7 +4330,7 @@ namespace hotel_api.Controllers
         private CancelPolicyMaster FindCancelPolicy(int noOfRooms, int hours, List<CancelPolicyMaster> cancelPolicies)
         {
             var cancelPolicy = cancelPolicies.FirstOrDefault(x => (x.MinRoom <= noOfRooms && x.MaxRoom >= noOfRooms)
-             && (x.FromTime < hours && x.ToTime >= hours)
+             && (x.FromTime <= hours && x.ToTime > hours)
             );
 
             return cancelPolicy;
@@ -4635,23 +4607,23 @@ namespace hotel_api.Controllers
         {
             foreach (var pay in paymentDetails)
             {
-                if (pay.PaymentStatus == Constants.Constants.AdvancePayment)
+                if (pay.PaymentStatus == Constants.Constants.AdvancePayment || pay.PaymentStatus == Constants.Constants.AgentPayment)
                 {
                     cancelSummary.AdvanceAmount = cancelSummary.AdvanceAmount + pay.PaymentLeft;
+                    cancelSummary.TransactionCharges += pay.TransactionAmount;
                 }
-                else if (pay.PaymentStatus == Constants.Constants.AgentPayment)
-                {
-                    cancelSummary.AgentAmount = cancelSummary.AgentAmount + pay.PaymentLeft;
-                }
+                
                 else
                 {
                     if(pay.BookingId == 0 && pay.RoomId == 0)
                     {
                         cancelSummary.ReceivedAmount = cancelSummary.ReceivedAmount + pay.PaymentLeft;
+                        cancelSummary.TransactionCharges += pay.TransactionAmount;
                     }
                     else if (bookingDetails.Select(x => x.BookingId).Contains(pay.BookingId))
                     {
                         cancelSummary.ReceivedAmount = cancelSummary.ReceivedAmount + pay.PaymentLeft;
+                        cancelSummary.TransactionCharges += pay.TransactionAmount;
                     }
                     
                 }
@@ -4747,6 +4719,7 @@ namespace hotel_api.Controllers
                     booking.UpdatedDate = currentDate;
                     booking.BalanceAmount = item.BalanceAmount;
                     booking.RefundAmount = item.RefundAmount;
+                    booking.ResidualAmount = item.ResidualAmount;
                     booking.InvoiceNo = item.InvoiceNo;
                     booking.InvoiceDate = DateOnly.FromDateTime(currentDate);
                     booking.CheckOutInvoiceFormat = property.CheckOutInvoice;
