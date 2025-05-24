@@ -3529,10 +3529,7 @@ namespace hotel_api.Controllers
             }
         }
 
-        private bool IsTodayCheckOutDate(DateTime date)
-        {
-            return date.Date == DateTime.Today;
-        }
+        
 
         [HttpGet("GetRoomsById")]
         public async Task<IActionResult> GetRoomsById(int bookingId, int roomId)
@@ -4335,274 +4332,7 @@ namespace hotel_api.Controllers
 
             return cancelPolicy;
         }
-        private void CalculateCancelInvoice(List<BookingDetail> bookings, List<PaymentDetails> payments)
-        {
-            //set room payment if room wise payment
-            foreach (var booking in bookings)
-            {
-                foreach (var pay in payments)
-                {
-                    if (pay.RoomId == booking.RoomId && pay.BookingId == booking.BookingId)
-                    {
-                        pay.IsReceived = true;
-                        pay.PaymentLeft = 0;
-                        decimal balance = booking.CancelAmount;
-                        //amount left in room
-                        if (balance > 0)
-                        {
-                            decimal currentBalance = balance >= pay.PaymentAmount ? pay.PaymentAmount : balance;
-                            if (balance >= pay.PaymentAmount)
-                            {
-                                booking.ReceivedAmount = booking.ReceivedAmount + pay.PaymentAmount;
-                                pay.RefundAmount = 0;
-                            }
-                            else
-                            {
-                                booking.ReceivedAmount = booking.ReceivedAmount + balance;
-                                pay.RefundAmount = pay.PaymentAmount - balance;
-                                pay.PaymentLeft = 0;
-                                booking.RefundAmount = pay.RefundAmount;
-
-                            }
-                            pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, currentBalance));
-                        }
-                        else
-                        {
-                            pay.RefundAmount = pay.PaymentAmount;
-                            booking.RefundAmount = pay.RefundAmount;
-                            pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, 0));
-                        }
-
-                    }
-                }
-            }
-
-            //calculate advance
-            decimal agentAdvance = 0;
-            decimal advanceAmount = 0;
-            decimal receivedAmount = 0;
-            (agentAdvance, advanceAmount, receivedAmount) = CalculatePayment(payments, bookings);
-
-            //agent advance allocation
-            if (agentAdvance > 0)
-            {
-                int roomCounts = GetBalanceCancelCount(bookings);
-                if (roomCounts == 0)
-                {
-                    return;
-                }
-                List<decimal> equallyDivideArr = EquallyDivideAmount(agentAdvance, roomCounts);
-                int divideArrIndex = 0;
-
-
-                for (int i = 0; i < bookings.Count; i++)
-                {
-                    int paymentIndex = 0;
-                    decimal balance = CalculateBalanceCancelAmount(bookings[i]);
-                    if (balance > 0)
-                    {
-                        decimal currentBalance = 0;
-                        if (balance >= equallyDivideArr[divideArrIndex])
-                        {
-                            currentBalance = equallyDivideArr[divideArrIndex];
-                        }
-                        else
-                        {
-                            currentBalance = balance;
-                            if (divideArrIndex < equallyDivideArr.Count - 1)
-                            {
-                                equallyDivideArr[divideArrIndex + 1] += (equallyDivideArr[divideArrIndex] - balance);
-
-                            }
-                        }
-
-                        bookings[i].AgentAdvanceAmount += currentBalance;
-
-                        //assign payment
-                        while (paymentIndex != payments.Count && currentBalance != 0)
-                        {
-                            if (!IsAgentPaymentLeft(payments, paymentIndex))
-                            {
-                                paymentIndex++;
-                            }
-                            else
-                            {
-                                //payment     
-                                if (payments[paymentIndex].PaymentLeft >= currentBalance)
-                                {
-                                    payments[paymentIndex].PaymentLeft -= currentBalance;
-                                    bookings[i].AgentAdvanceAmount += currentBalance;
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
-                                    currentBalance = 0;
-                                }
-                                else
-                                {
-                                    bookings[i].AgentAdvanceAmount += payments[paymentIndex].PaymentLeft;
-                                    payments[paymentIndex].PaymentLeft = 0;
-                                    payments[paymentIndex].IsReceived = true;
-                                    currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
-                                }
-                                paymentIndex++;
-                            }
-
-                        }
-                        divideArrIndex++;
-                    }
-
-
-                }
-
-            }
-
-            //advance allocation
-            if (advanceAmount > 0)
-            {
-                int roomCounts = GetBalanceCancelCount(bookings);
-                if (roomCounts == 0)
-                {
-                    return;
-                }
-                List<decimal> equallyDivideArr = EquallyDivideAmount(advanceAmount, roomCounts);
-                int divideArrIndex = 0;
-
-
-                for (int i = 0; i < bookings.Count; i++)
-                {
-                    int paymentIndex = 0;
-                    decimal balance = CalculateBalanceCancelAmount(bookings[i]);
-                    if (balance > 0)
-                    {
-                        decimal currentBalance = 0;
-                        if (balance >= equallyDivideArr[divideArrIndex])
-                        {
-                            currentBalance = equallyDivideArr[divideArrIndex];
-                        }
-                        else
-                        {
-                            currentBalance = balance;
-                            if (divideArrIndex < equallyDivideArr.Count - 1)
-                            {
-                                equallyDivideArr[divideArrIndex + 1] += (equallyDivideArr[divideArrIndex] - balance);
-
-                            }
-                        }
-
-
-
-                        //assign payment
-                        while (paymentIndex != payments.Count && currentBalance != 0)
-                        {
-                            if (!IsAdvancePaymentLeft(payments, paymentIndex))
-                            {
-                                paymentIndex++;
-                            }
-                            else
-                            {
-                                //payment
-
-                                if (payments[paymentIndex].PaymentLeft >= currentBalance)
-                                {
-                                    payments[paymentIndex].PaymentLeft -= currentBalance;
-                                    bookings[i].AdvanceAmount += currentBalance;
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
-                                    currentBalance = 0;
-                                }
-                                else
-                                {
-                                    bookings[i].AdvanceAmount += payments[paymentIndex].PaymentLeft;
-                                    payments[paymentIndex].PaymentLeft = 0;
-                                    payments[paymentIndex].IsReceived = true;
-                                    currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
-                                }
-
-                                paymentIndex++;
-                            }
-                        }
-                        divideArrIndex++;
-                    }
-
-
-                }
-
-            }
-
-            //receive amount
-            if (receivedAmount > 0)
-            {
-
-                int roomCounts = GetBalanceCancelCount(bookings);
-                if (roomCounts == 0)
-                {
-                    return;
-                }
-                List<decimal> equallyDivideArr = EquallyDivideAmount(receivedAmount, roomCounts);
-                int divideArrIndex = 0;
-
-
-                for (int i = 0; i < bookings.Count; i++)
-                {
-                    int paymentIndex = 0;
-                    decimal balance = CalculateBalanceCancelAmount(bookings[i]);
-                    if (balance > 0)
-                    {
-                        decimal currentBalance = 0;
-                        if (balance >= equallyDivideArr[divideArrIndex])
-                        {
-                            currentBalance = equallyDivideArr[divideArrIndex];
-                        }
-                        else
-                        {
-                            currentBalance = balance;
-                            if (divideArrIndex < equallyDivideArr.Count - 1)
-                            {
-                                equallyDivideArr[divideArrIndex + 1] += (equallyDivideArr[divideArrIndex] - balance);
-
-                            }
-                        }
-
-
-
-                        //assign payment
-                        while (paymentIndex != payments.Count && currentBalance != 0)
-                        {
-                            if (!IsReceivedPaymentLeft(payments, paymentIndex))
-                            {
-                                paymentIndex++;
-                            }
-                            else
-                            {
-                                //payment     
-                                if (payments[paymentIndex].PaymentLeft >= currentBalance)
-                                {
-                                    payments[paymentIndex].PaymentLeft -= currentBalance;
-                                    bookings[i].ReceivedAmount += currentBalance;
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
-                                    currentBalance = 0;
-                                }
-                                else
-                                {
-                                    bookings[i].ReceivedAmount += payments[paymentIndex].PaymentLeft;
-                                    payments[paymentIndex].PaymentLeft = 0;
-                                    payments[paymentIndex].IsReceived = true;
-                                    currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
-                                }
-                                paymentIndex++;
-                            }
-                        }
-                        divideArrIndex++;
-                    }
-
-
-                }
-
-            }
-
-
-        }
-
+        
         private CancelSummary CalculatePaymentSummary(CancelSummary cancelSummary , List<PaymentDetails> paymentDetails,List<BookingDetail> bookingDetails)
         {
             foreach (var pay in paymentDetails)
@@ -5392,182 +5122,7 @@ namespace hotel_api.Controllers
         }
 
 
-        private async Task<(int Code, string Message, RoomRateResponse? Response)> CalculateRoomRateAsync(
-            int companyId, int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate,
-            string checkOutFormat, int noOfRooms, int noOfNights, string gstType, int hourId)
-        {
-            var roomRateResponse = new RoomRateResponse();
-
-            if (roomTypeId == 0)
-            {
-                return (400, "Invalid data", roomRateResponse);
-                //return Ok(new { Code = 400, Message = "Invalid data" });
-            }
-
-            //find property details
-            var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
-            if (property == null)
-            {
-                return (400, "Property not found", roomRateResponse);
-            }
-
-            var gstPercentage = await GetGstPercetage(Constants.Constants.Reservation);
-            if (gstPercentage == null)
-            {
-                return (400, "Gst percentage not found for reservation", roomRateResponse);
-
-            }
-            //if checkout format is sameday
-            if (property.CheckOutFormat == Constants.Constants.SameDayFormat)
-            {
-                var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourId).FirstOrDefaultAsync();
-                if (roomRates == null)
-                {
-                    return (400, "No Room Rates found", roomRateResponse);
-
-                }
-                else
-                {
-                    roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRates.RoomRate);
-
-                    var roomRateDate = new BookedRoomRate();
-                    roomRateDate.BookingDate = checkInDate;
-                    roomRateDate.GstType = gstType;
-                    if (gstPercentage.GstType == Constants.Constants.MultipleGst)
-                    {
-                        var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, roomRateResponse.BookingAmount);
-                        if (gstRangeMaster == null)
-                        {
-                            roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
-                        }
-                        else
-                        {
-                            roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
-                        }
-                    }
-                    else
-                    {
-                        roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
-                    }
-                    (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateDate.GstPercentage, gstType);
-                    roomRateResponse.BookingAmount = roomRateDate.RoomRate;
-
-                    roomRateDate.CGST = Constants.Calculation.CalculateCGST(roomRateDate.GstPercentage);
-                    roomRateDate.CGSTAmount = Constants.Calculation.CalculateCGST(roomRateDate.GstAmount);
-                    roomRateDate.SGST = roomRateDate.CGST;
-                    roomRateDate.SGSTAmount = roomRateDate.CGSTAmount;
-                    roomRateResponse.BookedRoomRates.Add(roomRateDate);
-                }
-            }
-
-            //checkout format - 24 hours/ night
-            else
-            {
-
-                DateOnly currentDate = checkInDate;
-                while (noOfNights > 0)
-                {
-                    var roomRateDate = new BookedRoomRate();
-                    roomRateDate.BookingDate = currentDate;
-                    roomRateDate.GstType = gstType;
-
-                    var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= currentDate && x.ToDate >= currentDate) && x.RoomTypeId == roomTypeId).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
-                    if (customRoomRates == null)
-                    {
-                        //fetch standard room rates
-                        var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId).FirstOrDefaultAsync();
-                        if (roomRates == null)
-                        {
-
-                            return (400, "No Room Rates found", roomRateResponse);
-
-                        }
-                        else
-                        {
-                            if (gstPercentage.GstType == Constants.Constants.MultipleGst)
-                            {
-                                var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, (Calculation.RoundOffDecimal(roomRates.RoomRate)));
-                                if (gstRangeMaster == null)
-                                {
-                                    roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
-                                }
-                                else
-                                {
-                                    roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
-                                }
-                            }
-                            else
-                            {
-                                roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
-                            }
-                            (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(roomRates.RoomRate), roomRateDate.GstPercentage, gstType);
-
-                        }
-                    }
-                    else
-                    {
-                        if (gstPercentage.GstType == Constants.Constants.MultipleGst)
-                        {
-                            var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, (Calculation.RoundOffDecimal(customRoomRates.RoomRate)));
-                            if (gstRangeMaster == null)
-                            {
-                                roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
-                            }
-                            else
-                            {
-                                roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
-                            }
-                        }
-                        else
-                        {
-                            roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
-                        }
-                        (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(customRoomRates.RoomRate), roomRateDate.GstPercentage, gstType);
-
-                    }
-
-                    roomRateDate.TotalRoomRate = Calculation.RoundOffDecimal(roomRateDate.RoomRate + roomRateDate.GstAmount);
-                    roomRateDate.CGST = Constants.Calculation.CalculateCGST(roomRateDate.GstPercentage);
-                    roomRateDate.CGSTAmount = Constants.Calculation.CalculateCGST(roomRateDate.GstAmount);
-                    roomRateDate.SGST = roomRateDate.CGST;
-                    roomRateDate.SGSTAmount = roomRateDate.CGSTAmount;
-                    roomRateResponse.BookedRoomRates.Add(roomRateDate);
-
-                    roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + roomRateDate.RoomRate);
-
-                    roomRateResponse.GstAmount = Calculation.RoundOffDecimal(roomRateResponse.GstAmount + roomRateDate.GstAmount);
-
-
-                    noOfNights--;
-                    currentDate = currentDate.AddDays(1);
-                }
-
-
-                //check earlycheckin 
-                if (property.IsEarlyCheckInPolicyEnable)
-                {
-                    var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.EARLYCHECKIN).ToListAsync();
-                    if (extraPolicy.Count == 0)
-                    {
-                        return (400, "Early checkin polic not found", roomRateResponse);
-                    }
-
-
-                }
-
-            }
-
-            roomRateResponse.TotalBookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + roomRateResponse.GstAmount);
-
-            //total amount
-            roomRateResponse.AllRoomsAmount = Calculation.RoundOffDecimal(noOfRooms * roomRateResponse.BookingAmount);
-            roomRateResponse.AllRoomsGst = Calculation.RoundOffDecimal(noOfRooms * roomRateResponse.GstAmount);
-            roomRateResponse.TotalRoomsAmount = Calculation.RoundOffDecimal(roomRateResponse.AllRoomsAmount + roomRateResponse.AllRoomsGst);
-
-            return (200, "Room rate fetched successfully", roomRateResponse);
-
-
-        }
+        
 
 
 
@@ -7307,5 +6862,455 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        private bool IsTodayCheckOutDate(DateTime date)
+        {
+            return date.Date == DateTime.Today;
+        }
+
+        private void CalculateCancelInvoice(List<BookingDetail> bookings, List<PaymentDetails> payments)
+        {
+            //set room payment if room wise payment
+            foreach (var booking in bookings)
+            {
+                foreach (var pay in payments)
+                {
+                    if (pay.RoomId == booking.RoomId && pay.BookingId == booking.BookingId)
+                    {
+                        pay.IsReceived = true;
+                        pay.PaymentLeft = 0;
+                        decimal balance = booking.CancelAmount;
+                        //amount left in room
+                        if (balance > 0)
+                        {
+                            decimal currentBalance = balance >= pay.PaymentAmount ? pay.PaymentAmount : balance;
+                            if (balance >= pay.PaymentAmount)
+                            {
+                                booking.ReceivedAmount = booking.ReceivedAmount + pay.PaymentAmount;
+                                pay.RefundAmount = 0;
+                            }
+                            else
+                            {
+                                booking.ReceivedAmount = booking.ReceivedAmount + balance;
+                                pay.RefundAmount = pay.PaymentAmount - balance;
+                                pay.PaymentLeft = 0;
+                                booking.RefundAmount = pay.RefundAmount;
+
+                            }
+                            pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, currentBalance));
+                        }
+                        else
+                        {
+                            pay.RefundAmount = pay.PaymentAmount;
+                            booking.RefundAmount = pay.RefundAmount;
+                            pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, 0));
+                        }
+
+                    }
+                }
+            }
+
+            //calculate advance
+            decimal agentAdvance = 0;
+            decimal advanceAmount = 0;
+            decimal receivedAmount = 0;
+            (agentAdvance, advanceAmount, receivedAmount) = CalculatePayment(payments, bookings);
+
+            //agent advance allocation
+            if (agentAdvance > 0)
+            {
+                int roomCounts = GetBalanceCancelCount(bookings);
+                if (roomCounts == 0)
+                {
+                    return;
+                }
+                List<decimal> equallyDivideArr = EquallyDivideAmount(agentAdvance, roomCounts);
+                int divideArrIndex = 0;
+
+
+                for (int i = 0; i < bookings.Count; i++)
+                {
+                    int paymentIndex = 0;
+                    decimal balance = CalculateBalanceCancelAmount(bookings[i]);
+                    if (balance > 0)
+                    {
+                        decimal currentBalance = 0;
+                        if (balance >= equallyDivideArr[divideArrIndex])
+                        {
+                            currentBalance = equallyDivideArr[divideArrIndex];
+                        }
+                        else
+                        {
+                            currentBalance = balance;
+                            if (divideArrIndex < equallyDivideArr.Count - 1)
+                            {
+                                equallyDivideArr[divideArrIndex + 1] += (equallyDivideArr[divideArrIndex] - balance);
+
+                            }
+                        }
+
+                        bookings[i].AgentAdvanceAmount += currentBalance;
+
+                        //assign payment
+                        while (paymentIndex != payments.Count && currentBalance != 0)
+                        {
+                            if (!IsAgentPaymentLeft(payments, paymentIndex))
+                            {
+                                paymentIndex++;
+                            }
+                            else
+                            {
+                                //payment     
+                                if (payments[paymentIndex].PaymentLeft >= currentBalance)
+                                {
+                                    payments[paymentIndex].PaymentLeft -= currentBalance;
+                                    bookings[i].AgentAdvanceAmount += currentBalance;
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
+                                    currentBalance = 0;
+                                }
+                                else
+                                {
+                                    bookings[i].AgentAdvanceAmount += payments[paymentIndex].PaymentLeft;
+                                    payments[paymentIndex].PaymentLeft = 0;
+                                    payments[paymentIndex].IsReceived = true;
+                                    currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+                                }
+                                paymentIndex++;
+                            }
+
+                        }
+                        divideArrIndex++;
+                    }
+
+
+                }
+
+            }
+
+            //advance allocation
+            if (advanceAmount > 0)
+            {
+                int roomCounts = GetBalanceCancelCount(bookings);
+                if (roomCounts == 0)
+                {
+                    return;
+                }
+                List<decimal> equallyDivideArr = EquallyDivideAmount(advanceAmount, roomCounts);
+                int divideArrIndex = 0;
+
+
+                for (int i = 0; i < bookings.Count; i++)
+                {
+                    int paymentIndex = 0;
+                    decimal balance = CalculateBalanceCancelAmount(bookings[i]);
+                    if (balance > 0)
+                    {
+                        decimal currentBalance = 0;
+                        if (balance >= equallyDivideArr[divideArrIndex])
+                        {
+                            currentBalance = equallyDivideArr[divideArrIndex];
+                        }
+                        else
+                        {
+                            currentBalance = balance;
+                            if (divideArrIndex < equallyDivideArr.Count - 1)
+                            {
+                                equallyDivideArr[divideArrIndex + 1] += (equallyDivideArr[divideArrIndex] - balance);
+
+                            }
+                        }
+
+
+
+                        //assign payment
+                        while (paymentIndex != payments.Count && currentBalance != 0)
+                        {
+                            if (!IsAdvancePaymentLeft(payments, paymentIndex))
+                            {
+                                paymentIndex++;
+                            }
+                            else
+                            {
+                                //payment
+
+                                if (payments[paymentIndex].PaymentLeft >= currentBalance)
+                                {
+                                    payments[paymentIndex].PaymentLeft -= currentBalance;
+                                    bookings[i].AdvanceAmount += currentBalance;
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
+                                    currentBalance = 0;
+                                }
+                                else
+                                {
+                                    bookings[i].AdvanceAmount += payments[paymentIndex].PaymentLeft;
+                                    payments[paymentIndex].PaymentLeft = 0;
+                                    payments[paymentIndex].IsReceived = true;
+                                    currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+                                }
+
+                                paymentIndex++;
+                            }
+                        }
+                        divideArrIndex++;
+                    }
+
+
+                }
+
+            }
+
+            //receive amount
+            if (receivedAmount > 0)
+            {
+
+                int roomCounts = GetBalanceCancelCount(bookings);
+                if (roomCounts == 0)
+                {
+                    return;
+                }
+                List<decimal> equallyDivideArr = EquallyDivideAmount(receivedAmount, roomCounts);
+                int divideArrIndex = 0;
+
+
+                for (int i = 0; i < bookings.Count; i++)
+                {
+                    int paymentIndex = 0;
+                    decimal balance = CalculateBalanceCancelAmount(bookings[i]);
+                    if (balance > 0)
+                    {
+                        decimal currentBalance = 0;
+                        if (balance >= equallyDivideArr[divideArrIndex])
+                        {
+                            currentBalance = equallyDivideArr[divideArrIndex];
+                        }
+                        else
+                        {
+                            currentBalance = balance;
+                            if (divideArrIndex < equallyDivideArr.Count - 1)
+                            {
+                                equallyDivideArr[divideArrIndex + 1] += (equallyDivideArr[divideArrIndex] - balance);
+
+                            }
+                        }
+
+
+
+                        //assign payment
+                        while (paymentIndex != payments.Count && currentBalance != 0)
+                        {
+                            if (!IsReceivedPaymentLeft(payments, paymentIndex))
+                            {
+                                paymentIndex++;
+                            }
+                            else
+                            {
+                                //payment     
+                                if (payments[paymentIndex].PaymentLeft >= currentBalance)
+                                {
+                                    payments[paymentIndex].PaymentLeft -= currentBalance;
+                                    bookings[i].ReceivedAmount += currentBalance;
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
+                                    currentBalance = 0;
+                                }
+                                else
+                                {
+                                    bookings[i].ReceivedAmount += payments[paymentIndex].PaymentLeft;
+                                    payments[paymentIndex].PaymentLeft = 0;
+                                    payments[paymentIndex].IsReceived = true;
+                                    currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+                                }
+                                paymentIndex++;
+                            }
+                        }
+                        divideArrIndex++;
+                    }
+
+
+                }
+
+            }
+
+
+        }
+
+        private async Task<(int Code, string Message, RoomRateResponse? Response)> CalculateRoomRateAsync(
+            int companyId, int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate,
+            string checkOutFormat, int noOfRooms, int noOfNights, string gstType, int hourId)
+        {
+            var roomRateResponse = new RoomRateResponse();
+
+            if (roomTypeId == 0)
+            {
+                return (400, "Invalid data", roomRateResponse);
+                //return Ok(new { Code = 400, Message = "Invalid data" });
+            }
+
+            //find property details
+            var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId);
+            if (property == null)
+            {
+                return (400, "Property not found", roomRateResponse);
+            }
+
+            var gstPercentage = await GetGstPercetage(Constants.Constants.Reservation);
+            if (gstPercentage == null)
+            {
+                return (400, "Gst percentage not found for reservation", roomRateResponse);
+
+            }
+            //if checkout format is sameday
+            if (property.CheckOutFormat == Constants.Constants.SameDayFormat)
+            {
+                var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == hourId).FirstOrDefaultAsync();
+                if (roomRates == null)
+                {
+                    return (400, "No Room Rates found", roomRateResponse);
+
+                }
+                else
+                {
+                    roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRates.RoomRate);
+
+                    var roomRateDate = new BookedRoomRate();
+                    roomRateDate.BookingDate = checkInDate;
+                    roomRateDate.GstType = gstType;
+                    if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                    {
+                        var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, roomRateResponse.BookingAmount);
+                        if (gstRangeMaster == null)
+                        {
+                            roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                        }
+                        else
+                        {
+                            roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
+                        }
+                    }
+                    else
+                    {
+                        roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                    }
+                    (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(roomRateResponse.BookingAmount, roomRateDate.GstPercentage, gstType);
+                    roomRateResponse.BookingAmount = roomRateDate.RoomRate;
+
+                    roomRateDate.CGST = Constants.Calculation.CalculateCGST(roomRateDate.GstPercentage);
+                    roomRateDate.CGSTAmount = Constants.Calculation.CalculateCGST(roomRateDate.GstAmount);
+                    roomRateDate.SGST = roomRateDate.CGST;
+                    roomRateDate.SGSTAmount = roomRateDate.CGSTAmount;
+                    roomRateResponse.BookedRoomRates.Add(roomRateDate);
+                }
+            }
+
+            //checkout format - 24 hours/ night
+            else
+            {
+
+                DateOnly currentDate = checkInDate;
+                while (noOfNights > 0)
+                {
+                    var roomRateDate = new BookedRoomRate();
+                    roomRateDate.BookingDate = currentDate;
+                    roomRateDate.GstType = gstType;
+
+                    var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= currentDate && x.ToDate >= currentDate) && x.RoomTypeId == roomTypeId).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
+                    if (customRoomRates == null)
+                    {
+                        //fetch standard room rates
+                        var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId).FirstOrDefaultAsync();
+                        if (roomRates == null)
+                        {
+
+                            return (400, "No Room Rates found", roomRateResponse);
+
+                        }
+                        else
+                        {
+                            if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                            {
+                                var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, (Calculation.RoundOffDecimal(roomRates.RoomRate)));
+                                if (gstRangeMaster == null)
+                                {
+                                    roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                                }
+                                else
+                                {
+                                    roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
+                                }
+                            }
+                            else
+                            {
+                                roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                            }
+                            (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(roomRates.RoomRate), roomRateDate.GstPercentage, gstType);
+
+                        }
+                    }
+                    else
+                    {
+                        if (gstPercentage.GstType == Constants.Constants.MultipleGst)
+                        {
+                            var gstRangeMaster = GetApplicableGstRange(gstPercentage.ranges, (Calculation.RoundOffDecimal(customRoomRates.RoomRate)));
+                            if (gstRangeMaster == null)
+                            {
+                                roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                            }
+                            else
+                            {
+                                roomRateDate.GstPercentage = gstRangeMaster.TaxPercentage;
+                            }
+                        }
+                        else
+                        {
+                            roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
+                        }
+                        (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(customRoomRates.RoomRate), roomRateDate.GstPercentage, gstType);
+
+                    }
+
+                    roomRateDate.TotalRoomRate = Calculation.RoundOffDecimal(roomRateDate.RoomRate + roomRateDate.GstAmount);
+                    roomRateDate.CGST = Constants.Calculation.CalculateCGST(roomRateDate.GstPercentage);
+                    roomRateDate.CGSTAmount = Constants.Calculation.CalculateCGST(roomRateDate.GstAmount);
+                    roomRateDate.SGST = roomRateDate.CGST;
+                    roomRateDate.SGSTAmount = roomRateDate.CGSTAmount;
+                    roomRateResponse.BookedRoomRates.Add(roomRateDate);
+
+                    roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + roomRateDate.RoomRate);
+
+                    roomRateResponse.GstAmount = Calculation.RoundOffDecimal(roomRateResponse.GstAmount + roomRateDate.GstAmount);
+
+
+                    noOfNights--;
+                    currentDate = currentDate.AddDays(1);
+                }
+
+
+                //check earlycheckin 
+                if (property.IsEarlyCheckInPolicyEnable)
+                {
+                    var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.EARLYCHECKIN).ToListAsync();
+                    if (extraPolicy.Count == 0)
+                    {
+                        return (400, "Early checkin polic not found", roomRateResponse);
+                    }
+
+
+                }
+
+            }
+
+            roomRateResponse.TotalBookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + roomRateResponse.GstAmount);
+
+            //total amount
+            roomRateResponse.AllRoomsAmount = Calculation.RoundOffDecimal(noOfRooms * roomRateResponse.BookingAmount);
+            roomRateResponse.AllRoomsGst = Calculation.RoundOffDecimal(noOfRooms * roomRateResponse.GstAmount);
+            roomRateResponse.TotalRoomsAmount = Calculation.RoundOffDecimal(roomRateResponse.AllRoomsAmount + roomRateResponse.AllRoomsGst);
+
+            return (200, "Room rate fetched successfully", roomRateResponse);
+
+
+        }
     }
 }
