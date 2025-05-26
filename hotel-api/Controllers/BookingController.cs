@@ -3628,7 +3628,8 @@ namespace hotel_api.Controllers
                                                     IsSelectedValue = false,
                                                     // NotMapped fields
                                                     RoomTypeName = category.Type == null ? "" : category.Type,
-                                                    RoomNo = bookrooms.RoomNo == null ? "" : bookrooms.RoomNo
+                                                    RoomNo = bookrooms.RoomNo == null ? "" : bookrooms.RoomNo,
+                                                    GuestDetails = guest
                                                 }).FirstOrDefaultAsync();
 
                 
