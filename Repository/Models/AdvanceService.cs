@@ -40,9 +40,8 @@ namespace Repository.Models
         public DateTime UpdatedDate { get; set; }
         public decimal DiscountAmount { get; set; }
         public bool IsActive { get; set; }
-
         public string ReservationNo { get; set; } = string.Empty;
-       
+        public decimal ServicePriceWithoutDiscount { get; set; }
     }
 
     public class AdvanceServicesValidator : AbstractValidator<AdvanceService>

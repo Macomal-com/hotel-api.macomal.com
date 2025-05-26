@@ -657,7 +657,7 @@ namespace hotel_api.Controllers
                         _context.RoomAvailability.Remove(roomAvailability);
 
                         var bookedRoomRate = await _context.BookedRoomRates
-                            .Where(x => x.BookingId == bookings.BookingId)
+                            .Where(x => x.BookingId == bookings.BookingId && x.CompanyId == companyId && x.IsActive)
                             .ToListAsync();
                         if (bookedRoomRate == null)
                         {
@@ -667,7 +667,7 @@ namespace hotel_api.Controllers
                         _context.BookedRoomRates.RemoveRange(bookedRoomRate);
 
                         var paymentDetails = await _context.PaymentDetails
-                            .Where(x => x.BookingId == bookings.BookingId)
+                            .Where(x => x.BookingId == bookings.BookingId && x.CompanyId == companyId && x.IsActive)
                             .ToListAsync();
                         if (paymentDetails == null)
                         {
@@ -684,7 +684,7 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    var reservation = await _context.ReservationDetails.FindAsync(id);
+                    var reservation = await _context.ReservationDetails.FirstOrDefaultAsync(d=> d.ReservationId == id && d.CompanyId == companyId && d.IsActive);
                     if (reservation == null)
                     {
                         await transaction.RollbackAsync();
@@ -694,7 +694,7 @@ namespace hotel_api.Controllers
                    
 
                     var booking = await _context.BookingDetail
-                        .Where(x => x.ReservationNo == reservation.ReservationNo)
+                        .Where(x => x.ReservationNo == reservation.ReservationNo && x.CompanyId == companyId && x.IsActive)
                         .ToListAsync();
                     if (booking.Count == 0)
                     {
@@ -725,7 +725,7 @@ namespace hotel_api.Controllers
                             item.Status = Constants.Constants.Rejected;
                             item.IsActive = false;
 
-                            var roomAvailability = await _context.RoomAvailability.FindAsync(item.BookingId);
+                            var roomAvailability = await _context.RoomAvailability.FirstOrDefaultAsync( x => x.BookingId == item.BookingId && x.CompanyId == companyId && x.IsActive);
                             if (roomAvailability == null)
                             {
                                 await transaction.RollbackAsync();
@@ -735,7 +735,7 @@ namespace hotel_api.Controllers
                             _context.RoomAvailability.Remove(roomAvailability);
 
                             var bookedRoomRate = await _context.BookedRoomRates
-                                .Where(x => x.BookingId == item.BookingId)
+                                .Where(x => x.BookingId == item.BookingId && x.CompanyId == companyId && x.IsActive)
                                 .ToListAsync();
                             if (bookedRoomRate == null)
                             {
@@ -745,7 +745,7 @@ namespace hotel_api.Controllers
                             _context.BookedRoomRates.RemoveRange(bookedRoomRate);
 
                             var paymentDetails = await _context.PaymentDetails
-                                .Where(x => x.BookingId == item.BookingId)
+                                .Where(x => x.BookingId == item.BookingId && x.CompanyId == companyId && x.IsActive)
                                 .ToListAsync();
                             if (paymentDetails == null)
                             {
