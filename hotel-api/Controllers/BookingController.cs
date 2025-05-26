@@ -17,7 +17,6 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using Repository.DTO;
-using Repository.InvoiceModel;
 using Repository.Models;
 using Repository.RequestDTO;
 using RepositoryModels.Repository;
@@ -41,12 +40,11 @@ namespace hotel_api.Controllers
         private int companyId;
         private string financialYear = string.Empty;
         private int userId;
-        private readonly RazorViewToStringRenderer _viewRenderer;
-        public BookingController(DbContextSql contextSql, IMapper map,IHttpContextAccessor httpContextAccessor, RazorViewToStringRenderer viewRenderer)
+
+        public BookingController(DbContextSql contextSql, IMapper map,IHttpContextAccessor httpContextAccessor)
         {
             _context = contextSql;
             _mapper = map;
-            _viewRenderer = viewRenderer;
             var headers = httpContextAccessor.HttpContext?.Request?.Headers;
             if (headers != null)
             {
@@ -604,7 +602,7 @@ namespace hotel_api.Controllers
                 //send email
                 if (property.IsEmailNotification && property.ReservationNotification)
                 {
-                    ReservationEmailNotification emailNotification = new ReservationEmailNotification(_context, property, request.ReservationDetailsDTO.ReservationNo, roomCount - 1, guest);
+                    ReservationEmailNotification emailNotification = new ReservationEmailNotification(_context, property, request.ReservationDetailsDTO.ReservationNo, roomCount - 1, guest, companyId);
                     await emailNotification.SendEmail();
                 }
 
@@ -1624,7 +1622,7 @@ namespace hotel_api.Controllers
                     }
 
 
-                    if (property.IsEmailNotification && property.CheckinNotification)
+                    if (property.IsEmailNotification)
                     {
                         CheckInEmailNotification inEmailNotification = new CheckInEmailNotification(_context, notificationDTOs, companyId, property);
 
@@ -1687,8 +1685,6 @@ namespace hotel_api.Controllers
                 //room shift
                 if (request.Type == "Shift")
                 {
-
-                    
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == request.BookingId);
                     if (booking == null)
                     {
@@ -2069,32 +2065,6 @@ namespace hotel_api.Controllers
                     _context.ReservationDetails.Update(reservationDetails);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-
-                    if(property.IsEmailNotification && property.RoomShiftNotification)
-                    {
-                        string previousRoomNo = await _context.RoomMaster
-                                            .Where(x => x.CompanyId == companyId && x.RoomId == booking.RoomId)
-                                            .Select(x => x.RoomNo)
-                                            .FirstOrDefaultAsync() ?? "";
-
-                        string previousCategory = await _context.RoomCategoryMaster.Where(x => x.CompanyId == companyId && x.Id == booking.RoomTypeId).Select(x => x.Type).FirstOrDefaultAsync() ?? "";
-
-                        string newRoomNo = await _context.RoomMaster
-                                                 .Where(x => x.CompanyId == companyId && x.RoomId == newBooking.RoomId)
-                                                 .Select(x => x.RoomNo)
-                                                 .FirstOrDefaultAsync() ?? "";
-
-                        string newCategory = await _context.RoomCategoryMaster.Where(x => x.CompanyId == companyId && x.Id == newBooking.RoomTypeId).Select(x => x.Type).FirstOrDefaultAsync() ?? "";
-
-                        var guestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.GuestId == newBooking.GuestId) ?? new GuestDetails();
-
-                        string roomShiftDate = newBooking.CheckoutFormat == Constants.Constants.SameDayFormat ? newBooking.ReservationDate.ToString("dd-MM-yyyy") : request.ShiftDate.ToString("dd-MM-yyyy");
-                        RoomShiftEmailNotification roomShiftEmailNotification = new RoomShiftEmailNotification(_context, property, request.ReservationNo, previousRoomNo, previousCategory, newRoomNo, newCategory, roomShiftDate, guestDetails);
-
-                        await roomShiftEmailNotification.SendEmail();
-                    }
-
-                   
                     return Ok(new
                     {
                         Code = 200,
@@ -2113,8 +2083,6 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "Booking not found" });
                     }
-
-                    string originalCheckOutDate = Constants.DateTimeMethod.ConvertDateTimeToString(booking.CheckOutDateTime);
 
                     //check new room available or not
                     DateOnly tempDate = DateOnly.FromDateTime(DateTime.Now);
@@ -2265,18 +2233,6 @@ namespace hotel_api.Controllers
                     _context.ReservationDetails.Update(reservationDetails);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-
-                    if(property.IsEmailNotification && property.RoomShiftNotification)
-                    {
-                        string roomNo = await _context.RoomMaster.Where(x => x.CompanyId == companyId && x.RoomId == booking.RoomId).Select(x=>x.RoomNo).FirstOrDefaultAsync() ?? "";
-
-                        var guestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestId == booking.GuestId) ?? new GuestDetails();
-
-                        RoomExtendEmailNotification roomExtendEmailNotification = new RoomExtendEmailNotification(_context, property, request.ReservationNo, roomNo, originalCheckOutDate, Constants.DateTimeMethod.ConvertDateTimeToString(booking.CheckOutDateTime), guestDetails);
-
-                        await roomExtendEmailNotification.SendEmail();
-
-                    }
                     return Ok(new
                     {
                         Code = 200,
@@ -6905,17 +6861,7 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
-        [HttpGet("html")]
-        public async Task<IActionResult> GetInvoiceHtml()
-        {
-            var model = new CheckOutInvoice
-            ();
 
-            string html = await _viewRenderer.RenderViewToStringAsync("Templates/Invoices/CheckOutInvoiceTemplate", model);
-            return Content(html, "text/html");
-        }
-
-        
 
         private bool IsTodayCheckOutDate(DateTime date)
         {

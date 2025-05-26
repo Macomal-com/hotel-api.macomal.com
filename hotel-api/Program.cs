@@ -25,7 +25,7 @@ builder.Services.AddSwaggerGen(options =>
     options.OperationFilter<AddRequiredHeaderParameter>();
 });
 
-builder.Services.AddControllersWithViews();
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",
@@ -36,11 +36,9 @@ builder.Services.AddCors(options =>
                    .AllowAnyHeader();
         });
 });
-
 var configuration = builder.Configuration;
 builder.Services.AddSingleton<IConfiguration>(configuration);
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
-builder.Services.AddScoped<RazorViewToStringRenderer>();
 builder.Services.AddDbContext<DbContextSql>((serviceProvider, dbContextBuilder) =>
 {
     var connectionStringPlaceHolder = configuration.GetConnectionString("SqlConnection");
@@ -58,11 +56,7 @@ var app = builder.Build();
 
     app.UseSwagger();
     app.UseSwaggerUI();
-app.UseRouting();
-app.UseEndpoints(endpoints =>
-{
-    _ = endpoints.MapControllers();
-});
+
 app.UseStaticFiles(new StaticFileOptions()
 {
     FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(), "uploads")),
@@ -81,7 +75,5 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-
-
 
 app.Run();

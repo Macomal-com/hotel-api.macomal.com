@@ -15,20 +15,21 @@ namespace hotel_api.Notifications.Email
         private string ReservationNo { get; set; } = string.Empty;
         private int RoomCount { get; set; }
        private GuestDetails GuestDetails = new GuestDetails();
-       
+        public int CompanyId { get; set; }
 
-      
+        public List<BookingDetailDTO> BookingDetail { get; set; } = new List<BookingDetailDTO>();
+
 
         
 
-        public ReservationEmailNotification(DbContextSql context,CompanyDetails companyDetails, string reservationNo, int count, GuestDetails guestDetails)
+        public ReservationEmailNotification(DbContextSql context,CompanyDetails companyDetails, string reservationNo, int count, GuestDetails guestDetails, int companyId)
         {
             _context = context;
             PropertyDetails = companyDetails;
             ReservationNo = reservationNo;
             RoomCount = count;
             GuestDetails = guestDetails;
-           
+            CompanyId = companyId;
         }
 
 
@@ -88,7 +89,7 @@ namespace hotel_api.Notifications.Email
 </html>
 ";
 
-            await Notification.SendMail(_context, subject, htmlBody, PropertyDetails.PropertyId, GuestDetails.Email);
+            await Notification.SendMail(_context, subject, htmlBody, CompanyId, GuestDetails.Email);
         }
 
 
