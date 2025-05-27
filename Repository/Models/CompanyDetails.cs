@@ -184,9 +184,9 @@ namespace Repository.Models
                 .NotEmpty().WithMessage("Property Name is required")
                 .NotNull().WithMessage("Property Name is required");
 
-            RuleFor(x => x.ClusterId)
-               .NotEmpty().WithMessage("Cluster is required")
-               .NotNull().WithMessage("Cluster is required");
+            //RuleFor(x => x.ClusterId)
+            //   .NotEmpty().WithMessage("Cluster is required")
+            //   .NotNull().WithMessage("Cluster is required");
 
             //RuleFor(x => x.OwnerId)
             //   .NotEmpty().WithMessage("Landlord is required")
