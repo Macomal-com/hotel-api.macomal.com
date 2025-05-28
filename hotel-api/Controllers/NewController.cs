@@ -171,10 +171,12 @@ namespace hotel_api.Controllers
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 if (model == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 400, message = "Invalid request. Data is null.", data = new object() });
                 }
 
@@ -182,6 +184,7 @@ namespace hotel_api.Controllers
 
                 if (roomCat == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
                 var validator = new RoomCategoryValidator(_context);
@@ -190,6 +193,8 @@ namespace hotel_api.Controllers
                     // Create new with updated data (from patched `roomCat`)
                     roomCat.IsActive = false;
                     roomCat.UpdatedDate = DateTime.Now;
+                    _context.RoomCategoryMaster.Update(roomCat);
+                    await _context.SaveChangesAsync();
 
                     var newRoomCat = new RoomCategoryMaster
                     {
@@ -216,12 +221,12 @@ namespace hotel_api.Controllers
                             Error = x.ErrorMessage,
                             Field = x.PropertyName
                         }).ToList();
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 202, message = errors });
                     }
-                    _context.RoomCategoryMaster.Update(roomCat);
                     await _context.RoomCategoryMaster.AddAsync(newRoomCat);
                     await _context.SaveChangesAsync();
-
+                    await transaction.CommitAsync();
                     return Ok(new { Code = 200, Message = "Room Category deleted successfully" });
                 }
                 
@@ -249,16 +254,19 @@ namespace hotel_api.Controllers
                             Error = x.ErrorMessage,
                             Field = x.PropertyName
                         }).ToList();
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 202, Message = errors });
                     }
 
                     _context.RoomCategoryMaster.Update(roomCat);
                     await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
                     return Ok(new { Code = 200, Message = "Room Category updated successfully" });
                 }
             }
             catch (Exception)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
@@ -410,10 +418,14 @@ namespace hotel_api.Controllers
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
             try
             {
                 if (model == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 500, Message = "Invalid Data" });
                 }
 
@@ -421,6 +433,7 @@ namespace hotel_api.Controllers
 
                 if (room == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
                 var validator = new RoomMasterValidator(_context);
@@ -429,6 +442,8 @@ namespace hotel_api.Controllers
                     // Create new with updated data (from patched `roomCat`)
                     room.IsActive = false;
                     room.UpdatedDate = DateTime.Now;
+                    _context.RoomMaster.Update(room);
+                    await _context.SaveChangesAsync();
 
                     var newRoom = new RoomMaster
                     {
@@ -453,12 +468,12 @@ namespace hotel_api.Controllers
                             Error = x.ErrorMessage,
                             Field = x.PropertyName
                         }).ToList();
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 202, message = errors });
                     }
-                    _context.RoomMaster.Update(room);
                     await _context.RoomMaster.AddAsync(newRoom);
                     await _context.SaveChangesAsync();
-
+                    await transaction.CommitAsync();
                     return Ok(new { Code = 200, Message = "Room updated successfully" });
                 }
 
@@ -481,16 +496,19 @@ namespace hotel_api.Controllers
                             Error = x.ErrorMessage,
                             Field = x.PropertyName
                         }).ToList();
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 202, Message = errors });
                     }
 
                     _context.RoomMaster.Update(room);
                     await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
                     return Ok(new { Code = 200, Message = "Room updated successfully" });
                 }
             }
             catch(Exception ex)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
@@ -578,10 +596,11 @@ namespace hotel_api.Controllers
 
                                       PropertyId = roommaster.PropertyId,
                                       RoomTypeId = roommaster.RoomTypeId,
+                                      RoomType = roomtype.Type,
                                       RoomTypeObj =  new
                                       {
-                                          Label = roommaster.RoomTypeId,
-                                          Value = roomtype.Type
+                                          Label = roomtype.Type,
+                                          Value = roommaster.RoomTypeId
                                       } ,
                                       RoomNo = roommaster.RoomNo,
                                       Description = roommaster.Description,
