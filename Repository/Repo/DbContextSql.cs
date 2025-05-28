@@ -70,6 +70,9 @@ namespace RepositoryModels.Repository
 
         public DbSet<WhatsAppCredentials> WhatsAppCredentials { get; set; }
         public DbSet<HouseKeeping> HouseKeeping { get; set; }
+
+        public DbSet<DynamicActionJs> DynamicActionJs { get; set; }
+
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();

@@ -10,6 +10,10 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using AutoMapper;
 using Microsoft.AspNetCore.Mvc.Filters;
+using Repository.ReportModels;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using System.Xml.Linq;
+using static Azure.Core.HttpHeader;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -19,6 +23,8 @@ namespace hotel_api.Controllers
         private readonly DbContextSql _context;
         private int companyId;
         private int userId;
+
+        private List<string> PendingReservationHideColumns = new List<string> { "Reservation Id" };
         public ReportsController(DbContextSql contextSql,  IHttpContextAccessor httpContextAccessor)
         {
             _context = contextSql;
@@ -206,6 +212,82 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 200, Message = "Reservation Fetched Successfully", data = dataSet });
             }
             catch (Exception)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("GetReports1")]
+        public async Task<IActionResult> GetReports1([FromBody] ReportRequest request)
+        {
+            try
+            {
+                DataTable? dataTable = null;
+                List<ColumnsData> columnNames = new List<ColumnsData>();
+                DataTable? filteredDataTable = null;
+                Dictionary<string, string> dynamicActionJs = new Dictionary<string, string>();
+                int totalNoOfRows = 0;
+                if (request.IsFirstRequest)
+                {
+                    dynamicActionJs = (await _context.DynamicActionJs
+    .Where(x => x.ReportName == request.ReportName)
+    .ToListAsync())
+    .ToDictionary(x => x.ActionName, x => x.ActionJs);
+                }
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    using (var command = new SqlCommand("GetPendingReservation", connection))
+                    {
+                        command.CommandTimeout = 120;
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@companyId", request.CompanyId);
+                        command.Parameters.AddWithValue("@startPageNumber", request.StartPageNumber);
+                        command.Parameters.AddWithValue("@endPageNumber", request.EndPageNumber);
+                        SqlParameter returnValueParam = new SqlParameter("@ReturnValue", SqlDbType.Int)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        command.Parameters.Add(returnValueParam);
+
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            dataTable = new DataTable();
+                            adapter.Fill(dataTable);
+                        }
+
+                        totalNoOfRows = (int)command.Parameters["@ReturnValue"].Value;
+                        await connection.CloseAsync();
+
+                        filteredDataTable =  dataTable.Copy();
+                        if (filteredDataTable.Columns.Contains("Id"))
+                        {
+                            filteredDataTable.Columns.Remove("Id");
+                        }
+
+                        if (filteredDataTable != null)
+                        {
+                            if (request.IsFirstRequest)
+                            {
+                                foreach (DataColumn column in filteredDataTable.Columns)
+                                {
+                                    ColumnsData columnsData = new ColumnsData();
+                                    columnsData.ColumnName = column.ColumnName;
+                                    columnsData.ColumnType = column.DataType.ToString();
+                                    columnNames.Add(columnsData);
+                                }
+                            }
+
+                               
+                        }
+                    }
+                }
+
+                return Ok(new { Code = 200, Message = "Data Fetched Successfully", data = dataTable, columns = columnNames,  filteredData = filteredDataTable, dynamicActionJs = dynamicActionJs, hasMore = totalNoOfRows > request.EndPageNumber ? true : false  });
+
+            }
+            catch (Exception ex)
             {
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
