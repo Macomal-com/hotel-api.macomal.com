@@ -230,13 +230,13 @@ namespace hotel_api.Controllers
                 if (request.IsFirstRequest)
                 {
                     dynamicActionJs = (await _context.DynamicActionJs
-    .Where(x => x.ReportName == request.ReportName)
-    .ToListAsync())
-    .ToDictionary(x => x.ActionName, x => x.ActionJs);
+                    .Where(x => x.ReportName == request.ReportName)
+                    .ToListAsync())
+                    .ToDictionary(x => x.ActionName, x => x.ActionJs);
                 }
                 using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
                 {
-                    using (var command = new SqlCommand("GetPendingReservation", connection))
+                    using (var command = new SqlCommand(request.SpName, connection))
                     {
                         command.CommandTimeout = 120;
                         command.CommandType = CommandType.StoredProcedure;

@@ -20,6 +20,7 @@ namespace Repository.ReportModels
         public bool IsFirstRequest { get; set; } = false;
 
         public string ReportName { get; set; } = string.Empty;
+        public string SpName { get; set; } = string.Empty;
     }
 
     public class ColumnsData
