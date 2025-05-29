@@ -20,6 +20,9 @@ namespace Repository.Models
         public string UniqueCaNo { get; set; } = String.Empty;
         public string ReminderMail { get; set; } = String.Empty;
         public bool IsActive { get; set; }
+        public DateOnly ReminderDate { get; set; } = DateOnly.MinValue;
+        public string ReminderTime { get; set; } = String.Empty;
+        public DateTime ReminderDatetime { get; set; } = new DateTime(1900, 01, 01);
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
@@ -35,6 +38,9 @@ namespace Repository.Models
         public string WhatsappContactNo { get; set; } = String.Empty;
         public string UniqueCaNo { get; set; } = String.Empty;
         public string ReminderMail { get; set; } = String.Empty;
+        public DateOnly ReminderDate { get; set; } = DateOnly.MinValue;
+        public string ReminderTime { get; set; } = String.Empty;
+        public DateTime ReminderDatetime { get; set; } = new DateTime(1900, 01, 01);
     }
     public class ReminderValidator : AbstractValidator<ReminderMaster>
     {
