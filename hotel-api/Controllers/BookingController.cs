@@ -2162,11 +2162,13 @@ namespace hotel_api.Controllers
                             await _context.BookedRoomRates.AddAsync(item);
                         }
                         await _context.SaveChangesAsync();
-
+                        
                         booking.CheckOutDate = request.ExtendedDate;
                         booking.InitialCheckOutDate = request.ExtendedDate;
+
                         booking.CheckOutDateTime = DateTimeMethod.ConvertToDateTime(booking.CheckOutDate, booking.CheckOutTime);
                         booking.InitialCheckOutDateTime = booking.CheckOutDateTime;
+                        booking.NoOfNights = Constants.Calculation.FindNightsAndHours(booking.ReservationDate, booking.ReservationTime, booking.CheckOutDate, booking.CheckOutTime, booking.CheckoutFormat);
                     }
                     
 
@@ -6817,6 +6819,23 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("GetBookingById")]
+        public async Task<IActionResult> GetBookingById(int bookingId)
+        {
+            try
+            {
+                var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.BookingId == bookingId && x.IsActive == true && x.CompanyId == companyId);
+                if(booking == null)
+                {
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", data = booking });
+                }
+                return Ok(new { Code = 400, Message = "Booking not found" });
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
         private bool IsTodayCheckOutDate(DateTime date)
         {
