@@ -132,7 +132,7 @@ namespace Repository.DTO
         public string InvoiceName { get; set; } = string.Empty;
         public DateTime CancelDate { get; set; } = DateTime.Now;
         public bool IsAllCancel { get; set; }
-   
+        public string CheckOutFormat { get; set; } = string.Empty;
     }
 
     public class CancelSummary

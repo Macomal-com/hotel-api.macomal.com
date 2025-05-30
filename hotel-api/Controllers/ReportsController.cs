@@ -222,10 +222,12 @@ namespace hotel_api.Controllers
         {
             try
             {
+                DataSet dataSet = null;
                 DataTable? dataTable = null;
                 List<ColumnsData> columnNames = new List<ColumnsData>();
                 DataTable? filteredDataTable = null;
                 Dictionary<string, string> dynamicActionJs = new Dictionary<string, string>();
+                DataTable? totalTable = null;
                 int totalNoOfRows = 0;
                 if (request.IsFirstRequest)
                 {
@@ -243,6 +245,8 @@ namespace hotel_api.Controllers
                         command.Parameters.AddWithValue("@companyId", request.CompanyId);
                         command.Parameters.AddWithValue("@startPageNumber", request.StartPageNumber);
                         command.Parameters.AddWithValue("@endPageNumber", request.EndPageNumber);
+                        //command.Parameters.AddWithValue("@startDate", request.StartDate);
+                        //command.Parameters.AddWithValue("@endDate", request.EndDate);
                         SqlParameter returnValueParam = new SqlParameter("@ReturnValue", SqlDbType.Int)
                         {
                             Direction = ParameterDirection.Output
@@ -253,14 +257,15 @@ namespace hotel_api.Controllers
 
                         using (var adapter = new SqlDataAdapter(command))
                         {
-                            dataTable = new DataTable();
-                            adapter.Fill(dataTable);
+                            dataSet = new DataSet();
+                            adapter.Fill(dataSet);
                         }
 
                         totalNoOfRows = (int)command.Parameters["@ReturnValue"].Value;
                         await connection.CloseAsync();
-
-                        filteredDataTable =  dataTable.Copy();
+                        dataTable = dataSet.Tables[0];
+                        totalTable = dataSet.Tables.Count > 1 ? dataSet.Tables[1] : new DataTable();
+                        filteredDataTable = dataSet.Tables[0].Copy();
                         if (filteredDataTable.Columns.Contains("Id"))
                         {
                             filteredDataTable.Columns.Remove("Id");
@@ -284,7 +289,7 @@ namespace hotel_api.Controllers
                     }
                 }
 
-                return Ok(new { Code = 200, Message = "Data Fetched Successfully", data = dataTable, columns = columnNames,  filteredData = filteredDataTable, dynamicActionJs = dynamicActionJs, hasMore = totalNoOfRows > request.EndPageNumber ? true : false  });
+                return Ok(new { Code = 200, Message = "Data Fetched Successfully", data = dataTable, columns = columnNames,  filteredData = filteredDataTable, dynamicActionJs = dynamicActionJs, hasMore = totalNoOfRows > request.EndPageNumber ? true : false, totalTable = totalTable });
 
             }
             catch (Exception ex)

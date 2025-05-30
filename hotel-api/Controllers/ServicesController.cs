@@ -554,7 +554,7 @@ namespace hotel_api.Controllers
 
 
         [HttpDelete("DeleteService/{serviceId}")]
-        public async Task<IActionResult> DeleteService(int serviceId, int bookingId)
+        public async Task<IActionResult> DeleteService(int serviceId)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -580,7 +580,7 @@ namespace hotel_api.Controllers
                 advanceService.UpdatedDate = currentTime;
 
                 await _context.SaveChangesAsync();
-                bool isUpdated = await CalculateTotalServiceAmount(bookingId);
+                bool isUpdated = await CalculateTotalServiceAmount(advanceService.BookingId);
                 if (isUpdated == false)
                 {
                     await transaction.RollbackAsync();

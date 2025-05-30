@@ -21,6 +21,9 @@ namespace Repository.ReportModels
 
         public string ReportName { get; set; } = string.Empty;
         public string SpName { get; set; } = string.Empty;
+
+        public string StartDate { get; set; } = string.Empty;
+        public string EndDate { get; set; } = string.Empty;
     }
 
     public class ColumnsData

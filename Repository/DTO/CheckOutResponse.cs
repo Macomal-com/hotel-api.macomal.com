@@ -25,7 +25,7 @@ namespace Repository.DTO
         public string CheckOutDiscountType { get; set; } = string.Empty;
 
         public decimal CheckOutDiscount { get; set; }
+        public string CheckOutFormat { get; set; } = string.Empty;
 
-        
     }
 }
