@@ -52,24 +52,42 @@ namespace Repository.Models
                 .NotEmpty().WithMessage("Phone Number is required")
                 .MinimumLength(10).WithMessage("Phone Number should be 10 numbers")
                 .MaximumLength(10).WithMessage("Phone Number should be 10 numbers");
-            RuleFor(x => x)
-                .MustAsync(IsPhoneNumberExists)
-                .When(x => x.StaffId == 0)
-                .WithMessage("Another Staff Member already registered with same phone number");
 
             RuleFor(x => x)
+                .MustAsync(IsPhoneNumberExists)
+                .When(x => x.StaffId == 0 && x.VendorId != 0)
+                .WithMessage("Another Staff Member already registered with same phone number");
+            RuleFor(x => x)
                 .MustAsync(IsPhoneNumberUpdateExists)
-                .When(x => x.StaffId > 0)
+                .When(x => x.StaffId > 0 && x.VendorId != 0)
+                .WithMessage("Another Staff Member already registered with same phone number");
+            RuleFor(x => x)
+                .MustAsync(IsPhoneNumberExistsVendor)
+                .When(x => x.StaffId == 0 && x.VendorId == 0)
+                .WithMessage("Another Staff Member already registered with same phone number");
+            RuleFor(x => x)
+                .MustAsync(IsPhoneNumberUpdateExistsVendor)
+                .When(x => x.StaffId > 0 && x.VendorId == 0)
                 .WithMessage("Another Staff Member already registered with same phone number");
         }
         private async Task<bool> IsPhoneNumberExists(StaffManagementMaster vm, CancellationToken cancellationToken)
         {
-            return !await _context.StaffManagementMaster.AnyAsync(x => x.PhoneNo == vm.PhoneNo && x.IsActive == true, cancellationToken);
+            return !await _context.StaffManagementMaster.AnyAsync(x => x.PhoneNo == vm.PhoneNo && x.VendorId != 0 && x.IsActive == true, cancellationToken);
         }
 
         private async Task<bool> IsPhoneNumberUpdateExists(StaffManagementMaster vm, CancellationToken cancellationToken)
         {
-            return !await _context.StaffManagementMaster.AnyAsync(x => x.PhoneNo == vm.PhoneNo && x.StaffId != vm.StaffId && x.IsActive == true, cancellationToken);
+            return !await _context.StaffManagementMaster.AnyAsync(x => x.PhoneNo == vm.PhoneNo && x.VendorId != 0 && x.StaffId != vm.StaffId && x.IsActive == true, cancellationToken);
+        }
+
+        private async Task<bool> IsPhoneNumberExistsVendor(StaffManagementMaster vm, CancellationToken cancellationToken)
+        {
+            return !await _context.StaffManagementMaster.AnyAsync(x => x.PhoneNo == vm.PhoneNo && x.VendorId == 0 && x.IsActive == true, cancellationToken);
+        }
+
+        private async Task<bool> IsPhoneNumberUpdateExistsVendor(StaffManagementMaster vm, CancellationToken cancellationToken)
+        {
+            return !await _context.StaffManagementMaster.AnyAsync(x => x.PhoneNo == vm.PhoneNo && x.VendorId == 0 && x.StaffId != vm.StaffId && x.IsActive == true, cancellationToken);
         }
     }
 }

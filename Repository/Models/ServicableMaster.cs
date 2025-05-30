@@ -105,7 +105,7 @@ namespace Repository.Models
         }
         private async Task<bool> IsUniqueServiceName(ServicableMaster serviceMaster, CancellationToken cancellationToken)
         {
-            return !await _context.ServicableMaster.AnyAsync(x => x.ServiceName == serviceMaster.ServiceName && x.IsActive == true && x.CompanyId == serviceMaster.CompanyId && x.UserId == serviceMaster.UserId, cancellationToken);
+            return !await _context.ServicableMaster.AnyAsync(x => x.ServiceName == serviceMaster.ServiceName && x.SubGroupId == serviceMaster.SubGroupId && x.IsActive == true && x.CompanyId == serviceMaster.CompanyId && x.UserId == serviceMaster.UserId, cancellationToken);
         }
 
 

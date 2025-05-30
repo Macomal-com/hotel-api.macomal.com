@@ -1705,6 +1705,7 @@ namespace hotel_api.Controllers
         [HttpGet("GetStaffMaster")]
         public async Task<IActionResult> GetStaffMaster(string status = "")
         {
+
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1770,7 +1771,7 @@ namespace hotel_api.Controllers
         {
             if (sm == null)
                 return Ok(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1794,6 +1795,7 @@ namespace hotel_api.Controllers
                     var savedObj = await _context.DepartmentMaster.Where(x => x.Name == sm.Department && x.CompanyId == companyId).FirstOrDefaultAsync();
                     if (savedObj == null)
                     {
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 404, Message = "Could't find department" });
                     }
                     cm.DepartmentId = savedObj.Id;
@@ -1820,6 +1822,7 @@ namespace hotel_api.Controllers
                     var savedObj = await _context.StaffDesignationMaster.Where(x => x.Name == sm.StaffDesignation && x.CompanyId == companyId).FirstOrDefaultAsync();
                     if (savedObj == null)
                     {
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 404, Message = "Could't find designation" });
                     }
                     cm.DesignationId = savedObj.Id;
@@ -1829,6 +1832,7 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
+                    await transaction.RollbackAsync();
                     var errors = result.Errors.Select(x => new
                     {
                         Error = x.ErrorMessage,
@@ -1838,10 +1842,12 @@ namespace hotel_api.Controllers
                 }
                 _context.StaffManagementMaster.Add(cm);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
                 return Ok(new { Code = 200, Message = "Staff created successfully" });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
@@ -1851,6 +1857,7 @@ namespace hotel_api.Controllers
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
             try
             {
                 var data = await (from bm in _context.StaffManagementMaster
