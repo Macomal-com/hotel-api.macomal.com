@@ -81,7 +81,7 @@ namespace Repository.Models
         private async Task<bool> IsUniquePolicyCode(CancelPolicyMaster master, CancellationToken cancellationToken)
         {
 
-            return !await _context.CancelPolicyMaster.AnyAsync(x => x.PolicyCode == master.PolicyCode && x.IsActive == true, cancellationToken);
+            return !await _context.CancelPolicyMaster.AnyAsync(x => x.PolicyCode == master.PolicyCode && x.CompanyId == master.CompanyId && x.IsActive == true, cancellationToken);
         }
     }
 }

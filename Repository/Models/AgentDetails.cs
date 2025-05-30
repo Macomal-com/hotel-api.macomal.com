@@ -88,26 +88,24 @@ namespace Repository.Models
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("TCS cannot be negative");
             RuleFor(x => x)
-                .MustAsync(IsUniqueGst)
-                .When(x=>x.AgentId == 0)
-                .WithMessage("GST must be unique");
+                .MustAsync(IsUniqueNameNumber)
+                .When(x => x.AgentId == 0)
+                .WithMessage("Name or Number must be unique");
 
             RuleFor(x => x)
-               .MustAsync(IsUniqueGstUpdate)
+               .MustAsync(IsUniqueNameNumberUpdate)
                .When(x => x.AgentId > 0)
-               .WithMessage("GST must be unique");
+               .WithMessage("Name or Number must be unique");
         }
 
-        private async Task<bool> IsUniqueGst(AgentDetails cm, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueNameNumber(AgentDetails cm, CancellationToken cancellationToken)
         {
-            var d = await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.GstNo == cm.GstNo, cancellationToken);
-            return !await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.GstNo == cm.GstNo, cancellationToken);
+            return !await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.AgentName == cm.AgentName && x.ContactNo == cm.ContactNo, cancellationToken);
         }
 
-        private async Task<bool> IsUniqueGstUpdate(AgentDetails cm, CancellationToken cancellationToken)
+        private async Task<bool> IsUniqueNameNumberUpdate(AgentDetails cm, CancellationToken cancellationToken)
         {
-
-            return !await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.GstNo == cm.GstNo && x.AgentId != cm.AgentId, cancellationToken);
+            return !await _context.AgentDetails.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.AgentName == cm.AgentName && x.ContactNo == cm.ContactNo && x.AgentId != cm.AgentId, cancellationToken);
         }
 
 

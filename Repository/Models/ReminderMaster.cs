@@ -40,7 +40,7 @@ namespace Repository.Models
         public string ReminderMail { get; set; } = String.Empty;
         public DateOnly ReminderDate { get; set; } = DateOnly.MinValue;
         public string ReminderTime { get; set; } = String.Empty;
-        public DateTime ReminderDatetime { get; set; } = new DateTime(1900, 01, 01);
+        public DateTime? ReminderDatetime { get; set; }
     }
     public class ReminderValidator : AbstractValidator<ReminderMaster>
     {

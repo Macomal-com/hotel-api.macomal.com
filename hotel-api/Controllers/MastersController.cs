@@ -16,6 +16,7 @@ using hotel_api.GeneralMethods;
 using Azure;
 using System.Xml.Linq;
 using System.Diagnostics.Metrics;
+using System.Globalization;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -2241,7 +2242,7 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.UserDetails
-                          .Where(x => x.IsActive == true && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.IsActive == true && x.CompanyId == companyId && x.UserId == id).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
@@ -2598,7 +2599,7 @@ namespace hotel_api.Controllers
                     savedObject.RoomShiftNotification = false;
                     savedObject.CheckOutNotification = false;
                     savedObject.CancelBookingNotification = false;
-
+                    savedObject.CancelMethod = Constants.Constants.DateWiseCancel;
                     if (files != null || files?.Length != 0)
                     {
                         var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
@@ -2650,6 +2651,23 @@ namespace hotel_api.Controllers
                         UserId = userId
                     };
                     _context.DepartmentMaster.Add(department);
+
+
+                    var gstmaster = new GstMaster
+                    {
+                        TaxPercentage = 12,
+                        ApplicableServices = Constants.Constants.Reservation,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        UserId = userId,
+                        CompanyId = savedObject.PropertyId,
+                        GstType = Constants.Constants.SingleGst,
+                        RangeStart = 0,
+                        RangeEnd = 0
+                    };
+                    _context.GstMaster.Add(gstmaster);
+
 
                     var mode = new PaymentMode
                     {
@@ -3329,7 +3347,8 @@ namespace hotel_api.Controllers
                 var cm = _mapper.Map<ReminderMaster>(gm);
                 SetMastersDefault(cm, companyId, userId);
                 var validator = new ReminderValidator(_context);
-
+                string dateTimeString = $"{cm.ReminderDate:yyyy-MM-dd}T{cm.ReminderTime}";
+                cm.ReminderDatetime = DateTime.ParseExact(dateTimeString, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture);
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {

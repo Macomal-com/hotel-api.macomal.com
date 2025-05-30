@@ -4,7 +4,7 @@
     {
         public static string GSTTYPE = "Inclusive";
         public static string ISCHECKOUTAPPLICABLE = "Yes";
-        public static string CHECKOUTFORMAT = "24 Hours";
+        public static string CHECKOUTFORMAT = "Night";
         public static string ISROOMRATEEDITABLE = "No";
         public static string CHECKINTIME = "11:00";
         public static string CHECKOUTTIME = "13:00";

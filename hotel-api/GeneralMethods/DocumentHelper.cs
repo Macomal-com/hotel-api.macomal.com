@@ -51,7 +51,7 @@ namespace hotel_api.GeneralMethods
             {
                 Type = documentType,
                 Prefix = prefix,
-                LastNumber = 0,
+                LastNumber = 1,
                 CompanyId = companyId,
                 FinancialYear = financialYear,
                 Prefix1 = "1",

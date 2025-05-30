@@ -75,12 +75,12 @@ namespace Repository.Models
             RuleFor(x => x)
                 .MustAsync(IsUniquePolicyName)
                 .When(x => x.PolicyId == 0)
-                .WithMessage("Hour already exists");
+                .WithMessage("Policy already exists");
 
             RuleFor(x => x)
                 .MustAsync(IsUniqueUpdatePolicyName)
                 .When(x => x.PolicyId > 0)
-                .WithMessage("Hour already exists");
+                .WithMessage("Policy already exists");
         }
         private async Task<bool> IsUniquePolicyName(ExtraPolicies cm, CancellationToken cancellationToken)
         {
