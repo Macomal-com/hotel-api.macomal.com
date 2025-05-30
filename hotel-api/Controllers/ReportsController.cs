@@ -245,8 +245,8 @@ namespace hotel_api.Controllers
                         command.Parameters.AddWithValue("@companyId", request.CompanyId);
                         command.Parameters.AddWithValue("@startPageNumber", request.StartPageNumber);
                         command.Parameters.AddWithValue("@endPageNumber", request.EndPageNumber);
-                        //command.Parameters.AddWithValue("@startDate", request.StartDate);
-                        //command.Parameters.AddWithValue("@endDate", request.EndDate);
+                        command.Parameters.AddWithValue("@startDate", request.StartDate);
+                        command.Parameters.AddWithValue("@endDate", request.EndDate);
                         SqlParameter returnValueParam = new SqlParameter("@ReturnValue", SqlDbType.Int)
                         {
                             Direction = ParameterDirection.Output
