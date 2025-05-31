@@ -6825,7 +6825,7 @@ namespace hotel_api.Controllers
             try
             {
                 var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.BookingId == bookingId && x.IsActive == true && x.CompanyId == companyId);
-                if(booking == null)
+                if(booking != null)
                 {
                     return Ok(new { Code = 200, Message = "Data fetched successfully", data = booking });
                 }
