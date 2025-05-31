@@ -866,7 +866,7 @@ namespace hotel_api.Controllers
 
                         foreach (var date in dayDates)
                         {
-                            var isRateExists = await _context.RoomRateDateWise.Where(x => x.RoomTypeId == item.RoomTypeId && x.IsActive == true && ( x.RateType == Constants.Constants.Weekend) && x.CompanyId == companyId && (item.FromDate >= date || item.FromDate <= date)).ToListAsync();
+                            var isRateExists = await _context.RoomRateDateWise.Where(x => x.RoomTypeId == item.RoomTypeId && x.IsActive == true && ( x.RateType == Constants.Constants.Weekend || x.RateType == Constants.Constants.Custom) && x.CompanyId == companyId && (item.FromDate >= date || item.FromDate <= date)).ToListAsync();
                             if (isRateExists.Count > 0)
                             {
                                 foreach (var data in isRateExists)
