@@ -27,5 +27,9 @@ namespace Repository.DTO
         public decimal CheckOutDiscount { get; set; }
         public string CheckOutFormat { get; set; } = string.Empty;
 
+        public CompanyDetails PropertyDetails = new CompanyDetails();
+
+        public string PageName = "CheckOutPage";
+
     }
 }
