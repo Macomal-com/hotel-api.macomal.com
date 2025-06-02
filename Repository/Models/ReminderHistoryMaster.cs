@@ -22,6 +22,8 @@ namespace Repository.Models
         public string DocumentPath { get; set; } = String.Empty;
         public bool BillPaid { get; set; }
         public bool IsActive { get; set; }
+        public string ReminderTime { get; set; } = String.Empty;
+
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
         public int UserId { get; set; }
@@ -37,6 +39,8 @@ namespace Repository.Models
         public int DaysBefore { get; set; }
         public DateTime DueDate { get; set; }
         public string DocumentPath { get; set; } = String.Empty;
+        public string ReminderTime { get; set; } = String.Empty;
+
     }
     public class ReminderHistoryValidator : AbstractValidator<ReminderHistoryMaster>
     {

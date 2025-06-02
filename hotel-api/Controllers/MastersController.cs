@@ -3354,8 +3354,6 @@ namespace hotel_api.Controllers
                 var cm = _mapper.Map<ReminderMaster>(gm);
                 SetMastersDefault(cm, companyId, userId);
                 var validator = new ReminderValidator(_context);
-                string dateTimeString = $"{cm.ReminderDate:yyyy-MM-dd}T{cm.ReminderTime}";
-                cm.ReminderDatetime = DateTime.ParseExact(dateTimeString, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture);
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
@@ -3444,6 +3442,7 @@ namespace hotel_api.Controllers
                                       history.DaysBefore,
                                       DueDate = history.DueDate.ToString("yyyy-MM-dd"),
                                       history.BillPaid,
+                                      history.ReminderTime,
                                       history.DocumentPath
                                   }).ToListAsync();
 
