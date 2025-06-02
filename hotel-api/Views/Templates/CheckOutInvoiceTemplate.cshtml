@@ -1,0 +1,461 @@
+﻿@model Repository.DTO.CheckOutResponse
+
+@{
+    var invoiceData = Model;
+    var ROOMWISEFORMAT = "Room Wise";
+    var CANCELPAGE = "CancelPage";
+    var CHECKOUTPAGE = "CheckOutPage";
+    var PERCENTAGE = "Percentage";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        .border {
+            border: 1px solid #dee2e6;
+        }
+
+        .p-4 {
+            padding: 1.5rem;
+        }
+
+        .mb-3 {
+            margin-bottom: 1rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1.5rem;
+        }
+
+        .mt-3 {
+            margin-top: 1rem;
+        }
+
+        .mt-4 {
+            margin-top: 1.5rem;
+        }
+
+        .m-0 {
+            margin: 0;
+        }
+
+        .m-2 {
+            margin: 0.5rem;
+        }
+
+        .ps-4 {
+            padding-left: 1.5rem;
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            margin-right: -15px;
+            margin-left: -15px;
+        }
+
+        .col-md-11 {
+            width: 91.66666667%;
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+
+        .col-md-1 {
+            width: 8.33333333%;
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+
+        .col-md-6 {
+            width: 50%;
+            padding-right: 15px;
+            padding-left: 15px;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .text-success {
+            color: #198754;
+        }
+
+        .text-danger {
+            color: #dc3545;
+        }
+
+        .text-info {
+            color: #0dcaf0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1rem;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #dee2e6;
+        }
+
+        .table-light {
+            background-color: #f8f9fa;
+        }
+
+        .d-flex {
+            display: flex;
+        }
+
+        .justify-content-end {
+            justify-content: flex-end;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 0.5rem;
+        }
+
+        h5 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    @if (invoiceData.CheckOutFormat == ROOMWISEFORMAT)
+    {
+        foreach (var room in invoiceData.BookingDetails)
+        {
+            <div style="border: 1px solid #dee2e6; padding: 1.5rem; margin-bottom: 1rem;">
+                <div style="display: flex; flex-wrap: wrap; margin-right: -15px; margin-left: -15px;">
+                    <div style="width: 91.66666667%; padding-right: 15px; padding-left: 15px;">
+                        <h2>@invoiceData.PropertyDetails.CompanyName</h2>
+                        <p style="margin: 0;">@invoiceData.PropertyDetails.CompanyAddress</p>
+                        <p>Contact: @invoiceData.PropertyDetails.ContactNo1</p>
+                    </div>
+
+                    <div style="width: 8.33333333%; padding-right: 15px; padding-left: 15px; text-align: right;">
+                        <!-- <img src="@Url.Content("~/images/logo.png")" style="width: 40px; height: 40px;" /> -->
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; flex-wrap: wrap; margin-right: -15px; margin-left: -15px;">
+                    <!-- GUEST DETAILS -->
+                    <div style="width: 50%; padding-right: 15px; padding-left: 15px;">
+                        <table>
+                            <tbody>
+                                <tr style="border: none;">
+                                    <th>Guest Name/Bill To :</th>
+                                    <td style="padding-left: 1.5rem;">
+                                        @(invoiceData.InvoiceName == "" ? room.GuestDetails.GuestName : invoiceData.InvoiceName)
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <th>Phone No :</th>
+                                    <td style="padding-left: 1.5rem;">
+                                        @room.GuestDetails.PhoneNumber
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <th>Room No :</th>
+                                    <td style="padding-left: 1.5rem;">@room.RoomNo</td>
+                                </tr>
+                                @if (invoiceData.PageName == CANCELPAGE)
+                                {
+                                    <tr style="border: none;">
+                                        <th>Room Category :</th>
+                                        <td style="padding-left: 1.5rem;">@room.RoomTypeName</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Invoice Details -->
+                    <div style="display: flex; width: 50%; padding-right: 15px; padding-left: 15px; justify-content: flex-end;">
+                        <table>
+                            <tbody>
+                                <tr style="border: none;">
+                                    <th>Invoice No :</th>
+                                    <td style="padding-left: 1.5rem;">
+                                        @invoiceData.InvoiceNo
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <th>Invoice Date :</th>
+                                    <td style="padding-left: 1.5rem;">
+                                        @invoiceData.InvoiceDate.ToString("dd/MM/yyyy")
+                                    </td>
+                                </tr>
+                                <tr style="border: none;">
+                                    <th>Pax :</th>
+                                    <td style="padding-left: 1.5rem;">@room.Pax</td>
+                                </tr>
+                                @if (invoiceData.PageName == CANCELPAGE)
+                                {
+                                    <!-- <tr style="border: none;">
+                                        <th>Cancel Date :</th>
+                                        <td style="padding-left: 1.5rem;">
+                                    @invoiceData.
+                                        </td>
+                                    </tr> -->
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ROOM CHARGES -->
+                    @if (invoiceData.PageName == CHECKOUTPAGE)
+                    {
+                        <h5 style="margin-top: 1rem;">Room Charges (Date-wise)</h5>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; border: 1px solid #dee2e6;">
+                            <thead style="background-color: #f8f9fa;">
+                                <tr>
+                                    <th rowspan="2" style="vertical-align: middle;">Date</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Category</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Actual Rate</th>
+                                    @if (room.DiscountType == PERCENTAGE)
+                                    {
+                                        <th colspan="2" style="text-align: center;">Discount</th>
+                                    }
+                                    else
+                                    {
+                                        <th rowspan="2" style="vertical-align: middle;">Discount</th>
+                                    }
+
+                                    <th rowspan="2" style="vertical-align: middle;">Room Rate</th>
+                                    <th colspan="2" style="text-align: center;">CGST</th>
+                                    <th colspan="2" style="text-align: center;">SGST</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Total Room Rate</th>
+                                </tr>
+                                <tr>
+                                    @if (room.DiscountType == PERCENTAGE)
+                                    {
+                                        <th style="text-align: center;">%</th>
+                                        <th style="text-align: center;">Amount</th>
+                                    }
+                                    <th style="text-align: center;">%</th>
+                                    <th style="text-align: center;">Amount</th>
+                                    <th style="text-align: center;">%</th>
+                                    <th style="text-align: center;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    foreach (var rate in room.BookedRoomRates)
+                                    {
+                                        <tr>
+                                            <td>@rate.BookingDate.ToString("dd/MM/yyyy")</td>
+                                            <td>@room.RoomTypeName</td>
+                                            <td style="text-align: right;">@rate.RoomRateWithoutDiscount</td>
+                                            @if (room.DiscountType == PERCENTAGE)
+                                            {
+                                                <td style="text-align: right;">
+                                                    @rate.DiscountPercentage
+                                                </td>
+                                                <td style="text-align: right;">@rate.DiscountAmount</td>
+                                            }
+                                            else
+                                            {
+                                                <td style="text-align: right;">@rate.DiscountAmount</td>
+                                            }
+                                            <td style="text-align: right;">
+                                                @rate.RoomRate
+                                            </td>
+                                            <td style="text-align: right;">@rate.CGST</td>
+                                            <td style="text-align: right;">
+                                                @rate.CGSTAmount
+                                            </td>
+                                            <td style="text-align: right;">@rate.SGST</td>
+                                            <td style="text-align: right;">
+                                                @rate.SGSTAmount
+                                            </td>
+                                            <td style="text-align: right;">
+                                                @rate.TotalRoomRate
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    <!-- SERVICES -->
+                    @if (invoiceData.PageName == CHECKOUTPAGE)
+                    {
+                        <h5 style="margin-top: 1rem;">Room Services</h5>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 1.5rem; border: 1px solid #dee2e6;">
+                            <thead style="background-color: #f8f9fa;">
+                                <tr>
+                                    <th rowspan="2" style="vertical-align: middle;">Date</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Service Name</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Service Price</th>
+                                    <th colspan="2" style="text-align: center;">CGST</th>
+                                    <th colspan="2" style="text-align: center;">SGST</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Quantity</th>
+                                    <th rowspan="2" style="vertical-align: middle;">Total Amount</th>
+                                </tr>
+                                <tr>
+                                    <th style="text-align: center;">%</th>
+                                    <th style="text-align: center;">Amount</th>
+                                    <th style="text-align: center;">%</th>
+                                    <th style="text-align: center;">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    foreach (var service in room.AdvanceServices)
+                                    {
+                                        <tr>
+                                            <td>@service.ServiceDate.ToString("dd/MM/yyyy")</td>
+                                            <td>@service.ServiceName</td>
+                                            <td style="text-align: right;">
+                                                @service.ServicePrice
+                                            </td>
+                                            <td style="text-align: right;">
+                                                @service.CGSTPercentage
+                                            </td>
+                                            <td style="text-align: right;">
+                                                @service.CgstAmount
+                                            </td>
+                                            <td style="text-align: right;">
+                                                @service.SGSTPercentage
+                                            </td>
+                                            <td style="text-align: right;">
+                                                @service.SgstAmount
+                                            </td>
+                                            <td style="text-align: right;">@service.Quantity</td>
+                                            <td style="text-align: right;">
+                                                @service.TotalAmount
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    <!-- CHECKOUT SUMMARY -->
+                    @if (invoiceData.PageName == CHECKOUTPAGE)
+                    {
+                        <div style="display: flex; justify-content: flex-end; margin: 0.5rem;">
+                            <table style="width: auto;">
+                                <tbody>
+                                    <tr style="border: none;">
+                                        <th>Booking Amount :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem;">
+                                            @room.TotalBookingAmount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Early Check In / Late Check Out:</th>
+                                        <td style="text-align: right; padding-left: 1.5rem;">
+                                            @(room.EarlyCheckInCharges + room.LateCheckOutCharges)
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Service Amount :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem;">
+                                            @room.TotalServicesAmount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Total Amount :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem; color: #198754;">
+                                            @room.TotalAmountWithOutDiscount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        @if (room.CheckOutDiscountType == PERCENTAGE)
+                                        {
+                                            <th>Discount Amount : (@room.CheckOutDiscountPercentage)</th>
+                                        }
+                                        else
+                                        {
+                                            <th>Discount Amount :</th>
+                                        }
+                                        <td style="text-align: right; padding-left: 1.5rem; color: #dc3545;">
+                                            @room.CheckOutDiscoutAmount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Total Bill :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem; color: #198754;">
+                                            @room.TotalAmount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Total Paid :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem;">
+                                            @(room.AdvanceAmount + room.ReceivedAmount + room.RefundAmount + room.ResidualAmount)
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Advance :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem;">
+                                            @room.AdvanceAmount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Received :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem;">
+                                            @room.ReceivedAmount
+                                        </td>
+                                    </tr>
+                                    <tr style="border: none;">
+                                        <th>Balance Amount :</th>
+                                        <td style="text-align: right; padding-left: 1.5rem; color: #dc3545;">
+                                            @room.BalanceAmount
+                                        </td>
+                                    </tr>
+                                    @if (@room.RefundAmount > 0)
+                                    {
+                                        <tr style="border: none;">
+                                            <th>Refund Amount :</th>
+                                            <td style="text-align: right; padding-left: 1.5rem; color: #0dcaf0;">
+                                                @room.RefundAmount
+                                            </td>
+                                        </tr>
+                                    }
+
+                                    @if (@room.ResidualAmount > 0)
+                                    {
+                                        <tr style="border: none;">
+                                            <th>Residual Amount :</th>
+                                            <td style="text-align: right; padding-left: 1.5rem; color: #0dcaf0;">
+                                                @room.ResidualAmount
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+    else
+    {
+        <h2>Property Name</h2>
+        <p>PropertyAddress</p>
+        <p>Contact: ContactNo</p>
+
+        <h3>Guest: GuestName</h3>
+        <p>Room: RoomNo</p>
+
+        <h4>Invoice #: InvoiceNo</h4>
+        <p>Date: @invoiceData.InvoiceDate.ToString("dd/MM/yyyy")</p>
+       
+    }
+</body>
+</html>
