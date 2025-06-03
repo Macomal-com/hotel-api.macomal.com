@@ -1412,9 +1412,6 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 202, Message = errors });
                     }
                 }
-                document.Prefix1 = string.IsNullOrEmpty(document.Prefix1) || string.IsNullOrWhiteSpace(document.Prefix1) ? "0" : document.Prefix1;
-                document.Prefix2 = string.IsNullOrEmpty(document.Prefix2) || string.IsNullOrWhiteSpace(document.Prefix2) ? "0" : document.Prefix2;
-                document.Suffix = string.IsNullOrEmpty(document.Suffix) || string.IsNullOrWhiteSpace(document.Suffix) ? "0" : document.Suffix;
                 document.UpdatedDate = DateTime.Now;
                 
 
