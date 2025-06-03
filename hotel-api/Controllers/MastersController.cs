@@ -1792,14 +1792,9 @@ namespace hotel_api.Controllers
                     };
                     _context.DepartmentMaster.Add(department);
                     await _context.SaveChangesAsync();
-                    var savedObj = await _context.DepartmentMaster.Where(x => x.Name == sm.Department && x.CompanyId == companyId).FirstOrDefaultAsync();
-                    if (savedObj == null)
-                    {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 404, Message = "Could't find department" });
-                    }
-                    cm.DepartmentId = savedObj.Id;
-                    departmentId = savedObj.Id;
+                   
+                    cm.DepartmentId = department.Id;
+                    departmentId = department.Id;
                 }
                 else
                 {
@@ -1819,13 +1814,8 @@ namespace hotel_api.Controllers
                     };
                     _context.StaffDesignationMaster.Add(designation);
                     await _context.SaveChangesAsync();
-                    var savedObj = await _context.StaffDesignationMaster.Where(x => x.Name == sm.StaffDesignation && x.CompanyId == companyId).FirstOrDefaultAsync();
-                    if (savedObj == null)
-                    {
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 404, Message = "Could't find designation" });
-                    }
-                    cm.DesignationId = savedObj.Id;
+                    
+                    cm.DesignationId = designation.Id;
                 }
                 SetMastersDefault(cm, companyId, userId);
                 var validator = new StaffValidator(_context);
@@ -2582,33 +2572,27 @@ namespace hotel_api.Controllers
                     _context.CompanyDetails.Add(cm);
                     await _context.SaveChangesAsync();
 
-                    var savedObject = await _context.CompanyDetails
-                                                     .FirstOrDefaultAsync(c => c.CompanyName == cm.CompanyName && c.IsActive == true);
-                    if(savedObject == null)
-                    {
-                        return Ok(new { Code = 404, Message = "Data Not Found!" });
-                    }
-                    savedObject.GstType = Constants.PropertyConstants.GSTTYPE;
-                    savedObject.IsCheckOutApplicable = Constants.PropertyConstants.ISCHECKOUTAPPLICABLE;
-                    savedObject.CheckOutFormat = Constants.PropertyConstants.CHECKOUTFORMAT;
-                    savedObject.IsRoomRateEditable = Constants.PropertyConstants.ISROOMRATEEDITABLE;
-                    savedObject.CheckInTime = Constants.PropertyConstants.CHECKINTIME;
-                    savedObject.CheckOutTime = Constants.PropertyConstants.CHECKOUTTIME;
-                    savedObject.ApproveReservation = Constants.PropertyConstants.APPROVERESERVATION;
-                    savedObject.CancelMethod = Constants.PropertyConstants.CANCELMETHOD;
-                    savedObject.CancelCalculatedBy = Constants.PropertyConstants.CANCELCALCULATEBY;
-                    savedObject.CheckOutInvoice = Constants.PropertyConstants.CHECKOUTINVOICE;
-                    savedObject.IsWhatsappNotification = Constants.PropertyConstants.WHATSAPPNOTIFICATIONENABLE;
-                    savedObject.IsEmailNotification = Constants.PropertyConstants.EMAILNOTIFICATIONENABLE;
-                    savedObject.IsDefaultCheckInTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKIN;
-                    savedObject.IsDefaultCheckOutTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKOUT;
-                    savedObject.CalculateRoomRates = Constants.PropertyConstants.CALCULATEROOMRATES;
-                    savedObject.ReservationNotification = false;
-                    savedObject.CheckinNotification = false;
-                    savedObject.RoomShiftNotification = false;
-                    savedObject.CheckOutNotification = false;
-                    savedObject.CancelBookingNotification = false;
-                    savedObject.CancelMethod = Constants.Constants.DateWiseCancel;
+                    cm.GstType = Constants.PropertyConstants.GSTTYPE;
+                    cm.IsCheckOutApplicable = Constants.PropertyConstants.ISCHECKOUTAPPLICABLE;
+                    cm.CheckOutFormat = Constants.PropertyConstants.CHECKOUTFORMAT;
+                    cm.IsRoomRateEditable = Constants.PropertyConstants.ISROOMRATEEDITABLE;
+                    cm.CheckInTime = Constants.PropertyConstants.CHECKINTIME;
+                    cm.CheckOutTime = Constants.PropertyConstants.CHECKOUTTIME;
+                    cm.ApproveReservation = Constants.PropertyConstants.APPROVERESERVATION;
+                    cm.CancelMethod = Constants.PropertyConstants.CANCELMETHOD;
+                    cm.CancelCalculatedBy = Constants.PropertyConstants.CANCELCALCULATEBY;
+                    cm.CheckOutInvoice = Constants.PropertyConstants.CHECKOUTINVOICE;
+                    cm.IsWhatsappNotification = Constants.PropertyConstants.WHATSAPPNOTIFICATIONENABLE;
+                    cm.IsEmailNotification = Constants.PropertyConstants.EMAILNOTIFICATIONENABLE;
+                    cm.IsDefaultCheckInTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKIN;
+                    cm.IsDefaultCheckOutTimeApplicable = Constants.PropertyConstants.DEFAULTCHECKOUT;
+                    cm.CalculateRoomRates = Constants.PropertyConstants.CALCULATEROOMRATES;
+                    cm.ReservationNotification = false;
+                    cm.CheckinNotification = false;
+                    cm.RoomShiftNotification = false;
+                    cm.CheckOutNotification = false;
+                    cm.CancelBookingNotification = false;
+                    cm.CancelMethod = Constants.Constants.DateWiseCancel;
                     if (files != null || files?.Length != 0)
                     {
                         var uploadPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
@@ -2632,7 +2616,7 @@ namespace hotel_api.Controllers
 
                             var propertyImage = new PropertyImages
                             {
-                                PropertyId = savedObject.PropertyId,
+                                PropertyId = cm.PropertyId,
                                 FilePath = fileName
                             };
                             propertyImages.Add(propertyImage);
@@ -2640,20 +2624,20 @@ namespace hotel_api.Controllers
 
                         _context.PropertyImages.AddRange(propertyImages);
                     }
-                    DocumentHelper.CreateDocument(_context, "CP", savedObject.PropertyId, financialYear, Constants.Constants.DocumentCancelPolicy, userId);
+                    DocumentHelper.CreateDocument(_context, "CP", cm.PropertyId, financialYear, Constants.Constants.DocumentCancelPolicy, userId);
 
-                    DocumentHelper.CreateDocument(_context, "RES", savedObject.PropertyId, financialYear, Constants.Constants.DocumentReservation, userId);
+                    DocumentHelper.CreateDocument(_context, "RES", cm.PropertyId, financialYear, Constants.Constants.DocumentReservation, userId);
 
 
-                    DocumentHelper.CreateDocument(_context, "INV", savedObject.PropertyId, financialYear, Constants.Constants.DocumentInvoice, userId);
+                    DocumentHelper.CreateDocument(_context, "INV", cm.PropertyId, financialYear, Constants.Constants.DocumentInvoice, userId);
 
-                    DocumentHelper.CreateDocument(_context, "KOT", savedObject.PropertyId, financialYear, Constants.Constants.DocumentKot, userId);
-                    DocumentHelper.CreateDocument(_context, "G", savedObject.PropertyId, financialYear, Constants.Constants.DocumentGroupCode, userId);
+                    DocumentHelper.CreateDocument(_context, "KOT", cm.PropertyId, financialYear, Constants.Constants.DocumentKot, userId);
+                    DocumentHelper.CreateDocument(_context, "G", cm.PropertyId, financialYear, Constants.Constants.DocumentGroupCode, userId);
 
                     var department = new DepartmentMaster
                     {
                         Name = "Vendor",
-                        CompanyId = savedObject.PropertyId,
+                        CompanyId = cm.PropertyId,
                         CreatedDate = DateTime.Now,
                         UpdatedDate = DateTime.Now,
                         IsActive = true,
@@ -2670,7 +2654,7 @@ namespace hotel_api.Controllers
                         CreatedDate = DateTime.Now,
                         UpdatedDate = DateTime.Now,
                         UserId = userId,
-                        CompanyId = savedObject.PropertyId,
+                        CompanyId = cm.PropertyId,
                         GstType = Constants.Constants.SingleGst,
                         RangeStart = 0,
                         RangeEnd = 0
@@ -2688,7 +2672,7 @@ namespace hotel_api.Controllers
                         CreatedDate = DateTime.Now,
                         UpdatedDate = DateTime.Now,
                         UserId = userId,
-                        CompanyId = savedObject.PropertyId,
+                        CompanyId = cm.PropertyId,
                         TransactionType = ""
                     };
                     _context.PaymentMode.Add(mode);
