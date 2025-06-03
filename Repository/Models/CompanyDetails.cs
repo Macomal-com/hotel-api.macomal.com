@@ -138,6 +138,8 @@ namespace Repository.Models
         public bool CancelBookingNotification { get; set; }
         public string CalculateRoomRates { get; set; } = String.Empty;
         public bool CheckoutWithBalance { get; set; }
+        public string CommissionCharge { get; set; } = String.Empty;
+        public string CommissionType { get; set; } = String.Empty;
     }
     public class CompanyDetailsDTO
     {
@@ -172,6 +174,8 @@ namespace Repository.Models
         public bool CancelBookingNotification { get; set; }
         public string CalculateRoomRates { get; set; } = String.Empty;
         public bool CheckoutWithBalance { get; set; }
+        public string CommissionCharge { get; set; } = String.Empty;
+        public string CommissionType { get; set; } = String.Empty;
     }
     public class PropertyDetailsValidator : AbstractValidator<CompanyDetails>
     {
@@ -212,15 +216,15 @@ namespace Repository.Models
                .NotNull().WithMessage("Contanct No is required")
                .Length(10)
                    .WithMessage("Contact No length should be 10 digits");
-            RuleFor(x => x)
-                .MustAsync(IsUniqueProperty)
-                .When(x => x.PropertyId == 0)
-                .WithMessage("Property already exists");
+            //RuleFor(x => x)
+            //    .MustAsync(IsUniqueProperty)
+            //    .When(x => x.PropertyId == 0)
+            //    .WithMessage("Property already exists");
 
-            RuleFor(x => x)
-                .MustAsync(IsUniqueUpdateProperty)
-                .When(x => x.PropertyId > 0)
-                .WithMessage("Property already exists");
+            //RuleFor(x => x)
+            //    .MustAsync(IsUniqueUpdateProperty)
+            //    .When(x => x.PropertyId > 0)
+            //    .WithMessage("Property already exists");
 
         }
         private async Task<bool> IsUniqueProperty(CompanyDetails cm, CancellationToken cancellationToken)

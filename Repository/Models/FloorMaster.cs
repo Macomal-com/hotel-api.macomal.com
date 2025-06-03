@@ -45,9 +45,9 @@ namespace Repository.Models
                 .NotNull().WithMessage("Floor Number is required")
                 .NotEmpty().WithMessage("Floor Number is required");
 
-            RuleFor(x => x.NoOfRooms)
-                .NotNull().WithMessage("No of Rooms is required")
-                .NotEmpty().WithMessage("No of Rooms is required");
+            //RuleFor(x => x.NoOfRooms)
+            //    .NotNull().WithMessage("No of Rooms is required")
+            //    .NotEmpty().WithMessage("No of Rooms is required");
 
             RuleFor(x=>x.PropertyId)
                 .NotNull().WithMessage("Property is required")
@@ -68,6 +68,7 @@ namespace Repository.Models
                 .MustAsync(IsCountExceed)
                 .When(x=>x.FloorId == 0)
                 .WithMessage("You have already created total floors in this building.");
+
         }
 
         private async Task<bool> IsFloorNumberExists(FloorMaster floorMaster, CancellationToken cancellationToken)
@@ -100,15 +101,15 @@ namespace Repository.Models
         {
             if (floorMaster.BuildingId > 0)
             {
-                var buildingMaster = await _context.BuildingMaster.FirstOrDefaultAsync(x=>x.BuildingId == floorMaster.BuildingId && x.IsActive == true);
+                var buildingMaster = await _context.BuildingMaster.FirstOrDefaultAsync(x => x.BuildingId == floorMaster.BuildingId && x.IsActive == true);
 
-                if(buildingMaster == null)
+                if (buildingMaster == null)
                 {
                     return false;
                 }
                 else
                 {
-                    if(buildingMaster.NoOfFloors == 0)
+                    if (buildingMaster.NoOfFloors == 0)
                     {
                         return true;
                     }

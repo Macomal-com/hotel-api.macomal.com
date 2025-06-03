@@ -2534,7 +2534,9 @@ namespace hotel_api.Controllers
                                             com.ClusterId,
                                             com.OwnerId,
                                             cluster.ClusterName,
-                                            landlord.LandlordName                                          
+                                            landlord.LandlordName,
+                                            com.CommissionType,
+                                            com.CommissionCharge
                                        }).ToListAsync();
                 if (data.Count == 0)
                 {
@@ -3543,23 +3545,36 @@ namespace hotel_api.Controllers
         }
 
         [HttpPatch("PatchReminderHistoryMaster/{id}")]
-        public async Task<IActionResult> PatchReminderHistoryMaster(int id, [FromBody] JsonPatchDocument<ReminderHistoryMaster> patchDocument)
+        public async Task<IActionResult> PatchReminderHistoryMaster(int id, [FromForm] string patchDoc, IFormFile? file)
         {
             try
             {
-                if (patchDocument == null)
+                if (patchDoc == null)
                 {
                     return Ok(new { Code = 500, Message = "Invalid Data" });
 
                 }
-
+                var patchDocument = JsonConvert.DeserializeObject<JsonPatchDocument<ReminderHistoryMaster>>(patchDoc);
                 var gm = await _context.ReminderHistoryMaster.FindAsync(id);
 
                 if (gm == null)
                 {
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
+                // Handle file upload
+                if (file != null)
+                {
+                    var documentPath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", "reminderDocuments");
+                    Directory.CreateDirectory(documentPath);
 
+                    var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+                    var filePath = Path.Combine(documentPath, fileName);
+
+                    using var stream = new FileStream(filePath, FileMode.Create);
+                    await file.CopyToAsync(stream);
+
+                    gm.DocumentPath = fileName;
+                }
                 patchDocument.ApplyTo(gm, ModelState);
 
                 var validator = new ReminderHistoryValidator(_context);
