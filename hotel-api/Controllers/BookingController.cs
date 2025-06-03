@@ -244,6 +244,32 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("CheckReservationNoExists")]
+        public async Task<IActionResult> CheckReservationNoExists(string reservationNo = "")
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(reservationNo))
+                {
+                    return Ok(new { Code = 400, Message = "Reservation No not found" });
+                }
+                var isExists = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.ReservationNo == reservationNo && x.CompanyId == companyId);
+                if (isExists == null)
+                {
+                    return Ok(new { Code = 200, Message = "Reservation no not exists" });
+                }
+                else
+                {
+                    var getbookingno = await DocumentHelper.GetDocumentNo(_context, Constants.Constants.DocumentReservation, companyId, financialYear);
+                    return Ok(new { Code = 409, Message = "Reservation no already exists" , data  = getbookingno });
+                }
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
         [HttpGet("ReservationRoomRate")]
         public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate, int noOfRooms, int noOfNights, string gstType, int noOfHours = 0, string checkInTime = "", string checkOutTime = "", string discountType = "", decimal discount = 0, string checkOutFormat = "", string calculateRoomRates = "")
         {

@@ -224,10 +224,10 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 202, message = errors });
                     }
 
-                   
-                        Constants.Constants.SetMastersDefault(service, companyId, userId, currentTime);
+                    
+                    Constants.Constants.SetMastersDefault(service, companyId, userId, currentTime);
 
-                        await _context.AdvanceServices.AddAsync(service);
+                    await _context.AdvanceServices.AddAsync(service);
                   
 
                     
@@ -370,7 +370,7 @@ namespace hotel_api.Controllers
                                                ServiceName = service.ServiceName,
                                                ServiceDescription = service.ServiceDescription,
                                                Amount = service.Amount,
-                                               Discount = service.Discount,
+                                               Discount = roomservice.DiscountAmount,
                                                TaxType = service.TaxType,
                                                GstPercentage = groups.GST,
                                                //(TotalAmount, GstAmount) = Constants.Calculation.CalculateGst(service.Amount, groups.GST, service.TaxType),
@@ -380,11 +380,11 @@ namespace hotel_api.Controllers
                                                //SgstAmount = service.SgstAmount,
                                                CgstPercentage = groups.CGST,
                                                //CgstAmount = service.CgstAmount,
-                                               //TotalAmount = service.TotalAmount
+                                              
                                                Quantity = roomservice.Quantity,
                                                DiscountAmount = roomservice.DiscountAmount,
                                                BookingId = roomservice.BookingId,
-                                               Total = service.Amount * roomservice.Quantity,
+                                               Total = service.Amount * roomservice.Quantity - roomservice.DiscountAmount,
                                                KotNo = roomservice.KotNo,
                                                ServiceDate = roomservice.ServiceDate,
                                                ServiceTime = roomservice.ServiceTime,
@@ -523,7 +523,8 @@ namespace hotel_api.Controllers
                     advanceService.ServiceDate = service.ServiceDate;
                     advanceService.ServiceTime = service.ServiceTime;
                     advanceService.UpdatedDate = currentTime;
-
+                    advanceService.ServicePriceWithoutDiscount = service.ServicePriceWithoutDiscount;
+                    advanceService.DiscountAmount = service.DiscountAmount;
                     _context.AdvanceServices.Update(advanceService);
                 }
                 await _context.SaveChangesAsync();

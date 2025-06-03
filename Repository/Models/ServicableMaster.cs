@@ -76,6 +76,7 @@ namespace Repository.Models
         public DateOnly ServiceDate { get; set; }
         public string ServiceTime { get; set; } = string.Empty;
         public int Id { get; set; }
+        public decimal TotalAmount { get; set; }
     }
 
     public class ServiveValidator : AbstractValidator<ServicableMaster>
