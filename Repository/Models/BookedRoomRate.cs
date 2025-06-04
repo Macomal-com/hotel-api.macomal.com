@@ -50,6 +50,11 @@ namespace Repository.Models
         public decimal DiscountPercentage { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal RoomRateWithoutDiscount { get; set; }
+
+        public int RoomTypeId { get; set; }
+
+        [NotMapped]
+        public string RoomTypeName { get; set; } = string.Empty;
     }
 
 }
