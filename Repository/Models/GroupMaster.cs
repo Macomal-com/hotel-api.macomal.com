@@ -50,16 +50,20 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.Code)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Code is required")
                 .NotEmpty().WithMessage("Code is required");
             RuleFor(x => x.GroupName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Group Name is required")
                 .NotEmpty().WithMessage("Group Name is required");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueGroupCode)
                 .When(x => x.Id == 0)
                 .WithMessage("Group Code already exists");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateGroupCode)
                 .When(x => x.Id > 0)
                 .WithMessage("Group Code already exists");
@@ -84,14 +88,24 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(DoSubGroupExists)
                 .When(x => x.IsActive == false)
                 .WithMessage("You can't delete this Group, sub-group already exists!");
+            RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
+                .MustAsync(DoSubGroupInServiceExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Group, service already exists!");
         }
         private async Task<bool> DoSubGroupExists(GroupMaster groupMaster, CancellationToken cancellationToken)
         {
             return !await _context.SubGroupMaster.Where(x => x.IsActive == true && x.CompanyId == groupMaster.CompanyId && x.GroupId == groupMaster.Id).AnyAsync();
-            
+
+        }
+        private async Task<bool> DoSubGroupInServiceExists(GroupMaster groupMaster, CancellationToken cancellationToken)
+        {
+            return !await _context.ServicableMaster.Where(x => x.IsActive == true && x.CompanyId == groupMaster.CompanyId && x.ServiceId == groupMaster.Id).AnyAsync();
         }
     }
 }

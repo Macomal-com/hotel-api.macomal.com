@@ -53,20 +53,21 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.BuildingName)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Building Name is required")
                 .NotNull().WithMessage("Building Name is required");
 
-            RuleFor(x => x.PropertyId)
+            RuleFor(x => x.PropertyId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Property is required")
                 .NotEmpty().WithMessage("Property is required")
                 .GreaterThan(0).WithMessage("Property is required");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueBuildingName)
                 .When(x => x.BuildingId == 0)
                 .WithMessage("Building Name must be unique");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateBuildingName)
                 .When(x => x.BuildingId > 0)
                 .WithMessage("Building Name must be unique");
@@ -87,6 +88,37 @@ namespace Repository.Models
 
             return !await _context.BuildingMaster.AnyAsync(x => x.BuildingName == master.BuildingName && x.BuildingId != master.BuildingId && x.PropertyId == master.PropertyId && x.IsActive == true, cancellationToken);
 
+
+        }
+
+        
+    }
+    public class BuildingDeleteValidator : AbstractValidator<BuildingMaster>
+    {
+        private readonly DbContextSql _context;
+        public BuildingDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
+                .MustAsync(DoBuildingExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Building, Floor already exists!");
+            RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
+                .MustAsync(DoBuildingInRoomExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Building, Room already exists!");
+        }
+        private async Task<bool> DoBuildingExists(BuildingMaster building, CancellationToken cancellationToken)
+        {
+            return !await _context.FloorMaster.Where(x => x.IsActive == true && x.CompanyId == building.CompanyId && x.BuildingId == building.BuildingId).AnyAsync();
+
+        }
+
+        private async Task<bool> DoBuildingInRoomExists(BuildingMaster building, CancellationToken cancellationToken)
+        {
+            return !await _context.RoomMaster.Where(x => x.IsActive == true && x.CompanyId == building.CompanyId && x.BuildingId == building.BuildingId).AnyAsync();
 
         }
     }

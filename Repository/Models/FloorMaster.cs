@@ -42,6 +42,7 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.FloorNumber)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Floor Number is required")
                 .NotEmpty().WithMessage("Floor Number is required");
 
@@ -50,21 +51,25 @@ namespace Repository.Models
             //    .NotEmpty().WithMessage("No of Rooms is required");
 
             RuleFor(x=>x.PropertyId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Property is required")
                 .NotEmpty().WithMessage("Property is required")
                 .GreaterThan(0).WithMessage("Property is required");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsFloorNumberExists)   
                 .When(x=>x.FloorId == 0)
                 .WithMessage("Floor Number already exists");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
               .MustAsync(IsFloorUpdateNumberExists)
               .When(x => x.FloorId > 0)
               .WithMessage("Floor Number already exists");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsCountExceed)
                 .When(x=>x.FloorId == 0)
                 .WithMessage("You have already created total floors in this building.");
@@ -134,5 +139,25 @@ namespace Repository.Models
             }
 
         }
+    }
+    public class FloorDeleteValidator : AbstractValidator<FloorMaster>
+    {
+        private readonly DbContextSql _context;
+        public FloorDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
+                .MustAsync(DoFloorExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this floor, room already exists!");
+
+        }
+        private async Task<bool> DoFloorExists(FloorMaster floor, CancellationToken cancellationToken)
+        {
+            return !await _context.RoomMaster.Where(x => x.IsActive == true && x.CompanyId == floor.CompanyId && x.FloorId == floor.FloorId).AnyAsync();
+
+        }
+
     }
 }

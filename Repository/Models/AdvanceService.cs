@@ -49,75 +49,78 @@ namespace Repository.Models
         public AdvanceServicesValidator()
         {
             RuleFor(x => x.BookingId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Booking Id is required")
                 .NotEmpty().WithMessage("Booking Id is required")
                 .GreaterThan(0).WithMessage("Booking Id is required");
 
             RuleFor(x => x.RoomId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Room Id is required")
                 .NotEmpty().WithMessage("Room Id is required")
                 .GreaterThan(0).WithMessage("Room Id is required");
 
             RuleFor(x => x.GroupId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Group Id is required")
                 .NotEmpty().WithMessage("Group Id is required")
                 .GreaterThan(0).WithMessage("Group Id is required");
 
-            RuleFor(x => x.SubGroupId)
+            RuleFor(x => x.SubGroupId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Sub Group Id is required")
                 .NotEmpty().WithMessage("Sub Group Id is required")
                 .GreaterThan(0).WithMessage("Sub Group Id is required");
 
-            RuleFor(x => x.ServiceId)
+            RuleFor(x => x.ServiceId).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Service Id is required")
                .NotEmpty().WithMessage("Service Id is required")
                .GreaterThan(0).WithMessage("Service Id is required");
 
-            RuleFor(x => x.ServiceName)
+            RuleFor(x => x.ServiceName).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Service Name is required")
                .NotEmpty().WithMessage("Service Name is required");
 
-            RuleFor(x => x.ServicePrice)
+            RuleFor(x => x.ServicePrice).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Service Price is required")
                .NotEmpty().WithMessage("Service Price is required")
                .GreaterThanOrEqualTo(0).WithMessage("Service Price is required");
 
-            RuleFor(x => x.Quantity)
+            RuleFor(x => x.Quantity).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Quantity is required")
                .NotEmpty().WithMessage("Quantity is required")
                .GreaterThan(0).WithMessage("Quantity is required");
 
-            RuleFor(x => x.ServiceDate)
+            RuleFor(x => x.ServiceDate).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Service Date is required")
                .NotEmpty().WithMessage("Service Date is required")
                ;
 
-            RuleFor(x => x.ServiceTime)
+            RuleFor(x => x.ServiceTime).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Service Time is required")
                .NotEmpty().WithMessage("Service Time is required")
                ;
 
-            RuleFor(x => x.TaxType)
+            RuleFor(x => x.TaxType).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Tax Type is required")
                .NotEmpty().WithMessage("Tax Type is required")
                ;
 
-            RuleFor(x => x.TotalServicePrice)
+            RuleFor(x => x.TotalServicePrice).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("TotalServicePrice is required")
                .NotEmpty().WithMessage("TotalServicePrice is required")
                .GreaterThanOrEqualTo(0).WithMessage("TotalServicePrice is required");
 
-            RuleFor(x => x.TotalAmount)
+            RuleFor(x => x.TotalAmount).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("TotalAmount is required")
                .NotEmpty().WithMessage("TotalAmount is required")
                .GreaterThanOrEqualTo(0).WithMessage("TotalAmount is required");
 
-            RuleFor(x => x.GSTPercentage)
+            RuleFor(x => x.GSTPercentage).Cascade(CascadeMode.Stop)
               .NotNull().WithMessage("GST is required")
               .NotEmpty().WithMessage("GST is required")
               .GreaterThanOrEqualTo(0).WithMessage("GST is required");
 
-            RuleFor(x => x.GstAmount)
+            RuleFor(x => x.GstAmount).Cascade(CascadeMode.Stop)
               .NotNull().WithMessage("GstAmount is required")
               .NotEmpty().WithMessage("GstAmount is required")
               .GreaterThanOrEqualTo(0).WithMessage("GstAmount is required");

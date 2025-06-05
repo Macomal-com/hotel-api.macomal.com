@@ -49,15 +49,16 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.GivenBy)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Staff Name is required")
                 .NotEmpty().WithMessage("Staff Name is required");
-            RuleFor(x => x.VendorId)
+            RuleFor(x => x.VendorId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Vendor is required")
                 .NotEmpty().WithMessage("Vendor is required");
-            RuleFor(x => x.ServiceId)
+            RuleFor(x => x.ServiceId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Service is required")
                 .NotEmpty().WithMessage("Service is required");
-            RuleFor(x => x.GivenDate)
+            RuleFor(x => x.GivenDate).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Date is required")
                 .NotEmpty().WithMessage("Date is required");
         }

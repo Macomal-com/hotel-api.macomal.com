@@ -17,6 +17,7 @@ using Azure;
 using System.Xml.Linq;
 using System.Diagnostics.Metrics;
 using System.Globalization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -97,12 +98,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 SetMastersDefault(cm, companyId, userId);
@@ -135,28 +135,20 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(cluster, ModelState);
-
+            if(cluster.IsActive == false)
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Cluster deleted successfully" });
+            }
             var validator = new ClusterValidator(_context);
             var result = await validator.ValidateAsync(cluster);
             if (!result.IsValid)
             {
-                var errors = result.Errors.Select(x => new
+                var firstError = result.Errors.FirstOrDefault();
+                if (firstError != null)
                 {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, Message = errors });
-            }
-
-
-            if (!ModelState.IsValid)
-            {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
+                    return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                }
             }
             cluster.UpdatedDate = DateTime.Now;
             await _context.SaveChangesAsync();
@@ -213,6 +205,10 @@ namespace hotel_api.Controllers
 
                 }
                 var patchDocument = JsonConvert.DeserializeObject<JsonPatchDocument<LandlordDetails>>(patchDoc);
+                if(patchDocument == null)
+                {
+                    return Ok(new { Code = 404, Message = "Data Not Found" });
+                }
                 var landlord = await _context.LandlordDetails.FindAsync(id);
 
                 if (landlord == null)
@@ -227,12 +223,11 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(landlord);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, message = errors });
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     landlord.UpdatedDate = DateTime.Now;
@@ -247,12 +242,11 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(landlord);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, Message = errors });
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
                     landlord.UpdatedDate = DateTime.Now;
                     if (file != null)
@@ -292,12 +286,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 if (file != null)
                 {
@@ -386,12 +379,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 SetMastersDefault(cm, companyId, userId);
@@ -426,32 +418,47 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(building, ModelState);
-                var validator = new BuildingMasterValidator(_context);
-                var result = await validator.ValidateAsync(building);
-                if (!result.IsValid)
+
+                if (building.IsActive == false)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var validator = new BuildingDeleteValidator(_context);
+
+                    var result = await validator.ValidateAsync(building);
+                    if (!result.IsValid)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
-                }
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
+                        {
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
+                    }
 
-                building.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
+                    building.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Building deleted successfully" });
+                }
+                else
                 {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
+                    var validator = new BuildingMasterValidator(_context);
+                    var result = await validator.ValidateAsync(building);
+                    if (!result.IsValid)
+                    {
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
+                        {
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
+                    }
+
+                    building.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Building updated successfully" });
                 }
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Building updated successfully" });
+                    
             }
             catch (Exception ex)
             {
@@ -545,9 +552,6 @@ namespace hotel_api.Controllers
 
             try
             {
-
-
-
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
@@ -596,33 +600,46 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(floor, ModelState);
-            var validator = new FloorValidator(_context);
-            var result = await validator.ValidateAsync(floor);
-            if (!result.IsValid)
+            if (floor.IsActive == false)
             {
-                var error = result.Errors.Select(x => new
+                var validator = new FloorDeleteValidator(_context);
+
+                var result = await validator.ValidateAsync(floor);
+                if (!result.IsValid)
                 {
-                    Error = x.ErrorMessage,
-                    PropertyName = x.PropertyName
-                }).ToList();
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
 
-                return Ok(new { Code = 400, Message = error });
+                floor.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Floor deleted successfully" });
             }
-            floor.BuildingId = floor.BuildingId == 0 ? null : floor.BuildingId;
-            floor.UpdatedDate = DateTime.Now;
-            if (!ModelState.IsValid)
+            else
             {
-                var errorMessages = ModelState
-                                    .Where(x => x.Value.Errors.Any())
-                                    .SelectMany(x => x.Value.Errors)
-                                    .Select(x => x.ErrorMessage)
-                                    .ToList();
-                return Ok(new { Code = 500, Message = errorMessages });
+                var validator = new FloorValidator(_context);
+                var result = await validator.ValidateAsync(floor);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                floor.BuildingId = floor.BuildingId == 0 ? null : floor.BuildingId;
+                floor.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Floor updated successfully" });
             }
-
-            await _context.SaveChangesAsync();
-
-            return Ok(new { Code = 200, Message = "Floor updated successfully" });
+                
         }
 
 
@@ -696,12 +713,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -743,12 +759,11 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(group);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, message = errors });
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     group.UpdatedDate = DateTime.Now;
@@ -764,12 +779,11 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(group);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, message = errors });
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     group.UpdatedDate = DateTime.Now;
@@ -851,12 +865,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 _context.BedTypeMaster.Add(cm);
                 await _context.SaveChangesAsync();
@@ -886,24 +899,47 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(bedType, ModelState);
-            var validator = new BedTypeValidator(_context);
-
-            var result = await validator.ValidateAsync(bedType);
-            if (!result.IsValid)
+            if (bedType.IsActive == false)
             {
-                var errors = result.Errors.Select(x => new
+                var validator = new BedTypeDeleteValidator(_context);
+
+                var result = await validator.ValidateAsync(bedType);
+                if (!result.IsValid)
                 {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, message = errors });
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+
+                bedType.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "BedType deleted successfully" });
             }
-            bedType.UpdatedDate = DateTime.Now;
+            else
+            {
+                var validator = new BedTypeValidator(_context);
+
+                var result = await validator.ValidateAsync(bedType);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                bedType.UpdatedDate = DateTime.Now;
 
 
-            await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
 
-            return Ok(new { Code = 200, Message = "Bed Type updated successfully" });
+                return Ok(new { Code = 200, Message = "Bed Type updated successfully" });
+            }
+                
         }
 
 
@@ -958,12 +994,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 _context.SubGroupMaster.Add(cm);
                 await _context.SaveChangesAsync();
@@ -1012,21 +1047,44 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(group, ModelState);
-            var validator = new SubGroupValidator(_context);
-            var result = await validator.ValidateAsync(group);
-            if (!result.IsValid)
+            if(group.IsActive == false)
             {
-                var errors = result.Errors.Select(x => new
-                {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, Message = errors });
-            }
-            group.UpdatedDate = DateTime.Now;
-            await _context.SaveChangesAsync();
+                var validator = new SubGroupDeleteValidator(_context);
 
-            return Ok(new { Code = 200, Message = "SubGroup updated successfully" });
+                var result = await validator.ValidateAsync(group);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+
+                group.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Sub Group deleted successfully" });
+            }
+            else
+            {
+                var validator = new SubGroupValidator(_context);
+                var result = await validator.ValidateAsync(group);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                group.UpdatedDate = DateTime.Now;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "SubGroup updated successfully" });
+            }
+                
         }
 
 
@@ -1084,12 +1142,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 _context.ServicableMaster.Add(cm);
@@ -1140,16 +1197,20 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(service, ModelState);
+            if(service.IsActive == false)
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Service deleted successfully!" });
+            }
             var validator = new ServiveValidator(_context);
             var result = await validator.ValidateAsync(service);
             if (!result.IsValid)
             {
-                var errors = result.Errors.Select(x => new
+                var firstError = result.Errors.FirstOrDefault();
+                if (firstError != null)
                 {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, Message = errors });
+                    return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                }
             }
             service.UpdatedDate = DateTime.Now;
             await _context.SaveChangesAsync();
@@ -1210,12 +1271,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 _context.VendorMaster.Add(cm);
                 await _context.SaveChangesAsync();
@@ -1264,21 +1324,44 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(vendor, ModelState);
-            var validator = new VendorValidator(_context);
-            var result = await validator.ValidateAsync(vendor);
-            if (!result.IsValid)
+            if (vendor.IsActive == false)
             {
-                var errors = result.Errors.Select(x => new
-                {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, Message = errors });
-            }
-            vendor.UpdatedDate = DateTime.Now;
-            await _context.SaveChangesAsync();
+                var validator = new VendorDeleteValidator(_context);
 
-            return Ok(new { Code = 200, Message = "Vendor updated successfully" });
+                var result = await validator.ValidateAsync(vendor);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+
+                vendor.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Vendor deleted successfully" });
+            }
+            else
+            {
+                var validator = new VendorValidator(_context);
+                var result = await validator.ValidateAsync(vendor);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                vendor.UpdatedDate = DateTime.Now;
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Vendor updated successfully" });
+            }
+            
         }
 
         //VENDOR HISTORY MASTER
@@ -1369,12 +1452,12 @@ namespace hotel_api.Controllers
 
                     if (!staffValidationResult.IsValid)
                     {
-                        var errors = staffValidationResult.Errors.Select(e => new
+                        var firstError = staffValidationResult.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Field = e.PropertyName,
-                            Error = e.ErrorMessage
-                        });
-                        return Ok(new { Code = 202, Message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     _context.StaffManagementMaster.Add(newStaff);
@@ -1390,12 +1473,12 @@ namespace hotel_api.Controllers
 
                 if (!vendorValidationResult.IsValid)
                 {
-                    var errors = vendorValidationResult.Errors.Select(e => new
+                    var firstError = vendorValidationResult.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Field = e.PropertyName,
-                        Error = e.ErrorMessage
-                    });
-                    return Ok(new { Code = 202, Message = errors });
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 _context.VendorHistoryMaster.Add(cm);
@@ -1506,13 +1589,12 @@ namespace hotel_api.Controllers
 
                     if (!staffValidationResult.IsValid)
                     {
-                        var errors = staffValidationResult.Errors.Select(e => new
+                        var firstError = staffValidationResult.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Field = e.PropertyName,
-                            Error = e.ErrorMessage
-                        });
-
-                        return Ok(new { Code = 202, message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     _context.StaffManagementMaster.Add(newStaff);
@@ -1645,12 +1727,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 _context.PaymentMode.Add(cm);
                 await _context.SaveChangesAsync();
@@ -1680,17 +1761,21 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(pm, ModelState);
+            if(pm.IsActive == false)
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Payment mode deleted successfully!" });
+            }
             var validator = new PaymentModeValidator(_context);
 
             var result = await validator.ValidateAsync(pm);
             if (!result.IsValid)
             {
-                var errors = result.Errors.Select(x => new
+                var firstError = result.Errors.FirstOrDefault();
+                if (firstError != null)
                 {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, message = errors });
+                    return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                }
             }
             pm.UpdatedDate = DateTime.Now;
 
@@ -1823,12 +1908,11 @@ namespace hotel_api.Controllers
                 if (!result.IsValid)
                 {
                     await transaction.RollbackAsync();
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 _context.StaffManagementMaster.Add(cm);
                 await _context.SaveChangesAsync();
@@ -1893,16 +1977,20 @@ namespace hotel_api.Controllers
             }
 
             patchDocument.ApplyTo(sm, ModelState);
+            if(sm.IsActive == false)
+            {
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Staff Deleted Successfully" });
+            }
             var validator = new StaffValidator(_context);
             var result = await validator.ValidateAsync(sm);
             if (!result.IsValid)
             {
-                var errors = result.Errors.Select(x => new
+                var firstError = result.Errors.FirstOrDefault();
+                if (firstError != null)
                 {
-                    Error = x.ErrorMessage,
-                    Field = x.PropertyName
-                }).ToList();
-                return Ok(new { Code = 202, Message = errors });
+                    return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                }
             }
             sm.UpdatedDate = DateTime.Now;
             await _context.SaveChangesAsync();
@@ -1946,10 +2034,11 @@ namespace hotel_api.Controllers
             {
                 var data = await _context.GstMaster
                           .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
-
+                var rangeData = await _context.GstRangeMaster
+                          .Where(x => x.GstId == id && x.IsActive && x.CompanyId == companyId).ToListAsync();
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
-                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+                    : Ok(new { Code = 200, Message = "Data fetched successfully", Data = data, Range = rangeData });
             }
             catch (Exception ex)
             {
@@ -1963,7 +2052,7 @@ namespace hotel_api.Controllers
 
             if (gm == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
-            var transaction = _context.Database.BeginTransactionAsync();
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
@@ -1976,13 +2065,12 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    await _context.Database.RollbackTransactionAsync();
-                    return Ok(new { Code = 202, message = errors });
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
 
                 }
 
@@ -2014,48 +2102,40 @@ namespace hotel_api.Controllers
             }
         }
 
-        [HttpPatch("PatchGstMaster/{id}")]
-        public async Task<IActionResult> PatchGstMaster(int id, [FromBody] JsonPatchDocument<GstMaster> patchDocument)
+        [HttpPost("PatchGstMaster/{id}")]
+        public async Task<IActionResult> PatchGstMaster(int id, [FromBody] GstMaster model)
         {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (patchDocument == null)
+                if (model == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 500, Message = "Invalid Data" });
-
                 }
 
-                var gm = await _context.GstMaster.FindAsync(id);
+                var gm = await _context.GstMaster.FindAsync(model.Id);
 
                 if (gm == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
-
-                patchDocument.ApplyTo(gm, ModelState);
 
                 var validator = new GstValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
 
                 await _context.SaveChangesAsync();
 
@@ -2132,12 +2212,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -2172,29 +2251,23 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(gm, ModelState);
-
+                if (gm.IsActive == false)
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Commission deleted successfully!" });
+                }
                 var validator = new CommissionValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
 
                 await _context.SaveChangesAsync();
 
@@ -2273,12 +2346,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 cm.DBName = dbName;
                 cm.BranchId = 0;
@@ -2318,29 +2390,23 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(gm, ModelState);
-
+                if (gm.IsActive == false)
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "User deleted successfully!" });
+                }
                 var validator = new UserValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.ModifyDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
 
                 await _context.SaveChangesAsync();
 
@@ -2419,12 +2485,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -2459,33 +2524,38 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(vs, ModelState);
-
-                var validator = new VendorServiceValidator(_context);
-                var result = await validator.ValidateAsync(vs);
-                if (!result.IsValid)
+                if (vs.IsActive == false)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var validator = new VendorServiceDeleteValidator(_context);
+
+                    var result = await validator.ValidateAsync(vs);
+                    if (!result.IsValid)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
-                }
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
+                        {
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
+                    }
 
-                vs.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
+                    vs.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Vendor Service deleted successfully" });
+                }
+                else
                 {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
+                    var validator = new VendorServiceValidator(_context);
+                    var result = await validator.ValidateAsync(vs);
+
+                    vs.UpdatedDate = DateTime.Now;                    
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Vendor Service updated successfully" });
                 }
-
-                await _context.SaveChangesAsync();
-
-                return Ok(new { Code = 200, Message = "Vendor Service updated successfully" });
+                    
             }
             catch (Exception ex)
             {
@@ -2562,12 +2632,12 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(cm);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
                     _context.CompanyDetails.Add(cm);
                     await _context.SaveChangesAsync();
@@ -2762,15 +2832,6 @@ namespace hotel_api.Controllers
                         company.PropertyLogo = fileName.ToString();
                     }
                     company.UpdatedDate = DateTime.Now;
-                    if (!ModelState.IsValid)
-                    {
-                        var errorMessages = ModelState
-                                            .Where(x => x.Value.Errors.Any())
-                                            .SelectMany(x => x.Value.Errors)
-                                            .Select(x => x.ErrorMessage)
-                                            .ToList();
-                        return Ok(new { Code = 500, Message = errorMessages });
-                    }
 
                     await _context.SaveChangesAsync();
 
@@ -2887,12 +2948,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -2927,29 +2987,23 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(gm, ModelState);
-
+                if (gm.IsActive == false)
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Hour deleted successfully!" });
+                }
                 var validator = new HourValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.UpdatedDate = DateTime.Now;
-                if (!ModelState.IsValid)
-                {
-                    var errorMessages = ModelState
-                                        .Where(x => x.Value.Errors.Any())
-                                        .SelectMany(x => x.Value.Errors)
-                                        .Select(x => x.ErrorMessage)
-                                        .ToList();
-                    return Ok(new { Code = 500, Message = errorMessages });
-                }
 
                 await _context.SaveChangesAsync();
 
@@ -3052,12 +3106,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -3092,17 +3145,20 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(gm, ModelState);
-
+                if (gm.IsActive == false)
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Extra Policy deleted successfully!" });
+                }
                 var validator = new ExtrapolicyValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.UpdatedDate = DateTime.Now;
@@ -3206,12 +3262,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 if(cm.CancellationTime == "Day")
                 {
@@ -3254,17 +3309,20 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(gm, ModelState);
-
+                if (gm.IsActive == false)
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Cancel Policy deleted successfully!" });
+                }
                 var validator = new CancelPolicyValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.UpdatedDate = DateTime.Now;
@@ -3343,12 +3401,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -3382,24 +3439,46 @@ namespace hotel_api.Controllers
                 }
 
                 patchDocument.ApplyTo(gm, ModelState);
-
-                var validator = new ReminderValidator(_context);
-                var result = await validator.ValidateAsync(gm);
-                if (!result.IsValid)
+                if (gm.IsActive == false)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var validator = new ReminderDeleteValidator(_context);
+
+                    var result = await validator.ValidateAsync(gm);
+                    if (!result.IsValid)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
+                        {
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
+                    }
+
+                    gm.UpdatedDate = DateTime.Now;
+
+                    await _context.SaveChangesAsync();
+
+                    return Ok(new { Code = 200, Message = "Reminder deleted successfully" });
                 }
+                else
+                {
+                    var validator = new ReminderValidator(_context);
+                    var result = await validator.ValidateAsync(gm);
+                    if (!result.IsValid)
+                    {
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
+                        {
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
+                    }
 
-                gm.UpdatedDate = DateTime.Now;
+                    gm.UpdatedDate = DateTime.Now;
 
-                await _context.SaveChangesAsync();
+                    await _context.SaveChangesAsync();
 
-                return Ok(new { Code = 200, Message = "Reminder updated successfully" });
+                    return Ok(new { Code = 200, Message = "Reminder updated successfully" });
+                }
+                    
             }
             catch (Exception ex)
             {
@@ -3506,13 +3585,12 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    await transaction.RollbackAsync();
-                    return Ok(new { Code = 202, message = errors });
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 await _context.ReminderHistoryMaster.AddAsync(cm);
@@ -3560,17 +3638,20 @@ namespace hotel_api.Controllers
                     gm.DocumentPath = fileName;
                 }
                 patchDocument.ApplyTo(gm, ModelState);
-
+                if (gm.IsActive == false)
+                {
+                    await _context.SaveChangesAsync();
+                    return Ok(new { Code = 200, Message = "Reminder History deleted successfully!" });
+                }
                 var validator = new ReminderHistoryValidator(_context);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 gm.UpdatedDate = DateTime.Now;

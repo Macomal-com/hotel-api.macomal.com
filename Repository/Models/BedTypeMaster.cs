@@ -65,5 +65,24 @@ namespace Repository.Models
         }
 
     }
+    public class BedTypeDeleteValidator : AbstractValidator<BedTypeMaster>
+    {
+        private readonly DbContextSql _context;
+        public BedTypeDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
+                .MustAsync(DoBedTypeExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Bed Type, Room type contains this bed type!");
+           
+        }
+        private async Task<bool> DoBedTypeExists(BedTypeMaster bedtype, CancellationToken cancellationToken)
+        {
+            return !await _context.RoomCategoryMaster.Where(x => x.IsActive == true && x.CompanyId == bedtype.CompanyId && x.BedTypeId == bedtype.BedTypeId).AnyAsync();
 
+        }
+
+    }
 }

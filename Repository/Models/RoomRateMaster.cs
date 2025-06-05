@@ -75,15 +75,18 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.RoomTypeId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Room Type is required")
                 .NotEmpty().WithMessage("Room Tyoe is required");
 
             RuleFor(x => x.RoomRate)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Room rate is required")
                 .NotEmpty().WithMessage("Room rate is required")
                 .GreaterThanOrEqualTo(0).WithMessage("Room rate should be greater than or equal to 0");
 
             RuleFor(x => x.RateType)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Rate Type is required")
                 .NotEmpty().WithMessage("Rate Type  is required");
 
@@ -94,21 +97,22 @@ namespace Repository.Models
 
 
             RuleFor(x => x.FromDate)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("From date is required")
                 .NotEmpty().WithMessage("From date is required")
                 .When(x => x.RateType == "Weekend" || x.RateType == "Custom");
 
-            RuleFor(x => x.ToDate)
+            RuleFor(x => x.ToDate).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("To date is required")
                 .NotEmpty().WithMessage("To date is required")
                 .When(x => x.RateType == "Weekend" || x.RateType == "Custom");
 
-            RuleFor(x => x.WeekendDay)
+            RuleFor(x => x.WeekendDay).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Weekend Day is required")
                 .NotEmpty().WithMessage("Weekend Day is required")
                 .When(x => x.RateType == "Weekend");
 
-            RuleFor(x => x.HourId)
+            RuleFor(x => x.HourId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Hour is required")
                 .NotEmpty().WithMessage("Hour is required")
                 .When(x => x.RateType == "Hour");

@@ -124,12 +124,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
 
@@ -216,13 +215,12 @@ namespace hotel_api.Controllers
 
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 202, message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
                     await _context.RoomCategoryMaster.AddAsync(newRoomCat);
                     await _context.SaveChangesAsync();
@@ -249,13 +247,12 @@ namespace hotel_api.Controllers
 
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 202, Message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     _context.RoomCategoryMaster.Update(roomCat);
@@ -297,12 +294,12 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(existingProduct);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
                 if (existingProduct == null)
                 {
@@ -392,12 +389,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 cm.BuildingId = cm.BuildingId == 0 ? null : cm.BuildingId;
@@ -463,13 +459,12 @@ namespace hotel_api.Controllers
 
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 202, message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
                     await _context.RoomMaster.AddAsync(newRoom);
                     await _context.SaveChangesAsync();
@@ -491,13 +486,12 @@ namespace hotel_api.Controllers
 
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 202, Message = errors });
+                            await transaction.RollbackAsync();
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
 
                     _context.RoomMaster.Update(room);
@@ -1359,12 +1353,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(documentMaster);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 await _context.DocumentMaster.AddAsync(documentMaster);
@@ -1404,12 +1397,11 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(document);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, Message = errors });
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
                 }
                 document.UpdatedDate = DateTime.Now;
@@ -1486,15 +1478,13 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(agentDetails);
                 if (!result.IsValid)
                 {
-                    var errors = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        Field = x.PropertyName
-                    }).ToList();
-                    
-                    return Ok(new { Code = 202, Message = errors });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
 
-                    
+
                 }
 
                 if (file != null)
@@ -1541,12 +1531,11 @@ namespace hotel_api.Controllers
                     var result = await validator.ValidateAsync(agent);
                     if (!result.IsValid)
                     {
-                        var errors = result.Errors.Select(x => new
+                        var firstError = result.Errors.FirstOrDefault();
+                        if (firstError != null)
                         {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        return Ok(new { Code = 202, Message = errors });
+                            return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        }
                     }
                 }
 

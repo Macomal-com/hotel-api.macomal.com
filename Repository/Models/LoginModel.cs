@@ -17,11 +17,11 @@ namespace Repository.Models
     {
         public LoginModalValidator()
         {
-            RuleFor(x => x.Username)
+            RuleFor(x => x.Username).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("User Name is required")
                 .NotEmpty().WithMessage("User Name is required");
 
-            RuleFor(x => x.Password)
+            RuleFor(x => x.Password).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Password is required")
                 .NotEmpty().WithMessage("Password  is required");
         }

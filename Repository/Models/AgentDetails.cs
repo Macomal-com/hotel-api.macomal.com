@@ -61,10 +61,11 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.AgentName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Agent Name is required")
                 .NotEmpty().WithMessage("Agent Name is required");
 
-            RuleFor(x => x.AgentType)
+            RuleFor(x => x.AgentType).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Agent Type is required")
                 .NotEmpty().WithMessage("Agent Type is required");
 
@@ -77,22 +78,25 @@ namespace Repository.Models
             //    .WithMessage("GST No length should be 15 numbers");
 
             RuleFor(x => x.Commission)
+                .Cascade(CascadeMode.Stop)
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("Commission cannot be negative");
 
             RuleFor(x => x.Tds)
+                .Cascade(CascadeMode.Stop)
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("TDS cannot be negative");
 
-            RuleFor(x => x.Tcs)
+            RuleFor(x => x.Tcs).Cascade(CascadeMode.Stop)
                 .GreaterThanOrEqualTo(0)
                 .WithMessage("TCS cannot be negative");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueNameNumber)
                 .When(x => x.AgentId == 0)
                 .WithMessage("Name or Number must be unique");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                .MustAsync(IsUniqueNameNumberUpdate)
                .When(x => x.AgentId > 0)
                .WithMessage("Name or Number must be unique");

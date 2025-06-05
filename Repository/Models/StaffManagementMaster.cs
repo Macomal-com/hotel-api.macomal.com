@@ -45,27 +45,33 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.StaffName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Staff Name is required")
                 .NotEmpty().WithMessage("Staff Name is required");
             RuleFor(x => x.PhoneNo)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Phone Number is required")
                 .NotEmpty().WithMessage("Phone Number is required")
                 .MinimumLength(10).WithMessage("Phone Number should be 10 numbers")
                 .MaximumLength(10).WithMessage("Phone Number should be 10 numbers");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsPhoneNumberExists)
                 .When(x => x.StaffId == 0 && x.VendorId != 0)
                 .WithMessage("Another Staff Member already registered with same phone number");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsPhoneNumberUpdateExists)
                 .When(x => x.StaffId > 0 && x.VendorId != 0)
                 .WithMessage("Another Staff Member already registered with same phone number");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsPhoneNumberExistsVendor)
                 .When(x => x.StaffId == 0 && x.VendorId == 0)
                 .WithMessage("Another Staff Member already registered with same phone number");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsPhoneNumberUpdateExistsVendor)
                 .When(x => x.StaffId > 0 && x.VendorId == 0)
                 .WithMessage("Another Staff Member already registered with same phone number");

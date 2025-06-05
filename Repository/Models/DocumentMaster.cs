@@ -54,23 +54,24 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.Type)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Type is required")
                 .NotEmpty().WithMessage("Type is required");
 
-            RuleFor(x => x.Prefix)
+            RuleFor(x => x.Prefix).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Prefix is required")
                 .NotEmpty().WithMessage("Prefix is required");
 
-            RuleFor(x => x.Separator)
+            RuleFor(x => x.Separator).Cascade(CascadeMode.Stop)
                .NotNull().WithMessage("Separator is required")
                .NotEmpty().WithMessage("Separator is required");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(UniquePrefix)
                 .When(x => x.DocId == 0)
                 .WithMessage("Document already defined for this type");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(UniquePrefixUpdate)
                 .When(x => x.DocId > 0)
                 .WithMessage("Document already defined for this type");

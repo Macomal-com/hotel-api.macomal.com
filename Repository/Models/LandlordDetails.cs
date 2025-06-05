@@ -52,21 +52,25 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.LandlordName)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Landlord Name is required")
                 .NotNull().WithMessage("Landlord Name is required");
 
             RuleFor(x => x.PhoneNumber)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Phone Number is required")
                 .NotEmpty().WithMessage("Phone Number is required")
                 .MinimumLength(10).WithMessage("Phone Number should be 10 numbers")
                 .MaximumLength(10).WithMessage("Phone Number should be 10 numbers");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsPhoneNumberExists)
                 .When(x => x.LandlordId == 0)
                 .WithMessage("Another Landlord already registered with same phone number");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsPhoneNumberUpdateExists)
                 .When(x => x.LandlordId > 0)
                 .WithMessage("Another Landlord already registered with same phone number");
@@ -95,6 +99,7 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(DoLandlordExists)
                 .When(x => x.IsActive == false)
                 .WithMessage("You can't delete this landlord, a property for this already exists!");

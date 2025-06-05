@@ -49,12 +49,13 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.ReminderId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Type is required")
                 .NotEmpty().WithMessage("Type is required");
-            RuleFor(x => x.DueDate)
+            RuleFor(x => x.DueDate).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Due Date is required")
                 .NotEmpty().WithMessage("Due Date is required");
-            RuleFor(x => x.DaysBefore)
+            RuleFor(x => x.DaysBefore).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Days Before is required")
                 .NotEmpty().WithMessage("Days Before is required");
 

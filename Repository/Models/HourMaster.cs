@@ -35,14 +35,17 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.Hour)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Hour is required")
                 .NotEmpty().WithMessage("Hour is required");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueHour)
                 .When(x => x.Id == 0)
                 .WithMessage("Hour already exists");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateHour)
                 .When(x => x.Id > 0)
                 .WithMessage("Hour already exists");

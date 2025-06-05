@@ -86,20 +86,22 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.ServiceName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Service Name cannot be null")
                 .NotEmpty().WithMessage("Service Name is required");
             RuleFor(x => x.GroupId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Group Id cannot be null")
                 .NotEmpty().WithMessage("Group Id Name is required");
-            RuleFor(x => x.SubGroupId)
+            RuleFor(x => x.SubGroupId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("SubGroup Id Name cannot be null")
                 .NotEmpty().WithMessage("SubGroup Id Name is required");
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueServiceName)
                 .When(x => x.ServiceId == 0)
                 .WithMessage("Service Name already exists");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateServiceName)
                 .When(x => x.ServiceId > 0)
                 .WithMessage("Service Name already exists");

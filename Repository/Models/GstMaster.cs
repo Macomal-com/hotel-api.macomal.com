@@ -66,36 +66,44 @@ namespace Repository.Models
             _context = context;
             
             RuleFor(x => x.ApplicableServices)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Applicale Services is required")
                 .NotEmpty().WithMessage("Applicale Services is required");
 
             RuleFor(x => x.GstType)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("GST Type is required")
                 .NotEmpty().WithMessage("GST Type is required");
             RuleFor(x => x.TaxPercentage)
                 .NotNull().WithMessage("Tax Percentage is required")
                 .NotEmpty().WithMessage("Tax Percentage is required")
                 .When(x => x.GstType == "Single");
-            RuleFor(x=>x.ranges)
-               .NotEmpty() // Ensure that the OrderItems collection is not empty
-               .WithMessage("Must have one range")
-               .Must(x=> !x.All(r => r.TaxPercentage == 0 && r.RangeStart == 0 && r.RangeEnd == 0))
-               .When(x => x.GstType == "Multiple");
-
-            RuleFor(o => o.ranges)   
-               .ForEach(oi => oi.SetValidator(new GstRangeValidator()))
-               .When(x=>x.GstType == "Multiple");
-
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueService)
                 .When(x => x.Id == 0)
                 .WithMessage("Service already exists");
-
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateService)
                 .When(x => x.Id > 0)
                 .WithMessage("Service already exists");
+
+            RuleFor(x => x.ranges)
+                .Cascade(CascadeMode.Stop)
+               .NotEmpty() // Ensure that the OrderItems collection is not empty
+               .WithMessage("Must have one range")
+            //   .Must(x=> !x.All(r => r.TaxPercentage == 0 && r.RangeStart == 0 && r.RangeEnd == 0))
+               .When(x => x.GstType == "Multiple");
+
+            RuleFor(o => o.ranges)
+                .Cascade(CascadeMode.Stop)
+               .ForEach(oi => oi.SetValidator(new GstRangeValidator()))
+            .When(x => x.GstType == "Multiple");
+
+
+
         }
         private async Task<bool> IsUniqueService(GstMaster gm, CancellationToken cancellationToken)
         {
@@ -115,19 +123,20 @@ namespace Repository.Models
         public GstRangeValidator()
         {
             RuleFor(x => x.TaxPercentage)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Tax Percentage is required")
                 .NotEmpty().WithMessage("Tax Percentage is required")
                 .GreaterThanOrEqualTo(0).WithMessage("Tax Percentage cannot be negative")
                 .When(x => x.RangeStart > 0 || x.RangeEnd > 0);
 
             RuleFor(x => x.RangeStart)
-                .NotNull().WithMessage("Start Range is required")
-                .NotEmpty().WithMessage("Start Range is required")
+                .Cascade(CascadeMode.Stop)
                 .GreaterThanOrEqualTo(0).WithMessage("Start Range cannot be negative")
                 .LessThan(x => x.RangeEnd).WithMessage("Start Range should be less than end range")
                 .When(x => x.TaxPercentage > 0);
 
             RuleFor(x => x.RangeEnd)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("End Range is required")
                 .NotEmpty().WithMessage("End Range is required")
                 .GreaterThanOrEqualTo(0).WithMessage("End Range cannot be negative")

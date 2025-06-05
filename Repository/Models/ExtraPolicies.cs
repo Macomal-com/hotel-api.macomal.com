@@ -46,38 +46,39 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.PolicyName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Policy Name is required")
                 .NotEmpty().WithMessage("Policy Name is required");
-            RuleFor(x => x.Status)
+            RuleFor(x => x.Status).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Status is required")
                 .NotEmpty().WithMessage("Status is required");
 
 
 
-            RuleFor(x => x.ToHour)
+            RuleFor(x => x.ToHour).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("ToHour is required")
                 .NotEmpty().WithMessage("ToHour is required")
                 .GreaterThanOrEqualTo(0).WithMessage("ToHour value is not valid")
                 .LessThanOrEqualTo(24).WithMessage("ToHour value is not valid");
 
-            RuleFor(x => x.DeductionBy)
+            RuleFor(x => x.DeductionBy).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("DeductionBy is required")
                 .NotEmpty().WithMessage("DeductionBy is required");
 
-            RuleFor(x => x.ChargesApplicableOn)
+            RuleFor(x => x.ChargesApplicableOn).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("ChargesApplicableOn is required")
                 .NotEmpty().WithMessage("ChargesApplicableOn is required")
                 .When(x=>x.DeductionBy == "Percentage");
 
-            RuleFor(x => x.Amount)
+            RuleFor(x => x.Amount).Cascade(CascadeMode.Stop)
                 
                 .GreaterThanOrEqualTo(0).WithMessage("Amount is required");
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniquePolicyName)
                 .When(x => x.PolicyId == 0)
                 .WithMessage("Policy already exists");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdatePolicyName)
                 .When(x => x.PolicyId > 0)
                 .WithMessage("Policy already exists");

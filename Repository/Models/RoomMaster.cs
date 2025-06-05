@@ -50,32 +50,33 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.RoomNo)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Room No is required")
                 .NotEmpty().WithMessage("Room No is required");
 
-            RuleFor(x => x.RoomTypeId)
+            RuleFor(x => x.RoomTypeId).Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Room Type Id is required")
                 .NotNull().WithMessage("Room Type Id is required")
                 .GreaterThan(0).WithMessage("Room Type id is required");
 
-            RuleFor(x => x.PropertyId)
+            RuleFor(x => x.PropertyId).Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Property Id is required")
                 .NotNull().WithMessage("Property Id is required")
                 .GreaterThan(0).WithMessage("Property id is required");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueRoomNo)
                 .When(x => x.RoomId == 0)
                 .WithMessage("Room No already exists");
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUpdatedUniqueRoomNo)
                 .When(x => x.RoomId > 0)
                 .WithMessage("Room No already exists");
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsRoomCategoryCountExceed)               
                 .WithMessage("You have already created total rooms in this room type.");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsFloorCountExceed)
                 .When(x=>x.FloorId > 0 )             
                 .WithMessage("You have already created total rooms in this floor.");

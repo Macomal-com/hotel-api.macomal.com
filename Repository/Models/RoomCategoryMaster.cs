@@ -57,32 +57,34 @@ namespace Repository.Models
 
 
             RuleFor(x => x.Type)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Room Type is required")
                 .NotNull().WithMessage("Room Type is required");
 
-            RuleFor(x => x.MinPax)
+            RuleFor(x => x.MinPax).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("Min Pax is required")
                .NotNull().WithMessage("Min Pax is required")
                .GreaterThan(0).WithMessage("Min Pax should be greater than 0")
                .LessThan(x=>x.MaxPax).WithMessage("Min Pax should be less than max pax");
 
-            RuleFor(x => x.MaxPax)
+            RuleFor(x => x.MaxPax).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("Max Pax is required")
                .NotNull().WithMessage("Max Pax is required")
                .GreaterThan(0).WithMessage("Max Pax should be greater than 0")
                ;
 
-            RuleFor(x => x.NoOfRooms)
+            RuleFor(x => x.NoOfRooms).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("No of Rooms is required")
                .NotNull().WithMessage("No of Rooms is required")
                .GreaterThan(0).WithMessage("No of Rooms should be greater than 0")
                ;
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(isUniqueCategory)
                 .When(x => x.Id == 0)
                 .WithMessage("Category already exists with same name");
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                .MustAsync(isUniqueUpdateCategory)
                .When(x => x.Id > 0)
                .WithMessage("Category already exists with same name");
@@ -112,7 +114,7 @@ namespace Repository.Models
         public RoomCategoryDeleteValidator(DbContextSql context)
         {
             _context = context;
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(DoRoomCategoryExists)
                 .When(x => x.IsActive == false)
                 .WithMessage("You can't delete this Category, Room already exists!");

@@ -51,10 +51,11 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.PolicyCode)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Policy Code is required")
                 .NotNull().WithMessage("Policy Code is required");
 
-            RuleFor(x => x.PolicyDescription)
+            RuleFor(x => x.PolicyDescription).Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Policy Description is required")
                 .NotNull().WithMessage("Policy Description is required");
 
@@ -73,6 +74,7 @@ namespace Repository.Models
             //    .GreaterThan(0).WithMessage("Min Room is required");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniquePolicyCode)
                 .When(x => x.Id == 0)
                 .WithMessage("Policy Code must be unique");

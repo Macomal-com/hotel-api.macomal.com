@@ -36,24 +36,27 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.ClusterName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Cluster Name is required")
                 .NotEmpty().WithMessage("Cluster Name is required");
         
 
             RuleFor(x => x.ClusterLocation)
+                .Cascade(CascadeMode.Stop)  
                 .NotNull().WithMessage("Cluster Location is required")
                 .NotEmpty().WithMessage("Cluster Location is required");
 
             RuleFor(x => x.NoOfProperties)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("No of properties is required")
                 .GreaterThan(0).WithMessage("No of properties is required");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueClusterName)
                 .When(x => x.ClusterId == 0)
                 .WithMessage("Cluster Name already exists");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateClusterName)
                 .When(x => x.ClusterId > 0)
                 .WithMessage("Cluster Name already exists");

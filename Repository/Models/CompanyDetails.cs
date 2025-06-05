@@ -185,6 +185,7 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.CompanyName)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Property Name is required")
                 .NotNull().WithMessage("Property Name is required");
 
@@ -196,22 +197,22 @@ namespace Repository.Models
             //   .NotEmpty().WithMessage("Landlord is required")
             //   .NotNull().WithMessage("Landlord is required");
 
-            RuleFor(x => x.Gstin)
+            RuleFor(x => x.Gstin).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("GSTIN is required")
                .NotNull().WithMessage("GSTIN is required")               
                .Length(15)
                .WithMessage("GST No. length should be 15 numbers")
                .When(x => x.Gstin != "");
 
-            RuleFor(x => x.State)
+            RuleFor(x => x.State).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("State is required")
                .NotNull().WithMessage("State is required");
 
-            RuleFor(x => x.City)
+            RuleFor(x => x.City).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("City is required")
                .NotNull().WithMessage("City is required");
 
-            RuleFor(x => x.ContactNo1)
+            RuleFor(x => x.ContactNo1).Cascade(CascadeMode.Stop)
                .NotEmpty().WithMessage("Contanct No is required")
                .NotNull().WithMessage("Contanct No is required")
                .Length(10)

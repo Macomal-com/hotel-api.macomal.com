@@ -62,26 +62,28 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.UserName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("User Name is required")
                 .NotEmpty().WithMessage("User Name is required");
             RuleFor(x => x.Password)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Password is required")
                 .NotEmpty().WithMessage("Password is required");
-            RuleFor(x => x.Roles)
+            RuleFor(x => x.Roles).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Role is required")
                 .NotEmpty().WithMessage("Role is required");
-            RuleFor(x => x.Name)
+            RuleFor(x => x.Name).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Name is required")
                 .NotEmpty().WithMessage("Name is required");
-            RuleFor(x => x.EmailId)
+            RuleFor(x => x.EmailId).Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("EmailId is required")
                 .NotEmpty().WithMessage("EmailId is required");
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUserName)
                 .When(x => x.UserId == 0)
                 .WithMessage("UserName already exists");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateUserName)
                 .When(x => x.UserId > 0)
                 .WithMessage("UserName already exists");

@@ -45,6 +45,7 @@ namespace Repository.Models
             _context = context;
 
             RuleFor(x => x.PaymentModeName)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Payment Mode is required")
                 .NotNull().WithMessage("Payment Mode is required");
             //RuleFor(x => x.TransactionCharges)
@@ -52,16 +53,17 @@ namespace Repository.Models
             //    .NotNull().WithMessage("Transaction Charges is required");
 
             RuleFor(x => x.TransactionType)
+                .Cascade(CascadeMode.Stop)
                 .NotEmpty().WithMessage("Transaction Type is required")
                 .When(x => x.TransactionCharges > 0)
                 .NotNull().WithMessage("Transaction Type is required")
                 .When(x=>x.TransactionCharges > 0);
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsModeExists)
                 .When(x => x.PaymentId == 0)
                 .WithMessage("Another Mode Name already registered");
 
-            RuleFor(x => x)
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsModeUpdateExists)
                 .When(x => x.PaymentId > 0)
                 .WithMessage("Another Mode Name already registered");

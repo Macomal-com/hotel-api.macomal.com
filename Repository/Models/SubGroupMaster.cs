@@ -40,17 +40,21 @@ namespace Repository.Models
         {
             _context = context;
             RuleFor(x => x.SubGroupName)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("SubGroup Name cannot be null")
                 .NotEmpty().WithMessage("SubGroup Name is required");
             RuleFor(x => x.GroupId)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Group Name cannot be null")
                 .NotEmpty().WithMessage("Group Name is required");
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueSubGroupName)
                 .When(x => x.SubGroupId == 0)
                 .WithMessage("SubGroup Name already exists");
 
             RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateSubgroupName)
                 .When(x => x.SubGroupId > 0)
                 .WithMessage("SubGroup Name already exists");
@@ -63,6 +67,25 @@ namespace Repository.Models
         private async Task<bool> IsUniqueUpdateSubgroupName(SubGroupMaster subGroupMaster, CancellationToken cancellationToken)
         {
             return !await _context.SubGroupMaster.AnyAsync(x => x.SubGroupName == subGroupMaster.SubGroupName && x.SubGroupId != subGroupMaster.SubGroupId && x.IsActive == true && x.CompanyId == subGroupMaster.CompanyId, cancellationToken);
+        }
+    }
+
+    public class SubGroupDeleteValidator : AbstractValidator<SubGroupMaster>
+    {
+        private readonly DbContextSql _context;
+        public SubGroupDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+            RuleFor(x => x)
+                .Cascade(CascadeMode.Stop)
+                .MustAsync(DoSubGroupExists)
+                .When(x => x.IsActive == false)
+                .WithMessage("You can't delete this Subgroup, service already exists!");
+        }
+        private async Task<bool> DoSubGroupExists(SubGroupMaster groupMaster, CancellationToken cancellationToken)
+        {
+            return !await _context.ServicableMaster.Where(x => x.IsActive == true && x.CompanyId == groupMaster.CompanyId && x.SubGroupId == groupMaster.SubGroupId).AnyAsync();
+
         }
     }
 }
