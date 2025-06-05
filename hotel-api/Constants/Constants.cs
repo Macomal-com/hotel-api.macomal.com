@@ -61,6 +61,11 @@ namespace hotel_api.Constants
         public static string Dirty = "Dirty";
         public static string Shift = "Shift";
         public static string Cancel = "Cancel";
+        public static string ManagementBlock = "Management Block";
+        public static string UnderRepair = "Under Repair";
+        public static string RollBack = "Roll Back";
+        public static string Dnd = "DND";
+        public static string Other = "Other";
 
         //document type
         public static string DocumentReservation = "Reservation";

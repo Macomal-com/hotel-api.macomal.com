@@ -5066,7 +5066,8 @@ namespace hotel_api.Controllers
                                                 BillTo = "",
                                                 InvoiceNo = booking.InvoiceNo,
                                                 InvoiceDate = booking.InvoiceDate,
-                                                RoomCancelHistory = _context.RoomCancelHistory.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList()
+                                                RoomCancelHistory = _context.RoomCancelHistory.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                                GuestDetails=guest
                                             }).ToListAsync();
 
                     
@@ -5080,8 +5081,8 @@ namespace hotel_api.Controllers
                 response.InvoiceDate = BookingDetails[0].InvoiceDate;
                 response.InvoiceNo = BookingDetails[0].InvoiceNo;
                 response.InvoiceName = BookingDetails[0].InvoiceName;
-
-              
+                response.CancelDate = BookingDetails[0].CancelDate;
+               
                 response.bookingDetails = BookingDetails;
                 response.ReservationDetails = reservationDetails;
                 

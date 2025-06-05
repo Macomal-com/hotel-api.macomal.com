@@ -65,22 +65,22 @@ namespace hotel_api.Controllers
 
                 response.AllServicesStatus = new List<string>
                 {
-                    "Clean",
-                    "Dirty",
-                    "Under Repair",
-                    "Management Block",
-                    "DND",
-                    "CheckIn"
+                    Constants.Constants.Clean,
+                    Constants.Constants.Dirty,
+                    Constants.Constants.UnderRepair,
+                    Constants.Constants.ManagementBlock,
+                    Constants.Constants.Dnd,
+                    Constants.Constants.CheckIn
                 };
 
                 response.ServicesStatus = new List<object>
                 {
-                    new { Status = "Clean", Colour = "#e49273" , IsEnable = true},
-                    new { Status = "Dirty", Colour = "#8C8C8C", IsEnable = true},
-                    new { Status = "Under Repair", Colour = "#FFD393", IsEnable = true},
-                    new { Status = "Management Block", Colour = "#ecd230", IsEnable = true},
-                    new { Status = "DND", Colour = "#7d2525", IsEnable = true},
-                    new { Status = "Roll Back", Colour = "#ef5454", IsEnable = false},
+                    new { Status = Constants.Constants.Clean, Colour = "#e49273" , IsEnable = true},
+                    new { Status = Constants.Constants.Dirty, Colour = "#8C8C8C", IsEnable = true},
+                    new { Status = Constants.Constants.UnderRepair, Colour = "#FFD393", IsEnable = true},
+                    new { Status = Constants.Constants.ManagementBlock, Colour = "#ecd230", IsEnable = true},
+                    new { Status = Constants.Constants.Dnd, Colour = "#7d2525", IsEnable = true},
+                    new { Status = Constants.Constants.RollBack, Colour = "#ef5454", IsEnable = false},
                 };
 
                 
@@ -157,10 +157,11 @@ namespace hotel_api.Controllers
         public async Task<IActionResult> SaveHouseKeeping([FromBody] HousekeepingRequestDTO housekeepingRequest)
         {
 
-            var CleanAllowedStatus = new List<string> { "Dirty", "Under Repair", "Management Block", "Other" };
-            var DirtyAllowedStatus = new List<string> { "Clean" };
-            var CheckInAllowedStatus = new List<string> { "DND" };
-            var AllowedStatus = new List<string> { "Roll Back" };
+            
+            var CleanAllowedStatus = new List<string> { Constants.Constants.Dirty, Constants.Constants.UnderRepair, Constants.Constants.ManagementBlock, Constants.Constants.Other };
+            var DirtyAllowedStatus = new List<string> { Constants.Constants.Clean };
+            var CheckInAllowedStatus = new List<string> { Constants.Constants.Dnd };
+            var AllowedStatus = new List<string> { Constants.Constants.RollBack };
             var currentDate = DateTime.Now;
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -170,7 +171,15 @@ namespace hotel_api.Controllers
                 {
                     HouseKeeping houseKeeping = new HouseKeeping();
                     Constants.Constants.SetMastersDefault(houseKeeping, companyId, userId, currentDate);
-                    if (item.RoomStatus == "Clean")
+                    houseKeeping.RoomTypeId = item.RoomTypeId;
+                    houseKeeping.RoomId = item.RoomId;
+                    houseKeeping.RoomStatus = item.RoomStatus;
+                    houseKeeping.ServiceStatus = housekeepingRequest.ServiceStatus;
+                    (houseKeeping.ServiceDate, houseKeeping.ServiceTime) = DateTimeMethod.GetDateOnlyAndTime(currentDate);
+                    houseKeeping.ServiceDateTime = currentDate;
+                    houseKeeping.ServiceBy = housekeepingRequest.ServiceBy;
+                    houseKeeping.Remarks = housekeepingRequest.Remarks;
+                    if (item.RoomStatus == Constants.Constants.Clean)
                     {
                         if (!CleanAllowedStatus.Contains(housekeepingRequest.ServiceStatus))
                         {
@@ -178,7 +187,7 @@ namespace hotel_api.Controllers
                             return Ok(new { Code = 400, Message = $"No service should be performed for status {housekeepingRequest.ServiceStatus} and room no {item.RoomNo}." });
                         }
                     }
-                    else if(item.RoomStatus == "Dirty")
+                    else if(item.RoomStatus == Constants.Constants.Dirty)
                     {
                         if (!DirtyAllowedStatus.Contains(housekeepingRequest.ServiceStatus))
                         {
@@ -186,7 +195,7 @@ namespace hotel_api.Controllers
                             return Ok(new { Code = 400, Message = $"No service should be performed for status {housekeepingRequest.ServiceStatus} and room no {item.RoomNo}." });
                         }
                     }
-                    else if (item.RoomStatus == "CheckIn")
+                    else if (item.RoomStatus == Constants.Constants.CheckIn)
                     {
                         if (!CheckInAllowedStatus.Contains(housekeepingRequest.ServiceStatus))
                         {
@@ -218,23 +227,41 @@ namespace hotel_api.Controllers
                                 //room status = dirty, under repair, management block
                                 _context.RoomAvailability.Remove(roomAvailability);
                             }
-                            else if(housekeepingRequest.ServiceStatus == "Dirty")
+                            else if(housekeepingRequest.ServiceStatus == Constants.Constants.Dirty)
                             {
                                 //roomstatus = clean
-                                roomAvailability.RoomStatus = "Dirty";
+                                roomAvailability.RoomStatus = Constants.Constants.Dirty;
+                                _context.RoomAvailability.Update(roomAvailability);
                             }
-                            else if(houseKeeping.ServiceStatus == "Roll Back")
+                            else if(houseKeeping.ServiceStatus == Constants.Constants.RollBack)
                             {
-                                roomAvailability.ServiceStatus = "";                                
+                                if(houseKeeping.RoomStatus == Constants.Constants.ManagementBlock)
+                                {
+                                    _context.RoomAvailability.Remove(roomAvailability);
+                                }
+                                else if(houseKeeping.RoomStatus == Constants.Constants.UnderRepair)
+                                {
+                                    _context.RoomAvailability.Remove(roomAvailability);
+                                }
+                                else
+                                {
+                                    roomAvailability.ServiceStatus = "";
+                                    _context.RoomAvailability.Update(roomAvailability);
+                                }
+                                                              
                             }
-                            else if(houseKeeping.ServiceStatus == "DND")
+                            else if(houseKeeping.ServiceStatus == Constants.Constants.Dnd)
                             {
                                 roomAvailability.ServiceStatus = houseKeeping.ServiceStatus;
+                                _context.RoomAvailability.Update(roomAvailability);
                             }
                             else
                             {
                                 roomAvailability.ServiceStatus = houseKeeping.ServiceStatus;
+                                _context.RoomAvailability.Update(roomAvailability);
                             }
+
+                            
                             
                         }
 
@@ -257,14 +284,7 @@ namespace hotel_api.Controllers
                         await _context.RoomAvailability.AddAsync(room);
                     }
 
-                    houseKeeping.RoomTypeId = item.RoomTypeId;
-                    houseKeeping.RoomId = item.RoomId;
-                    houseKeeping.RoomStatus = item.RoomStatus;
-                    houseKeeping.ServiceStatus = housekeepingRequest.ServiceStatus;
-                    (houseKeeping.ServiceDate, houseKeeping.ServiceTime) = DateTimeMethod.GetDateOnlyAndTime(currentDate);
-                    houseKeeping.ServiceDateTime = currentDate;
-                    houseKeeping.ServiceBy = housekeepingRequest.ServiceBy;
-                    houseKeeping.Remarks = housekeepingRequest.Remarks;
+                   
 
                     await _context.HouseKeeping.AddAsync(houseKeeping);
                 }
