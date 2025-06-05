@@ -3470,8 +3470,12 @@ namespace hotel_api.Controllers
 
                         foreach (var rate in roomRates)
                         {
+                            if(noOfnights == 1)
+                            {
+                                
+                            }
 
-                            if (noOfnights == 1 ? rate.BookingDate <= item.CheckOutDate : rate.BookingDate < item.CheckOutDate)
+                            if (noOfnights == 1 ? rate.BookingDate == item.CheckInDate : rate.BookingDate < item.CheckOutDate)
                             {
                             }
                             else
@@ -4761,7 +4765,7 @@ namespace hotel_api.Controllers
                                             join roomType in _context.RoomCategoryMaster on booking.RoomTypeId equals roomType.Id
                                             join guest in _context.GuestDetails
                                             on booking.GuestId equals guest.GuestId
-                                            where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == booking.ReservationNo && booking.Status == Constants.Constants.CheckOut && booking.InvoiceNo == booking.InvoiceNo
+                                            where booking.IsActive == true && booking.CompanyId == companyId && booking.ReservationNo == bookingdetail.ReservationNo && booking.Status == Constants.Constants.CheckOut && booking.InvoiceNo == bookingdetail.InvoiceNo
                                             select new BookingDetail
                                             {
                                                 BookingId = booking.BookingId,
@@ -4822,6 +4826,27 @@ namespace hotel_api.Controllers
                                                 GuestDetails = guest,
                                                 AdvanceServices = _context.AdvanceServices.Where(x => x.IsActive == true && x.BookingId == booking.BookingId).ToList()
                                             }).ToListAsync();
+
+
+                    PaymentCheckOutSummary paymentSummary = new PaymentCheckOutSummary();
+                    foreach(var item in BookingDetails)
+                    {
+                        paymentSummary.TotalBookingAmount += item.TotalBookingAmount;
+                        paymentSummary.EarlyCheckIn += item.EarlyCheckInCharges;
+                        paymentSummary.LateCheckOut += item.LateCheckOutCharges;
+                        paymentSummary.TotalServiceAmount += item.TotalServicesAmount;
+                        paymentSummary.TotalAmount += item.TotalAmountWithOutDiscount;
+                        paymentSummary.CheckOutDiscoutAmount += item.CheckOutDiscoutAmount;
+                        paymentSummary.TotalBill += item.TotalAmount;
+                        paymentSummary.TotalAmountPaid += item.AdvanceAmount + item.ReceivedAmount + item.RefundAmount + item.ResidualAmount;
+                        paymentSummary.AdvanceAmount += item.AdvanceAmount;
+                        paymentSummary.ReceivedAmount += item.ReceivedAmount;
+                        item.BalanceAmount += item.BalanceAmount;
+                        paymentSummary.RefundAmount += item.RefundAmount;
+                        paymentSummary.ResidualAmount += item.ResidualAmount;
+
+                    }
+                    response.PaymentSummary = paymentSummary;
 
                 }
                 else
