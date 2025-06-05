@@ -75,6 +75,7 @@ namespace Repository.Models
                 .NotNull().WithMessage("GST Type is required")
                 .NotEmpty().WithMessage("GST Type is required");
             RuleFor(x => x.TaxPercentage)
+                .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Tax Percentage is required")
                 .NotEmpty().WithMessage("Tax Percentage is required")
                 .When(x => x.GstType == "Single");
@@ -93,15 +94,19 @@ namespace Repository.Models
             RuleFor(x => x.ranges)
                 .Cascade(CascadeMode.Stop)
                .NotEmpty() // Ensure that the OrderItems collection is not empty
+               .Must(x => !x.All(r => r.TaxPercentage == 0 && r.RangeStart == 0 && r.RangeEnd == 0))
                .WithMessage("Must have one range")
-            //   .Must(x=> !x.All(r => r.TaxPercentage == 0 && r.RangeStart == 0 && r.RangeEnd == 0))
                .When(x => x.GstType == "Multiple");
 
             RuleFor(o => o.ranges)
                 .Cascade(CascadeMode.Stop)
                .ForEach(oi => oi.SetValidator(new GstRangeValidator()))
             .When(x => x.GstType == "Multiple");
-
+            RuleFor(x => x.ranges)
+                .Cascade(CascadeMode.Stop)
+                .Must(ranges => !HasOverlappingRanges(ranges))
+                .WithMessage("Ranges must not overlap")
+                .When(x => x.GstType == "Multiple");
 
 
         }
@@ -116,6 +121,26 @@ namespace Repository.Models
         {
             return !await _context.GstMaster.AnyAsync(x => x.ApplicableServices == gm.ApplicableServices && x.Id != gm.Id && x.IsActive == true && x.CompanyId == gm.CompanyId, cancellationToken);
         }
+        private bool HasOverlappingRanges(List<GstRangeMaster> ranges)
+        {
+            var sortedRanges = ranges
+                .Where(r => r.TaxPercentage > 0 && r.RangeStart < r.RangeEnd) // Only valid ranges
+                .OrderBy(r => r.RangeStart)
+                .ToList();
+
+            for (int i = 1; i < sortedRanges.Count; i++)
+            {
+                if (sortedRanges[i].RangeStart < sortedRanges[i - 1].RangeEnd)
+                {
+                    // Overlap exists
+                    return true;
+                }
+            }
+
+            return false; // No overlaps
+        }
+
+
     }
 
     public class GstRangeValidator : AbstractValidator<GstRangeMaster>

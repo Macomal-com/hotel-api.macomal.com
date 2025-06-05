@@ -288,6 +288,7 @@ namespace hotel_api.Controllers
 
                 if (existingProduct == null)
                 {
+                    await transaction.RollbackAsync();
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
                 var validator = new RoomCategoryDeleteValidator(_context);
@@ -300,11 +301,6 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 202, message = firstError.ErrorMessage });
                     }
-                }
-                if (existingProduct == null)
-                {
-                    await transaction.RollbackAsync();
-                    return Ok(new { Code = 404, message = "Category does not exist.", data = new object() });
                 }
 
                 // Update existing fields

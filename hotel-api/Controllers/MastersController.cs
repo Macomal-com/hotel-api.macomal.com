@@ -2010,6 +2010,30 @@ namespace hotel_api.Controllers
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
                 var data = await _context.GstMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Data = data });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetGstRangeMaster/{id}")]
+        public async Task<IActionResult> GetGstRangeMaster(int id)
+        {
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var data = await _context.GstRangeMaster.Where(bm => bm.GstId == id && bm.IsActive && bm.CompanyId == companyId).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -2107,6 +2131,7 @@ namespace hotel_api.Controllers
         {
             int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
             int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -2116,39 +2141,113 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 500, Message = "Invalid Data" });
                 }
 
-                var gm = await _context.GstMaster.FindAsync(model.Id);
-
-                if (gm == null)
+                var existingGst = await _context.GstMaster.FindAsync(model.Id);
+                if (existingGst == null)
                 {
                     await transaction.RollbackAsync();
                     return Ok(new { Code = 404, Message = "Data Not Found" });
                 }
 
+                // Validate incoming model (not the DB entity)
                 var validator = new GstValidator(_context);
-                var result = await validator.ValidateAsync(gm);
+                var result = await validator.ValidateAsync(model);
                 if (!result.IsValid)
                 {
                     var firstError = result.Errors.FirstOrDefault();
-                    if (firstError != null)
+                    return Ok(new { Code = 202, message = firstError?.ErrorMessage });
+                }
+
+                // Update main GST master
+                existingGst.TaxPercentage = model.TaxPercentage;
+                existingGst.ApplicableServices = model.ApplicableServices;
+                existingGst.GstType = model.GstType;
+                existingGst.UpdatedDate = DateTime.Now;
+                _context.GstMaster.Update(existingGst);
+
+                // Deactivate old ranges
+                var oldRanges = await _context.GstRangeMaster
+                    .Where(x => x.GstId == model.Id && x.CompanyId == companyId && x.IsActive)
+                    .ToListAsync();
+                foreach (var range in oldRanges)
+                {
+                    range.IsActive = false;
+                }
+
+                // Add new ranges
+                foreach (var item in model.ranges)
+                {
+                    if (item.TaxPercentage != 0)
                     {
-                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                        SetMastersDefault(item, companyId, userId);
+                        item.RangeId = 0;
+                        item.GstId = model.Id;
+                        await _context.GstRangeMaster.AddAsync(item);
                     }
                 }
 
-                gm.UpdatedDate = DateTime.Now;
-
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
                 return Ok(new { Code = 200, Message = "Gst updated successfully" });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
-
         }
 
 
+        [HttpPost("DeleteGstMaster/{id}")]
+        public async Task<IActionResult> DeleteGstMaster(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            if (id == 0)
+            {
+                return Ok(new { Code = 400, message = "Invalid Id.", data = new object() });
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var existingProduct = await _context.GstMaster
+                    .FirstOrDefaultAsync(u => u.Id == id && u.IsActive == true);
+
+                if (existingProduct == null)
+                {
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 404, message = "Gst does not exist.", data = new object() });
+                }
+
+                // Update existing fields
+                existingProduct.IsActive = false;
+                var ranges = await _context.GstRangeMaster
+                    .Where(x => x.GstId == id && x.CompanyId == companyId && x.IsActive)
+                    .ToListAsync();
+                if(ranges != null)
+                {
+                    foreach (var range in ranges)
+                    {
+                        range.IsActive = false;
+                    }
+                }
+                
+                _context.GstMaster.Update(existingProduct);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, message = "Gst deleted successfully", data = new object() });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                // Optional: log the exception
+                return StatusCode(500, new { Code = 500, message = "An error occurred", data = new object() });
+            }
+        }
         //COMMISSION MASTER 
         [HttpGet("GetCommissionMaster")]
         public async Task<IActionResult> GetCommissionMaster()
