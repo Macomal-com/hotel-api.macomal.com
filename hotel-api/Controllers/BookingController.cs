@@ -7098,32 +7098,45 @@ namespace hotel_api.Controllers
                         {
                             document.Add(new Paragraph("Room Charges (Date-wise)").SetFont(font).SetFontSize(12));
 
-                            var chargesTable = new iText.Layout.Element.Table(room.DiscountType == "PERCENTAGE" ? 11 : 10)
+                            var chargesTable = new iText.Layout.Element.Table(room.DiscountType == "Percentage" ? 11 : 10)
                          .SetWidth(UnitValue.CreatePercentValue(100));
 
 
 
                             // Header
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("Date").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("Category").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("Actual Rate").SetFont(font).SetFontSize(10)));
+                            // Header Row 1
+                            // Main headers
+                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Date").SetFont(font).SetFontSize(10)));
+                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Category").SetFont(font).SetFontSize(10)));
+                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Actual Rate").SetFont(font).SetFontSize(10)));
 
-                            if (room.DiscountType == "PERCENTAGE")
+                            if (room.DiscountType == "Percentage")
                             {
-                                chargesTable.AddCell(new Cell().Add(new Paragraph("Discount %").SetFont(font).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph("Discount Amount").SetFont(font).SetFontSize(10)));
+                                chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("Discount").SetFont(font).SetFontSize(10)));
                             }
                             else
                             {
-                                chargesTable.AddCell(new Cell().Add(new Paragraph("Discount Amount").SetFont(font).SetFontSize(10)));
+                                chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Discount").SetFont(font).SetFontSize(10)));
                             }
 
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("Room Rate").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("CGST %").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("CGST Amt").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("SGST %").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("SGST Amt").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddCell(new Cell().Add(new Paragraph("Total").SetFont(font).SetFontSize(10)));
+                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Room Rate").SetFont(font).SetFontSize(10)));
+                            chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("CGST").SetFont(font).SetFontSize(10)));
+                            chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("SGST").SetFont(font).SetFontSize(10)));
+                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Total").SetFont(font).SetFontSize(10)));
+
+                            // Header Row 2 (Only when DiscountType is Percentage)
+                            if (room.DiscountType == "Percentage")
+                            {
+                                chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
+                                chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
+                            }
+
+                            // GST breakdown cells (always added)
+                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10))); // CGST %
+                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10))); // CGST Amt
+                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10))); // SGST %
+                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10))); // SGST Amt
+
 
                             foreach (var rate in room.BookedRoomRates)
                             {
@@ -7133,14 +7146,14 @@ namespace hotel_api.Controllers
                                 chargesTable.AddCell(new Cell().Add(new Paragraph(room.RoomTypeName).SetFontSize(10)));
                                 chargesTable.AddCell(new Cell().Add(new Paragraph(rate.RoomRateWithoutDiscount.ToString("F2")).SetFontSize(10)));
 
-                                if (room.DiscountType == "PERCENTAGE")
+                                if (room.DiscountType == "Percentage")
                                 {
                                     chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountPercentage.ToString("F2")).SetFontSize(10)));
                                     chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
                                 }
                                 else
                                 {
-                                    chargesTable.AddCell(new Cell(1, 2).Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
+                                    chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
                                 }
 
                                 chargesTable.AddCell(new Cell().Add(new Paragraph(rate.RoomRate.ToString("F2")).SetFontSize(10)));
@@ -7156,9 +7169,9 @@ namespace hotel_api.Controllers
                         }
 
                         // SERVICES TABLE
-                        if (invoiceData.PageName == "CHECKOUTPAGE" && room.AdvanceServices.Any())
+                        if (invoiceData.PageName == "CheckOutPage" && room.AdvanceServices.Any())
                         {
-                            document.Add(new Paragraph("Room Services").SetFont(font).SetFontSize(12).SimulateBold());
+                            document.Add(new Paragraph("Room Services").SetFont(font).SetFontSize(12));
 
                             var serviceTable = new iText.Layout.Element.Table(9)
                         .SetWidth(UnitValue.CreatePercentValue(100));
@@ -7166,10 +7179,28 @@ namespace hotel_api.Controllers
 
 
 
-                            string[] serviceHeaders = { "Date", "Service Name", "Price", "CGST %", "CGST Amt", "SGST %", "SGST Amt", "Qty", "Total" };
-                            foreach (var header in serviceHeaders)
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
+                            string[] serviceHeaders = { "Date", "Service Name", "Price", "CGST", "SGST", "Qty", "Total" };
 
+                            foreach (var header in serviceHeaders)
+                            {
+                                if (header == "CGST" || header == "SGST")
+                                {
+                                    // These headers span 2 columns in 1 row
+                                    serviceTable.AddHeaderCell(new Cell(1, 2)
+                                        .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
+                                }
+                                else
+                                {
+                                    // All other headers span 2 rows
+                                    serviceTable.AddHeaderCell(new Cell(2, 1)
+                                        .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
+                                }
+                            }
+
+                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
+                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
+                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
+                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
                             foreach (var service in room.AdvanceServices)
                             {
                                 serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
