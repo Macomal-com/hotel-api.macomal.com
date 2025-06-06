@@ -1820,20 +1820,27 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    var staffData = await (from bm in _context.StaffManagementMaster
-                                           join department in _context.DepartmentMaster on bm.DepartmentId equals department.Id
-                                           join designation in _context.StaffDesignationMaster on bm.DesignationId equals designation.Id
-                                           where bm.IsActive && bm.CompanyId == companyId && bm.VendorId == 0
-                                           select new
-                                           {
-                                               bm.StaffId,
-                                               bm.StaffName,
-                                               Department = department.Name,
-                                               Designation = designation.Name,
-                                               bm.PhoneNo,
-                                               bm.Salary
-                                           }).ToListAsync();
+                    var staffData = await (
+                        from bm in _context.StaffManagementMaster
+                        join department in _context.DepartmentMaster
+                            on bm.DepartmentId equals department.Id
+                        join designation in _context.StaffDesignationMaster
+                            on bm.DesignationId equals designation.Id into designationGroup
+                        from designation in designationGroup.DefaultIfEmpty() // LEFT JOIN here
+                        where bm.IsActive && bm.CompanyId == companyId && bm.VendorId == 0
+                        select new
+                        {
+                            bm.StaffId,
+                            bm.StaffName,
+                            Department = department.Name,
+                            Designation = designation != null ? designation.Name : "", // handle null
+                            bm.PhoneNo,
+                            bm.Salary
+                        }
+                   ).ToListAsync();
+
                     return Ok(new { Code = 200, Message = "Staff fetched successfully", Data = staffData });
+
 
                 }
                 if (data.Count == 0)
@@ -1885,7 +1892,7 @@ namespace hotel_api.Controllers
                 {
                     departmentId = cm.DepartmentId;
                 }
-                if (cm.DesignationId == 0)
+                if (cm.DesignationId == 0 && sm.StaffDesignation != "")
                 {
                     var designation = new StaffDesignationMaster
                     {
@@ -2970,7 +2977,7 @@ namespace hotel_api.Controllers
 
                     await transaction.CommitAsync();
 
-                    return Ok(new { Code = 200, Message = "Company created successfully" });
+                    return Ok(new { Code = 200, Message = "Company updated successfully" });
                 }
                 catch (Exception ex)
                 {

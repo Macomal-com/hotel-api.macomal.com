@@ -61,12 +61,12 @@ namespace Repository.Models
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsModeExists)
                 .When(x => x.PaymentId == 0)
-                .WithMessage("Another Mode Name already registered");
+                .WithMessage("Mode Name already registered");
 
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsModeUpdateExists)
                 .When(x => x.PaymentId > 0)
-                .WithMessage("Another Mode Name already registered");
+                .WithMessage("Mode Name already registered");
         }
         private async Task<bool> IsModeExists(PaymentMode master, CancellationToken cancellationToken)
         {
