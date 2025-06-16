@@ -2955,14 +2955,46 @@ namespace hotel_api.Controllers
                     {
                         item.NoOfHours = Constants.Calculation.CalculateHour(item.ReservationDate, item.ReservationTime, item.CheckOutDate, item.CheckOutTime);
 
+                        
                         //find rates for same day
-                        var (code, message, ratesResponse) = await CalculateRoomRateAsync(companyId, item.RoomTypeId, item.ReservationDate, item.CheckOutDate, 1, item.NoOfNights, item.GstType, item.NoOfHours, item.ReservationTime, item.CheckOutTime, item.DiscountType, item.DiscountType == Constants.Constants.DeductionByPercentage ? item.DiscountPercentage : equallyDivide[index], item.CheckoutFormat, item.CalculateRoomRates, property);
+                        var (code, message, ratesResponse) = await CalculateRoomRateAsync(companyId, item.RoomTypeId, item.ReservationDate, item.CheckOutDate, 1, item.NoOfNights, item.GstType, item.NoOfHours, item.ReservationTime, item.CheckOutTime, item.DiscountType, item.DiscountType == Constants.Constants.DeductionByPercentage ? item.DiscountPercentage : (index >= 0 && index < equallyDivide.Count ? equallyDivide[index] : 0), item.CheckoutFormat, item.CalculateRoomRates, property);
                         if(code == 200)
                         {
                             item.BookingAmount = ratesResponse.BookingAmount;
                             item.GstAmount = ratesResponse.GstAmount;
                             item.TotalBookingAmount = ratesResponse.TotalBookingAmount;
-                            item.BookedRoomRates = ratesResponse.BookedRoomRates;
+                            var bookedRoomRates = (from rates in ratesResponse.BookedRoomRates
+                                                   join type in _context.RoomCategoryMaster on rates.RoomTypeId equals type.Id
+                                                   
+                                                   select new BookedRoomRate
+                                                   {
+                                                       Id = rates.Id,
+                                                       BookingId = rates.BookingId,
+                                                       RoomId = rates.RoomId,
+                                                       ReservationNo = rates.ReservationNo,
+                                                       RoomRate = rates.RoomRate,
+                                                       GstPercentage = rates.GstPercentage,
+                                                       GstAmount = rates.GstAmount,
+                                                       TotalRoomRate = rates.TotalRoomRate,
+                                                       GstType = rates.GstType,
+                                                       BookingDate = rates.BookingDate,
+                                                       CreatedDate = rates.CreatedDate,
+                                                       UpdatedDate = rates.UpdatedDate,
+                                                       UserId = rates.UserId,
+                                                       CompanyId = rates.CompanyId,
+                                                       IsActive = rates.IsActive,
+                                                       CGST = rates.CGST,
+                                                       CGSTAmount = rates.CGSTAmount,
+                                                       SGST = rates.SGST,
+                                                       SGSTAmount = rates.SGSTAmount,
+                                                       DiscountType = rates.DiscountType,
+                                                       DiscountPercentage = rates.DiscountPercentage,
+                                                       DiscountAmount = rates.DiscountAmount,
+                                                       RoomRateWithoutDiscount = rates.RoomRateWithoutDiscount,
+                                                       RoomTypeId = rates.RoomTypeId,
+                                                       RoomTypeName = type.Type
+                                                   }).ToList();
+                            item.BookedRoomRates = bookedRoomRates;
                         }
                         else
                         {
