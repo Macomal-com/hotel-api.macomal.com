@@ -2697,12 +2697,12 @@ namespace hotel_api.Controllers
                 }
 
 
-                var pdfBytes = GenerateInvoicePdf(response, "").ToArray();
-                return File(pdfBytes, "application/pdf", "invoice.pdf");
+                //var pdfBytes = GenerateInvoicePdf(response, "").ToArray();
+                //return File(pdfBytes, "application/pdf", "invoice.pdf");
 
                 
 
-                //return Ok(new { Code = 200, Message = "Data fetch successfully", data = response });
+                return Ok(new { Code = 200, Message = "Data fetch successfully", data = response });
             }
             catch (Exception ex)
             {
@@ -4859,7 +4859,37 @@ namespace hotel_api.Controllers
                                                 ServicesAmount = booking.ServicesAmount,
                                                 ServicesTaxAmount = booking.ServicesTaxAmount,
                                                 TotalServicesAmount = booking.TotalServicesAmount,
-                                                BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                                BookedRoomRates = (from rates in _context.BookedRoomRates
+                                                                   join type in _context.RoomCategoryMaster on rates.RoomTypeId equals type.Id
+                                                                   where rates.IsActive == true && rates.CompanyId == companyId && rates.BookingId == booking.BookingId
+                                                                   select new BookedRoomRate
+                                                                   {
+                                                                       Id = rates.Id,
+                                                                       BookingId = rates.BookingId,
+                                                                       RoomId = rates.RoomId,
+                                                                       ReservationNo = rates.ReservationNo,
+                                                                       RoomRate = rates.RoomRate,
+                                                                       GstPercentage = rates.GstPercentage,
+                                                                       GstAmount = rates.GstAmount,
+                                                                       TotalRoomRate = rates.TotalRoomRate,
+                                                                       GstType = rates.GstType,
+                                                                       BookingDate = rates.BookingDate,
+                                                                       CreatedDate = rates.CreatedDate,
+                                                                       UpdatedDate = rates.UpdatedDate,
+                                                                       UserId = rates.UserId,
+                                                                       CompanyId = rates.CompanyId,
+                                                                       IsActive = rates.IsActive,
+                                                                       CGST = rates.CGST,
+                                                                       CGSTAmount = rates.CGSTAmount,
+                                                                       SGST = rates.SGST,
+                                                                       SGSTAmount = rates.SGSTAmount,
+                                                                       DiscountType = rates.DiscountType,
+                                                                       DiscountPercentage = rates.DiscountPercentage,
+                                                                       DiscountAmount = rates.DiscountAmount,
+                                                                       RoomRateWithoutDiscount = rates.RoomRateWithoutDiscount,
+                                                                       RoomTypeId = rates.RoomTypeId,
+                                                                       RoomTypeName = type.Type
+                                                                   }).ToList(),
                                                 GuestDetails = guest,
                                                 AdvanceServices = _context.AdvanceServices.Where(x => x.IsActive == true && x.BookingId == booking.BookingId).ToList()
                                             }).ToListAsync();
@@ -4984,7 +5014,37 @@ namespace hotel_api.Controllers
                                                 // NotMapped fields
                                                 RoomTypeName = roomType.Type,
                                                 RoomNo = rooms.RoomNo,
-                                                BookedRoomRates = _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
+                                                BookedRoomRates = (from rates in _context.BookedRoomRates
+                                                                   join type in _context.RoomCategoryMaster on rates.RoomTypeId equals type.Id
+                                                                   where rates.IsActive == true && rates.CompanyId == companyId && rates.BookingId == booking.BookingId
+                                                                   select new BookedRoomRate
+                                                                   {
+                                                                       Id = rates.Id,
+                                                                       BookingId = rates.BookingId,
+                                                                       RoomId = rates.RoomId,
+                                                                       ReservationNo = rates.ReservationNo,
+                                                                       RoomRate = rates.RoomRate,
+                                                                       GstPercentage = rates.GstPercentage,
+                                                                       GstAmount = rates.GstAmount,
+                                                                       TotalRoomRate = rates.TotalRoomRate,
+                                                                       GstType = rates.GstType,
+                                                                       BookingDate = rates.BookingDate,
+                                                                       CreatedDate = rates.CreatedDate,
+                                                                       UpdatedDate = rates.UpdatedDate,
+                                                                       UserId = rates.UserId,
+                                                                       CompanyId = rates.CompanyId,
+                                                                       IsActive = rates.IsActive,
+                                                                       CGST = rates.CGST,
+                                                                       CGSTAmount = rates.CGSTAmount,
+                                                                       SGST = rates.SGST,
+                                                                       SGSTAmount = rates.SGSTAmount,
+                                                                       DiscountType = rates.DiscountType,
+                                                                       DiscountPercentage = rates.DiscountPercentage,
+                                                                       DiscountAmount = rates.DiscountAmount,
+                                                                       RoomRateWithoutDiscount = rates.RoomRateWithoutDiscount,
+                                                                       RoomTypeId = rates.RoomTypeId,
+                                                                       RoomTypeName = type.Type
+                                                                   }).ToList(),
                                                 GuestDetails = guest,
                                                 AdvanceServices = _context.AdvanceServices.Where(x => x.IsActive == true && x.BookingId == booking.BookingId).ToList(),
                                             }).ToListAsync();
