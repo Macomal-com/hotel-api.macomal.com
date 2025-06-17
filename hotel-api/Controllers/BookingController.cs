@@ -28,15 +28,8 @@ using System.Runtime.InteropServices.JavaScript;
 using System.Text.Json;
 using System.Threading.Tasks;
 using static System.Runtime.InteropServices.JavaScript.JSType;
-using iText.Kernel.Pdf;
-using iText.Layout;
-using iText.Layout.Element;
-using iText.IO.Font;
-using iText.Kernel.Font;
-using iText.Layout.Properties;
-using iText.Kernel.Colors;
-using iText.IO.Font.Constants;
-using iText.Layout.Borders;
+
+
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -2711,27 +2704,27 @@ namespace hotel_api.Controllers
         }
 
 
-        [HttpGet("generate")]
-        public IActionResult GeneratePdf()
-        {
-            // Create a memory stream to store the PDF
-            using var ms = new MemoryStream();
+        //[HttpGet("generate")]
+        //public IActionResult GeneratePdf()
+        //{
+        //    // Create a memory stream to store the PDF
+        //    using var ms = new MemoryStream();
 
-            // Initialize PDF writer and document
-            using var writer = new PdfWriter(ms);
-            using var pdf = new PdfDocument(writer);
-            using var document = new Document(pdf);
+        //    // Initialize PDF writer and document
+        //    using var writer = new PdfWriter(ms);
+        //    using var pdf = new PdfDocument(writer);
+        //    using var document = new Document(pdf);
 
-            // Add content to the document
-            document.Add(new Paragraph("Hello from iText 7 in .NET Core Web API!"));
+        //    // Add content to the document
+        //    document.Add(new Paragraph("Hello from iText 7 in .NET Core Web API!"));
 
-            // Close the document
-            document.Close();
+        //    // Close the document
+        //    document.Close();
 
-            // Return the PDF as a FileStreamResult
-            var pdfBytes = ms.ToArray();
-            return File(pdfBytes, "application/pdf", "example.pdf");
-        }
+        //    // Return the PDF as a FileStreamResult
+        //    var pdfBytes = ms.ToArray();
+        //    return File(pdfBytes, "application/pdf", "example.pdf");
+        //}
 
 
         [HttpPost("CalculateRoomRateOnCheckOut")]
@@ -7092,293 +7085,293 @@ namespace hotel_api.Controllers
       
 
 
-        private MemoryStream GenerateInvoicePdf(CheckOutResponse invoiceData, string outputPath)
-        {
+        //private MemoryStream GenerateInvoicePdf(CheckOutResponse invoiceData, string outputPath)
+        //{
            
-            using(var ms = new MemoryStream())
-            {
-                var writer = new iText.Kernel.Pdf.PdfWriter(ms);
-                var pdf = new PdfDocument(writer);
-                using (var document = new Document(pdf))
-                {
+        //    using(var ms = new MemoryStream())
+        //    {
+        //        var writer = new iText.Kernel.Pdf.PdfWriter(ms);
+        //        var pdf = new PdfDocument(writer);
+        //        using (var document = new Document(pdf))
+        //        {
                     
-                    // Load font
-                    PdfFont font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
+        //            // Load font
+        //            PdfFont font = PdfFontFactory.CreateFont(StandardFonts.HELVETICA_BOLD);
 
-                    foreach (var room in invoiceData.BookingDetails)
-                    {
-                        // Company Header
-                        var headerTable = new iText.Layout.Element.Table(new float[] { 9f, 1f })
-                            .SetWidth(UnitValue.CreatePercentValue(100));
+        //            foreach (var room in invoiceData.BookingDetails)
+        //            {
+        //                // Company Header
+        //                var headerTable = new iText.Layout.Element.Table(new float[] { 9f, 1f })
+        //                    .SetWidth(UnitValue.CreatePercentValue(100));
 
-                        headerTable.AddCell(new Cell(1, 1)
-                            .Add(new Paragraph(invoiceData.PropertyDetails.CompanyName).SetFont(font).SetFontSize(14))
-                            .Add(new Paragraph(invoiceData.PropertyDetails.CompanyAddress).SetFontSize(10))
-                            .Add(new Paragraph("Contact: " + invoiceData.PropertyDetails.ContactNo1).SetFontSize(10))
-                            .SetBorder(Border.NO_BORDER));
+        //                headerTable.AddCell(new Cell(1, 1)
+        //                    .Add(new Paragraph(invoiceData.PropertyDetails.CompanyName).SetFont(font).SetFontSize(14))
+        //                    .Add(new Paragraph(invoiceData.PropertyDetails.CompanyAddress).SetFontSize(10))
+        //                    .Add(new Paragraph("Contact: " + invoiceData.PropertyDetails.ContactNo1).SetFontSize(10))
+        //                    .SetBorder(Border.NO_BORDER));
 
-                        headerTable.AddCell(new Cell(1, 1).SetBorder(Border.NO_BORDER)); // Optional logo cell
+        //                headerTable.AddCell(new Cell(1, 1).SetBorder(Border.NO_BORDER)); // Optional logo cell
 
-                        document.Add(headerTable);
-                        document.Add(new Paragraph("\n"));
+        //                document.Add(headerTable);
+        //                document.Add(new Paragraph("\n"));
 
 
 
-                        // Guest and Invoice Info Table
-                        var infoTable = new iText.Layout.Element.Table(new float[] { 1f, 1f })
-                            .SetWidth(UnitValue.CreatePercentValue(100));
+        //                // Guest and Invoice Info Table
+        //                var infoTable = new iText.Layout.Element.Table(new float[] { 1f, 1f })
+        //                    .SetWidth(UnitValue.CreatePercentValue(100));
 
-                        // Guest Details
+        //                // Guest Details
                   
-                        var guestTable = new iText.Layout.Element.Table(new float[] { 120, 150 })
-                             .SetWidth(UnitValue.CreatePercentValue(100));
+        //                var guestTable = new iText.Layout.Element.Table(new float[] { 120, 150 })
+        //                     .SetWidth(UnitValue.CreatePercentValue(100));
 
 
-                        guestTable.AddCell(new Cell().Add(new Paragraph("Guest Name/Bill To:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        guestTable.AddCell(new Cell().Add(new Paragraph(string.IsNullOrWhiteSpace(invoiceData.InvoiceName) ? room.GuestDetails.GuestName : invoiceData.InvoiceName).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                guestTable.AddCell(new Cell().Add(new Paragraph("Guest Name/Bill To:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                guestTable.AddCell(new Cell().Add(new Paragraph(string.IsNullOrWhiteSpace(invoiceData.InvoiceName) ? room.GuestDetails.GuestName : invoiceData.InvoiceName).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
-                        guestTable.AddCell(new Cell().Add(new Paragraph("Phone No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        guestTable.AddCell(new Cell().Add(new Paragraph(room.GuestDetails.PhoneNumber).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                guestTable.AddCell(new Cell().Add(new Paragraph("Phone No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                guestTable.AddCell(new Cell().Add(new Paragraph(room.GuestDetails.PhoneNumber).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
-                        guestTable.AddCell(new Cell().Add(new Paragraph("Room No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        guestTable.AddCell(new Cell().Add(new Paragraph(room.RoomNo).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                guestTable.AddCell(new Cell().Add(new Paragraph("Room No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                guestTable.AddCell(new Cell().Add(new Paragraph(room.RoomNo).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
-                        if (invoiceData.PageName == "CANCELPAGE")
-                        {
-                            guestTable.AddCell(new Cell().Add(new Paragraph("Room Category:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                            guestTable.AddCell(new Cell().Add(new Paragraph(room.RoomTypeName).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        }
+        //                if (invoiceData.PageName == "CANCELPAGE")
+        //                {
+        //                    guestTable.AddCell(new Cell().Add(new Paragraph("Room Category:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                    guestTable.AddCell(new Cell().Add(new Paragraph(room.RoomTypeName).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                }
 
                         
 
-                        // Invoice Details
-                        var invoiceTable = new iText.Layout.Element.Table(new float[] { 120, 80 })
-                            .SetWidth(UnitValue.CreatePercentValue(100));
+        //                // Invoice Details
+        //                var invoiceTable = new iText.Layout.Element.Table(new float[] { 120, 80 })
+        //                    .SetWidth(UnitValue.CreatePercentValue(100));
 
-                        invoiceTable.AddCell(new Cell().Add(new Paragraph("Invoice No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        invoiceTable.AddCell(new Cell().Add(new Paragraph(invoiceData.InvoiceNo).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                invoiceTable.AddCell(new Cell().Add(new Paragraph("Invoice No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                invoiceTable.AddCell(new Cell().Add(new Paragraph(invoiceData.InvoiceNo).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
-                        invoiceTable.AddCell(new Cell().Add(new Paragraph("Invoice Date:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        invoiceTable.AddCell(new Cell().Add(new Paragraph(invoiceData.InvoiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                invoiceTable.AddCell(new Cell().Add(new Paragraph("Invoice Date:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                invoiceTable.AddCell(new Cell().Add(new Paragraph(invoiceData.InvoiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
-                        invoiceTable.AddCell(new Cell().Add(new Paragraph("Pax:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-                        invoiceTable.AddCell(new Cell().Add(new Paragraph(room.Pax.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                invoiceTable.AddCell(new Cell().Add(new Paragraph("Pax:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+        //                invoiceTable.AddCell(new Cell().Add(new Paragraph(room.Pax.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
 
-                        // === Wrapper Table with 2 columns, full width ===
-                        iText.Layout.Element.Table wrapper = new iText.Layout.Element.Table(2);
-                        wrapper.SetWidth(UnitValue.CreatePercentValue(100)); // Span entire page width
+        //                // === Wrapper Table with 2 columns, full width ===
+        //                iText.Layout.Element.Table wrapper = new iText.Layout.Element.Table(2);
+        //                wrapper.SetWidth(UnitValue.CreatePercentValue(100)); // Span entire page width
 
-                        // Add spacing by setting padding/margin in cells
-                        Cell wrapperCell1 = new Cell().Add(guestTable)
-                                                      .SetBorder(Border.NO_BORDER)
-                                                      .SetPaddingRight(100); // Space between tables
+        //                // Add spacing by setting padding/margin in cells
+        //                Cell wrapperCell1 = new Cell().Add(guestTable)
+        //                                              .SetBorder(Border.NO_BORDER)
+        //                                              .SetPaddingRight(100); // Space between tables
 
-                        Cell wrapperCell2 = new Cell().Add(invoiceTable)
-                                                      .SetBorder(Border.NO_BORDER);
+        //                Cell wrapperCell2 = new Cell().Add(invoiceTable)
+        //                                              .SetBorder(Border.NO_BORDER);
 
-                        wrapper.AddCell(wrapperCell1);
-                        wrapper.AddCell(wrapperCell2);
+        //                wrapper.AddCell(wrapperCell1);
+        //                wrapper.AddCell(wrapperCell2);
 
                        
 
-                        document.Add(wrapper);
-                        document.Add(new Paragraph("\n"));
+        //                document.Add(wrapper);
+        //                document.Add(new Paragraph("\n"));
 
-                        // Room Charges Table
-                        if (invoiceData.PageName == "CheckOutPage")
-                        {
-                            document.Add(new Paragraph("Room Charges (Date-wise)").SetFont(font).SetFontSize(12));
+        //                // Room Charges Table
+        //                if (invoiceData.PageName == "CheckOutPage")
+        //                {
+        //                    document.Add(new Paragraph("Room Charges (Date-wise)").SetFont(font).SetFontSize(12));
 
-                            var chargesTable = new iText.Layout.Element.Table(room.DiscountType == "Percentage" ? 11 : 10)
-                         .SetWidth(UnitValue.CreatePercentValue(100));
-
-
-
-                            // Header
-                            // Header Row 1
-                            // Main headers
-                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Date").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Category").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Actual Rate").SetFont(font).SetFontSize(10)));
-
-                            if (room.DiscountType == "Percentage")
-                            {
-                                chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("Discount").SetFont(font).SetFontSize(10)));
-                            }
-                            else
-                            {
-                                chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Discount").SetFont(font).SetFontSize(10)));
-                            }
-
-                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Room Rate").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("CGST").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("SGST").SetFont(font).SetFontSize(10)));
-                            chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Total").SetFont(font).SetFontSize(10)));
-
-                            // Header Row 2 (Only when DiscountType is Percentage)
-                            if (room.DiscountType == "Percentage")
-                            {
-                                chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
-                                chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
-                            }
-
-                            // GST breakdown cells (always added)
-                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10))); // CGST %
-                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10))); // CGST Amt
-                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10))); // SGST %
-                            chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10))); // SGST Amt
-
-
-                            foreach (var rate in room.BookedRoomRates)
-                            {
-
-
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.BookingDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(room.RoomTypeName).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.RoomRateWithoutDiscount.ToString("F2")).SetFontSize(10)));
-
-                                if (room.DiscountType == "Percentage")
-                                {
-                                    chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountPercentage.ToString("F2")).SetFontSize(10)));
-                                    chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
-                                }
-                                else
-                                {
-                                    chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
-                                }
-
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.RoomRate.ToString("F2")).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.CGST.ToString("F2")).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.CGSTAmount.ToString("F2")).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.SGST.ToString("F2")).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.SGSTAmount.ToString("F2")).SetFontSize(10)));
-                                chargesTable.AddCell(new Cell().Add(new Paragraph(rate.TotalRoomRate.ToString("F2")).SetFontSize(10)));
-                            }
-
-                            document.Add(chargesTable);
-                            document.Add(new Paragraph("\n"));
-                        }
-
-                        // SERVICES TABLE
-                        if (invoiceData.PageName == "CheckOutPage" && room.AdvanceServices.Any())
-                        {
-                            document.Add(new Paragraph("Room Services").SetFont(font).SetFontSize(12));
-
-                            var serviceTable = new iText.Layout.Element.Table(9)
-                        .SetWidth(UnitValue.CreatePercentValue(100));
+        //                    var chargesTable = new iText.Layout.Element.Table(room.DiscountType == "Percentage" ? 11 : 10)
+        //                 .SetWidth(UnitValue.CreatePercentValue(100));
 
 
 
+        //                    // Header
+        //                    // Header Row 1
+        //                    // Main headers
+        //                    chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Date").SetFont(font).SetFontSize(10)));
+        //                    chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Category").SetFont(font).SetFontSize(10)));
+        //                    chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Actual Rate").SetFont(font).SetFontSize(10)));
 
-                            string[] serviceHeaders = { "Date", "Service Name", "Price", "CGST", "SGST", "Qty", "Total" };
+        //                    if (room.DiscountType == "Percentage")
+        //                    {
+        //                        chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("Discount").SetFont(font).SetFontSize(10)));
+        //                    }
+        //                    else
+        //                    {
+        //                        chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Discount").SetFont(font).SetFontSize(10)));
+        //                    }
 
-                            foreach (var header in serviceHeaders)
-                            {
-                                if (header == "CGST" || header == "SGST")
-                                {
-                                    // These headers span 2 columns in 1 row
-                                    serviceTable.AddHeaderCell(new Cell(1, 2)
-                                        .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
-                                }
-                                else
-                                {
-                                    // All other headers span 2 rows
-                                    serviceTable.AddHeaderCell(new Cell(2, 1)
-                                        .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
-                                }
-                            }
+        //                    chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Room Rate").SetFont(font).SetFontSize(10)));
+        //                    chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("CGST").SetFont(font).SetFontSize(10)));
+        //                    chargesTable.AddHeaderCell(new Cell(1, 2).Add(new Paragraph("SGST").SetFont(font).SetFontSize(10)));
+        //                    chargesTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Total").SetFont(font).SetFontSize(10)));
 
-                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
-                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
-                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
-                            serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
-                            foreach (var service in room.AdvanceServices)
-                            {
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceName).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePrice.ToString("F2")).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.CGSTPercentage.ToString("F2")).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.CgstAmount.ToString("F2")).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.SGSTPercentage.ToString("F2")).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.SgstAmount.ToString("F2")).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.Quantity.ToString()).SetFontSize(10)));
-                                serviceTable.AddCell(new Cell().Add(new Paragraph(service.TotalAmount.ToString("F2")).SetFontSize(10)));
-                            }
+        //                    // Header Row 2 (Only when DiscountType is Percentage)
+        //                    if (room.DiscountType == "Percentage")
+        //                    {
+        //                        chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
+        //                        chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
+        //                    }
 
-                            document.Add(serviceTable);
-                            document.Add(new Paragraph("\n"));
-                        }
+        //                    // GST breakdown cells (always added)
+        //                    chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10))); // CGST %
+        //                    chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10))); // CGST Amt
+        //                    chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10))); // SGST %
+        //                    chargesTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10))); // SGST Amt
 
-                        // CHECKOUT SUMMARY
-                        if (invoiceData.PageName == "CHECKOUTPAGE")
-                        {
-                            var summaryTable = new iText.Layout.Element.Table(2).SetWidth(300).SetHorizontalAlignment(HorizontalAlignment.RIGHT);
 
-                            summaryTable.AddCell(CreateLabelCell("Booking Amount:"));
-                            summaryTable.AddCell(CreateValueCell(room.TotalBookingAmount.ToString("F2")));
+        //                    foreach (var rate in room.BookedRoomRates)
+        //                    {
 
-                            summaryTable.AddCell(CreateLabelCell("Early/Late CheckIn Charges:"));
-                            summaryTable.AddCell(CreateValueCell((room.EarlyCheckInCharges + room.LateCheckOutCharges).ToString("F2")));
 
-                            summaryTable.AddCell(CreateLabelCell("Service Amount:"));
-                            summaryTable.AddCell(CreateValueCell(room.TotalServicesAmount.ToString("F2")));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.BookingDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(room.RoomTypeName).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.RoomRateWithoutDiscount.ToString("F2")).SetFontSize(10)));
 
-                            summaryTable.AddCell(CreateLabelCell("Total Amount:"));
-                            summaryTable.AddCell(CreateValueCell(room.TotalAmountWithOutDiscount.ToString("F2")));
+        //                        if (room.DiscountType == "Percentage")
+        //                        {
+        //                            chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountPercentage.ToString("F2")).SetFontSize(10)));
+        //                            chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
+        //                        }
+        //                        else
+        //                        {
+        //                            chargesTable.AddCell(new Cell().Add(new Paragraph(rate.DiscountAmount.ToString("F2")).SetFontSize(10)));
+        //                        }
 
-                            summaryTable.AddCell(CreateLabelCell("Discount Amount:"));
-                            summaryTable.AddCell(CreateValueCell(room.CheckOutDiscoutAmount.ToString("F2")));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.RoomRate.ToString("F2")).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.CGST.ToString("F2")).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.CGSTAmount.ToString("F2")).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.SGST.ToString("F2")).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.SGSTAmount.ToString("F2")).SetFontSize(10)));
+        //                        chargesTable.AddCell(new Cell().Add(new Paragraph(rate.TotalRoomRate.ToString("F2")).SetFontSize(10)));
+        //                    }
 
-                            summaryTable.AddCell(CreateLabelCell("Total Bill:"));
-                            summaryTable.AddCell(CreateValueCell(room.TotalAmount.ToString("F2")));
+        //                    document.Add(chargesTable);
+        //                    document.Add(new Paragraph("\n"));
+        //                }
 
-                            summaryTable.AddCell(CreateLabelCell("Total Paid:"));
-                            summaryTable.AddCell(CreateValueCell((room.AdvanceAmount + room.ReceivedAmount + room.RefundAmount + room.ResidualAmount).ToString("F2")));
+        //                // SERVICES TABLE
+        //                if (invoiceData.PageName == "CheckOutPage" && room.AdvanceServices.Any())
+        //                {
+        //                    document.Add(new Paragraph("Room Services").SetFont(font).SetFontSize(12));
 
-                            summaryTable.AddCell(CreateLabelCell("Balance Amount:"));
-                            summaryTable.AddCell(CreateValueCell(room.BalanceAmount.ToString("F2")));
+        //                    var serviceTable = new iText.Layout.Element.Table(9)
+        //                .SetWidth(UnitValue.CreatePercentValue(100));
 
-                            if (room.RefundAmount > 0)
-                            {
-                                summaryTable.AddCell(CreateLabelCell("Refund Amount:"));
-                                summaryTable.AddCell(CreateValueCell(room.RefundAmount.ToString("F2")));
-                            }
 
-                            if (room.ResidualAmount > 0)
-                            {
-                                summaryTable.AddCell(CreateLabelCell("Residual Amount:"));
-                                summaryTable.AddCell(CreateValueCell(room.ResidualAmount.ToString("F2")));
-                            }
 
-                            document.Add(summaryTable);
-                        }
 
-                        document.Add(new AreaBreak(AreaBreakType.NEXT_PAGE)); // Next room on new page
-                    }
+        //                    string[] serviceHeaders = { "Date", "Service Name", "Price", "CGST", "SGST", "Qty", "Total" };
+
+        //                    foreach (var header in serviceHeaders)
+        //                    {
+        //                        if (header == "CGST" || header == "SGST")
+        //                        {
+        //                            // These headers span 2 columns in 1 row
+        //                            serviceTable.AddHeaderCell(new Cell(1, 2)
+        //                                .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
+        //                        }
+        //                        else
+        //                        {
+        //                            // All other headers span 2 rows
+        //                            serviceTable.AddHeaderCell(new Cell(2, 1)
+        //                                .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
+        //                        }
+        //                    }
+
+        //                    serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
+        //                    serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
+        //                    serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("%").SetFont(font).SetFontSize(10)));
+        //                    serviceTable.AddHeaderCell(new Cell().Add(new Paragraph("Amt").SetFont(font).SetFontSize(10)));
+        //                    foreach (var service in room.AdvanceServices)
+        //                    {
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceName).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePrice.ToString("F2")).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.CGSTPercentage.ToString("F2")).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.CgstAmount.ToString("F2")).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.SGSTPercentage.ToString("F2")).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.SgstAmount.ToString("F2")).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.Quantity.ToString()).SetFontSize(10)));
+        //                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.TotalAmount.ToString("F2")).SetFontSize(10)));
+        //                    }
+
+        //                    document.Add(serviceTable);
+        //                    document.Add(new Paragraph("\n"));
+        //                }
+
+        //                // CHECKOUT SUMMARY
+        //                if (invoiceData.PageName == "CHECKOUTPAGE")
+        //                {
+        //                    var summaryTable = new iText.Layout.Element.Table(2).SetWidth(300).SetHorizontalAlignment(HorizontalAlignment.RIGHT);
+
+        //                    summaryTable.AddCell(CreateLabelCell("Booking Amount:"));
+        //                    summaryTable.AddCell(CreateValueCell(room.TotalBookingAmount.ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Early/Late CheckIn Charges:"));
+        //                    summaryTable.AddCell(CreateValueCell((room.EarlyCheckInCharges + room.LateCheckOutCharges).ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Service Amount:"));
+        //                    summaryTable.AddCell(CreateValueCell(room.TotalServicesAmount.ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Total Amount:"));
+        //                    summaryTable.AddCell(CreateValueCell(room.TotalAmountWithOutDiscount.ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Discount Amount:"));
+        //                    summaryTable.AddCell(CreateValueCell(room.CheckOutDiscoutAmount.ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Total Bill:"));
+        //                    summaryTable.AddCell(CreateValueCell(room.TotalAmount.ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Total Paid:"));
+        //                    summaryTable.AddCell(CreateValueCell((room.AdvanceAmount + room.ReceivedAmount + room.RefundAmount + room.ResidualAmount).ToString("F2")));
+
+        //                    summaryTable.AddCell(CreateLabelCell("Balance Amount:"));
+        //                    summaryTable.AddCell(CreateValueCell(room.BalanceAmount.ToString("F2")));
+
+        //                    if (room.RefundAmount > 0)
+        //                    {
+        //                        summaryTable.AddCell(CreateLabelCell("Refund Amount:"));
+        //                        summaryTable.AddCell(CreateValueCell(room.RefundAmount.ToString("F2")));
+        //                    }
+
+        //                    if (room.ResidualAmount > 0)
+        //                    {
+        //                        summaryTable.AddCell(CreateLabelCell("Residual Amount:"));
+        //                        summaryTable.AddCell(CreateValueCell(room.ResidualAmount.ToString("F2")));
+        //                    }
+
+        //                    document.Add(summaryTable);
+        //                }
+
+        //                document.Add(new AreaBreak(AreaBreakType.NEXT_PAGE)); // Next room on new page
+        //            }
                    
 
-                }
-                return ms;
-            }
+        //        }
+        //        return ms;
+        //    }
            
             
 
             
-        }
+        //}
 
-        private Cell CreateLabelCell(string text)
-        {
-            return new Cell().Add(new Paragraph(text).SetFontSize(10).SimulateBold()).SetBorder(Border.NO_BORDER);
-        }
+        //private Cell CreateLabelCell(string text)
+        //{
+        //    return new Cell().Add(new Paragraph(text).SetFontSize(10).SimulateBold()).SetBorder(Border.NO_BORDER);
+        //}
 
-        private Cell CreateValueCell(string text, DeviceRgb color = null)
-        {
-            var paragraph = new Paragraph(text).SetFontSize(10);
-            if (color != null)
-                paragraph.SetFontColor(color);
-            return new Cell().Add(paragraph).SetTextAlignment(TextAlignment.RIGHT).SetBorder(Border.NO_BORDER);
-        }
+        //private Cell CreateValueCell(string text, DeviceRgb color = null)
+        //{
+        //    var paragraph = new Paragraph(text).SetFontSize(10);
+        //    if (color != null)
+        //        paragraph.SetFontColor(color);
+        //    return new Cell().Add(paragraph).SetTextAlignment(TextAlignment.RIGHT).SetBorder(Border.NO_BORDER);
+        //}
         private bool IsTodayCheckOutDate(DateTime date)
         {
             return date.Date == DateTime.Today;
