@@ -2430,6 +2430,50 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        private  (int code, string message) CreateOrUpdateUser(
+       UserDetails user, int companyid = 0, int userid = 0 , string database = "")
+        {
+            using (SqlConnection conn = new SqlConnection(_context.Database.GetConnectionString()))
+            using (SqlCommand cmd = new SqlCommand("CreateUpdateUser", conn))
+            {
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                // Add parameters
+                cmd.Parameters.AddWithValue("@userid", user.UserId);
+                cmd.Parameters.AddWithValue("@username",user.UserName);
+                cmd.Parameters.AddWithValue("@password", user.Password);
+                cmd.Parameters.AddWithValue("@companyid", companyid);
+                cmd.Parameters.AddWithValue("@dbname",database);
+                cmd.Parameters.AddWithValue("@name", user.Name);
+                cmd.Parameters.AddWithValue("@emailid", user.EmailId);
+                cmd.Parameters.AddWithValue("@phoneno", user.PhoneNo);
+                cmd.Parameters.AddWithValue("@role", user.Roles);
+                cmd.Parameters.AddWithValue("@createdby", userid);
+                cmd.Parameters.AddWithValue("@isactive", user.IsActive);
+
+                try
+                {
+                    conn.Open();
+                    using (SqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            return (200, reader["Message"].ToString() ?? "");
+                            
+                        }
+                    }
+
+                    return (400, "Error while saving data");
+                }
+                catch (Exception ex)
+                {
+                    return (400, ex.Message);
+                    
+                }
+            }
+        }
+
         [HttpPost("AddUserMaster")]
         public async Task<IActionResult> AddUserMaster([FromBody] UserDetailsDTO gm)
         {
@@ -2458,6 +2502,11 @@ namespace hotel_api.Controllers
                         return Ok(new { Code = 202, message = firstError.ErrorMessage });
                     }
                 }
+
+                //call sp
+                (int code , string message) = CreateOrUpdateUser(cm, companyId, userId, dbName);
+
+                return Ok(new { Code = code, Message = message });
                 cm.DBName = dbName;
                 cm.BranchId = 0;
                 cm.CreatedDate = DateTime.Now;
@@ -2480,8 +2529,12 @@ namespace hotel_api.Controllers
         [HttpPatch("PatchUserMaster/{id}")]
         public async Task<IActionResult> PatchUserMaster(int id, [FromBody] JsonPatchDocument<UserDetails> patchDocument)
         {
+
             try
             {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string dbName = Convert.ToString(HttpContext.Request.Headers["Database"]);
                 if (patchDocument == null)
                 {
                     return Ok(new { Code = 500, Message = "Invalid Data" });
@@ -2498,8 +2551,11 @@ namespace hotel_api.Controllers
                 patchDocument.ApplyTo(gm, ModelState);
                 if (gm.IsActive == false)
                 {
-                    await _context.SaveChangesAsync();
-                    return Ok(new { Code = 200, Message = "User deleted successfully!" });
+                    (int code1, string message1) = CreateOrUpdateUser(gm, companyId, userId, dbName);
+
+                    return Ok(new { Code = code1, Message = message1 });
+                    //await _context.SaveChangesAsync();
+                    //return Ok(new { Code = 200, Message = "User deleted successfully!" });
                 }
                 var validator = new UserValidator(_context);
                 var result = await validator.ValidateAsync(gm);
@@ -2513,7 +2569,9 @@ namespace hotel_api.Controllers
                 }
 
                 gm.ModifyDate = DateTime.Now;
+                (int code, string message) = CreateOrUpdateUser(gm, companyId, userId, dbName);
 
+                return Ok(new { Code = code, Message = message });
                 await _context.SaveChangesAsync();
 
                 return Ok(new { Code = 200, Message = "User updated successfully" });
