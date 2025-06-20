@@ -98,7 +98,7 @@ namespace hotel_api.Constants
 
         //calculate room rates
         public static string CheckInRoomRates = "Consolidated";
-        public static string DayWiseRoomRates = "DayWise";
+        public static string DayWiseRoomRates = "Daywise";
 
         //image 
         public static List<string> AllowedExtensions = new List<string> { ".png", ".jpg", "jpeg",".pdf" };
