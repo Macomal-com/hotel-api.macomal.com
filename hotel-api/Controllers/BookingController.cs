@@ -2707,7 +2707,7 @@ namespace hotel_api.Controllers
             }
             catch (Exception ex)
             {
-                return Ok(new { Code = 500, Message = ex.Message });
+                return Ok(new { Code = 500, Message = ex.StackTrace });
             }
         }
 
