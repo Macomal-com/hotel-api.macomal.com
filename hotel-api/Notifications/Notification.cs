@@ -11,7 +11,7 @@ namespace hotel_api.Notifications
 {
     public class Notification
     {
-        public async static Task<bool> SendMail(DbContextSql _context, string emailSubject, string htmlBody, int companyId, string sendAddress)
+        public async static Task<bool> SendMail(DbContextSql _context, string emailSubject, string htmlBody, int companyId, string sendAddress, byte[]? attachment = null)
         {
             try
             {
@@ -41,9 +41,20 @@ namespace hotel_api.Notifications
                 {
                     Subject = emailSubject,
                     Body = htmlBody,
-                    IsBodyHtml = true
+                    IsBodyHtml = true,
+                
+
+                   
                 })
                 {
+                    if (attachment != null)
+                    {
+                        var pdfStream = new MemoryStream(attachment);
+                        var pdf = new Attachment(pdfStream, "invoice.pdf", "application/pdf");
+                        message.Attachments.Add(pdf);
+
+                    }
+
                     smtp.Send(message);
                 }
 

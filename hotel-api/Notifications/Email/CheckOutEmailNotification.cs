@@ -16,19 +16,24 @@ namespace hotel_api.Notifications.Email
         public string ReservationNo { get; set; } = string.Empty;
 
         public string RoomType { get; set; } = string.Empty;
+
+        
     }
     public class CheckOutEmailNotification
     {
         private readonly DbContextSql _context;
         private int CompanyId { get; set; }
-        public CompanyDetails CompanyDetails = new CompanyDetails();
-        public List<CheckOutNotificationDTO> inNotificationDTOs = new List<CheckOutNotificationDTO>();
-        public CheckOutEmailNotification(DbContextSql context, List<CheckOutNotificationDTO> inNotificationDTOs, int companyId, CompanyDetails companyDetails)
+        private  CompanyDetails CompanyDetails = new CompanyDetails();
+        private List<CheckOutNotificationDTO> inNotificationDTOs = new List<CheckOutNotificationDTO>();
+
+        private byte[]? attachment; 
+        public CheckOutEmailNotification(DbContextSql context, List<CheckOutNotificationDTO> inNotificationDTOs, int companyId, CompanyDetails companyDetails, byte[] attachment)
         {
             _context = context;
             this.inNotificationDTOs = inNotificationDTOs;
             CompanyId = companyId;
             CompanyDetails = companyDetails;
+            this.attachment = attachment;
         }
 
 
@@ -110,7 +115,7 @@ namespace hotel_api.Notifications.Email
 
                 ";
 
-                await Notifications.Notification.SendMail(_context, subject, htmlBody, CompanyId, item.GuestEmail);
+                await Notifications.Notification.SendMail(_context, subject, htmlBody, CompanyId, item.GuestEmail, attachment);
             }
 
         }

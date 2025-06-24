@@ -2698,12 +2698,12 @@ namespace hotel_api.Controllers
                 }
 
 
-                var pdfBytes = GenerateInvoicePdf(response, "").ToArray();
-                return File(pdfBytes, "application/pdf", "invoice.pdf");
+                //var pdfBytes = GenerateInvoicePdf(response, "").ToArray();
+                //return File(pdfBytes, "application/pdf", "invoice.pdf");
 
 
 
-               // return Ok(new { Code = 200, Message = "Data fetch successfully", data = response });
+                return Ok(new { Code = 200, Message = "Data fetch successfully", data = response });
             }
             catch (Exception ex)
             {
@@ -3686,12 +3686,17 @@ namespace hotel_api.Controllers
 
                 if (property.IsEmailNotification)
                 {
-                    CheckOutEmailNotification outEmailNotification = new CheckOutEmailNotification(_context, notificationDTOs, companyId, property);
+
+                    var pdfBytes = GenerateInvoicePdf(request, "").ToArray();
+                    
+
+                    CheckOutEmailNotification outEmailNotification = new CheckOutEmailNotification(_context, notificationDTOs, companyId, property, pdfBytes);
 
                     await outEmailNotification.SendEmail();
                 }
 
                 await _context.SaveChangesAsync();
+              //  await transaction.RollbackAsync();
                 await transaction.CommitAsync();
                 return Ok(new { Code = 200, Message = "Bookings Checkout successfully" });
             }
@@ -7312,7 +7317,7 @@ namespace hotel_api.Controllers
                         }
 
                         // CHECKOUT SUMMARY
-                        if (invoiceData.PageName == "CHECKOUTPAGE")
+                        if (invoiceData.PageName == "CheckOutPage")
                         {
                             var summaryTable = new iText.Layout.Element.Table(2).SetWidth(300).SetHorizontalAlignment(HorizontalAlignment.RIGHT);
 
