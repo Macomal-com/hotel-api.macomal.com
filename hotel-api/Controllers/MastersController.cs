@@ -4045,19 +4045,27 @@ namespace hotel_api.Controllers
             try
             {
                 var room = await _context.RoomMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
-
-                if (room.Count == 0)
-                {
-                    return Ok(new { Code = 404, Message = "Rooms not found", Data = Array.Empty<object>() });
-                }
                 var data = await _context.AssetMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var result = await (
+                    from ram in _context.RoomAssetMapping
+                    join rm in _context.RoomMaster on ram.RoomId equals rm.RoomId
+                    join am in _context.AssetMaster on ram.AssetId equals am.AssetId
+                    where ram.IsActive
+                    group new { ram, rm, am } by new { ram.RoomId, rm.RoomNo } into g
+                    select new RoomAssetMappingDTO
+                    {
+                        RoomId = g.Key.RoomId,
+                        RoomNo = g.Key.RoomNo,
+                        AssetData = g.Select(x => new MappingDTO
+                        {
+                            AssetId = x.ram.AssetId,
+                            AssetName = x.am.AssetName,
+                            Quantity = x.ram.Quantity
+                        }).ToList()
+                    }
+                ).ToListAsync();
 
-                if (data.Count == 0)
-                {
-                    return Ok(new { Code = 404, Message = "Assets not found", Data = Array.Empty<object>() });
-                }
-
-                return Ok(new { Code = 200, Message = "Assets fetched successfully", Rooms = room, Assets = data });
+                return Ok(new { Code = 200, Message = "Data fetched successfully", Rooms = room, Assets = data, Mappings = result });
             }
             catch (Exception ex)
             {
@@ -4074,26 +4082,24 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-                for (int i = 0; i < asset.Assets.Count; i++)
+                foreach(var item in asset.AssetData)
                 {
-                    
-                }
-                var cm = _mapper.Map<AssetMaster>(asset);
-                SetMastersDefault(cm, companyId, userId);
-                var validator = new AssetValidator(_context);
-                var result = await validator.ValidateAsync(cm);
-                if (!result.IsValid)
-                {
-                    var firstError = result.Errors.FirstOrDefault();
-                    if (firstError != null)
+                    var a = new RoomAssetMapping
                     {
-                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
-                    }
+                        RoomId = asset.RoomId,
+                        AssetId = item.AssetId,
+                        Quantity = item.Quantity,
+                        IsActive = true,
+                        CreatedDate = DateTime.Now,
+                        UpdatedDate = DateTime.Now,
+                        CompanyId = companyId,
+                        UserId = userId
+                    };
+                    _context.RoomAssetMapping.Add(a);
+                    await _context.SaveChangesAsync();
                 }
-                _context.AssetMaster.Add(cm);
-                await _context.SaveChangesAsync();
 
-                return Ok(new { Code = 200, Message = "Asset created successfully" });
+                return Ok(new { Code = 200, Message = "Mapping created successfully" });
             }
             catch (Exception ex)
             {

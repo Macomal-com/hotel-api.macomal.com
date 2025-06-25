@@ -24,11 +24,13 @@ namespace Repository.Models
     public class MappingDTO
     {
         public int AssetId { get; set; }
+        public string AssetName { get; set; } = string.Empty;
         public int Quantity { get; set; }
     }
     public class RoomAssetMappingDTO
     {
         public int RoomId { get; set; }
-        public List<MappingDTO> Assets { get; set; } = new List<MappingDTO>();
+        public string RoomNo { get; set; } = string.Empty;
+        public List<MappingDTO> AssetData { get; set; } = new List<MappingDTO>();
     }
 }

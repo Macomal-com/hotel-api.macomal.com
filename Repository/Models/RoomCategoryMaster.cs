@@ -116,7 +116,6 @@ namespace Repository.Models
             _context = context;
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(DoRoomCategoryExists)
-                .When(x => x.IsActive == false)
                 .WithMessage("You can't delete this Category, Room already exists!");
         }
         private async Task<bool> DoRoomCategoryExists(RoomCategoryMaster categotyMaster, CancellationToken cancellationToken)
