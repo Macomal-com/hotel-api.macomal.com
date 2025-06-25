@@ -1,0 +1,34 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Repository.Models
+{
+    public class RoomAssetMapping
+    {
+        [Key]
+        public int Id { get; set; }
+        public int RoomId { get; set; }
+        public int AssetId { get; set; }
+        public int Quantity { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public DateTime UpdatedDate { get; set; }
+        public int UserId { get; set; }
+        public int CompanyId { get; set; }
+    }
+
+    public class MappingDTO
+    {
+        public int AssetId { get; set; }
+        public int Quantity { get; set; }
+    }
+    public class RoomAssetMappingDTO
+    {
+        public int RoomId { get; set; }
+        public List<MappingDTO> Assets { get; set; } = new List<MappingDTO>();
+    }
+}

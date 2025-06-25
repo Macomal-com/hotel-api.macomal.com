@@ -70,6 +70,8 @@ namespace RepositoryModels.Repository
 
         public DbSet<WhatsAppCredentials> WhatsAppCredentials { get; set; }
         public DbSet<HouseKeeping> HouseKeeping { get; set; }
+        public DbSet<AssetMaster> AssetMaster { get; set; }
+        public DbSet<RoomAssetMapping> RoomAssetMapping { get; set; }
 
         public DbSet<DynamicActionJs> DynamicActionJs { get; set; }
 

@@ -3899,5 +3899,206 @@ namespace hotel_api.Controllers
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+
+        //ASSET MASTER
+        [HttpGet("GetAssets")]
+        public async Task<IActionResult> GetAssets()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.AssetMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Assets not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Assets fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpGet("GetAssetById/{id}")]
+        public async Task<IActionResult> GetAssetById(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.AssetMaster
+                          .Where(x => x.AssetId == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
+
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Assets not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Assets fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddAssetMaster")]
+        public async Task<IActionResult> AddAssetMaster([FromBody] AssetMasterDTO asset)
+        {
+            if (asset == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+                var cm = _mapper.Map<AssetMaster>(asset);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new AssetValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                _context.AssetMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Asset created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPatch("PatchAssetMaster/{id}")]
+        public async Task<IActionResult> PatchAssetMaster(int id, [FromBody] JsonPatchDocument<AssetMaster> patchDocument)
+        {
+            if (patchDocument == null)
+            {
+                return Ok(new { Code = 500, Message = "Invalid Data" });
+
+            }
+
+            var asset = await _context.AssetMaster.FindAsync(id);
+
+            if (asset == null)
+            {
+                return Ok(new { Code = 404, Message = "Data Not Found" });
+            }
+
+            patchDocument.ApplyTo(asset, ModelState);
+            if (asset.IsActive == false)
+            {
+                var validator = new AssetValidator(_context);
+
+                var result = await validator.ValidateAsync(asset);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+
+                asset.UpdatedDate = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Asset deleted successfully" });
+            }
+            else
+            {
+                var validator = new AssetValidator(_context);
+
+                var result = await validator.ValidateAsync(asset);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                asset.UpdatedDate = DateTime.Now;
+
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Asset updated successfully" });
+            }
+
+        }
+
+        [HttpGet("GetRoomAssets")]
+        public async Task<IActionResult> GetRoomAssets()
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var room = await _context.RoomMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (room.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Rooms not found", Data = Array.Empty<object>() });
+                }
+                var data = await _context.AssetMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+
+                if (data.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "Assets not found", Data = Array.Empty<object>() });
+                }
+
+                return Ok(new { Code = 200, Message = "Assets fetched successfully", Rooms = room, Assets = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("AddRoomAssetMaster")]
+        public async Task<IActionResult> AddRoomAssetMaster([FromBody] RoomAssetMappingDTO asset)
+        {
+            if (asset == null)
+                return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                for (int i = 0; i < asset.Assets.Count; i++)
+                {
+                    
+                }
+                var cm = _mapper.Map<AssetMaster>(asset);
+                SetMastersDefault(cm, companyId, userId);
+                var validator = new AssetValidator(_context);
+                var result = await validator.ValidateAsync(cm);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+                _context.AssetMaster.Add(cm);
+                await _context.SaveChangesAsync();
+
+                return Ok(new { Code = 200, Message = "Asset created successfully" });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }
