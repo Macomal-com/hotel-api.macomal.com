@@ -29,6 +29,8 @@ namespace Repository.Models
         public int CompanyId { get; set; }
         public int DefaultPax { get; set; }
         public int ExtraBed { get; set; }
+
+        public string ColorCode { get; set; } = string.Empty;
         [NotMapped]
         public bool ChangeDetails { get; set; }
 

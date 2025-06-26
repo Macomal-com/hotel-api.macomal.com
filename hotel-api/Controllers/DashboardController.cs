@@ -123,7 +123,8 @@ namespace hotel_api.Controllers
                         {
                             Name = row.Field<string>(0),
                             Data = row.Field<int>(1),
-                            Color = index < ColourCodes.Count ? ColourCodes[index] : ColourCodes[0]
+                            
+                            Color = row.Field<string>(2)  
                         }).ToList();
 
                         var availableRooms = new
@@ -137,7 +138,7 @@ namespace hotel_api.Controllers
                         {
                             Name = row.Field<string>(0),
                             Data = row.Field<int>(1),
-                            Color = index < ColourCodes.Count ? ColourCodes[index] : ColourCodes[0]
+                            Color = row.Field<string>(2)
                         }).ToList();
 
                         var checkInTotal = new
@@ -151,7 +152,7 @@ namespace hotel_api.Controllers
                         {
                             Name = row.Field<string>(0),
                             Data = row.Field<int>(1),
-                            Color = index < ColourCodes.Count ? ColourCodes[index] : ColourCodes[0]
+                            Color = row.Field<string>(2)
                         }).ToList();
 
                         var checkOutTotal = new
@@ -165,7 +166,7 @@ namespace hotel_api.Controllers
                         {
                             Name = row.Field<string>(0),
                             Data = row.Field<int>(1),
-                            Color = index < ColourCodes.Count ? ColourCodes[index] : ColourCodes[0]
+                            Color = row.Field<string>(2)
                         }).ToList();
 
                         var bookings = new

@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FluentValidation;
 using hotel_api.Constants;
+using hotel_api.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -110,6 +111,7 @@ namespace hotel_api.Controllers
         [HttpPost("AddRoomCategoryMaster")]
         public async Task<IActionResult> AddRoomCategoryMaster([FromBody] RoomCategoryMasterDTO roomCat)
         {
+            var transaction = await _context.Database.BeginTransactionAsync();
             if (roomCat == null)
                 return BadRequest(new { Code = 400, Message = "Invalid data", Data = Array.Empty<object>() });
 
@@ -127,13 +129,14 @@ namespace hotel_api.Controllers
                     var firstError = result.Errors.FirstOrDefault();
                     if (firstError != null)
                     {
+                        await transaction.RollbackAsync();
                         return Ok(new { Code = 202, message = firstError.ErrorMessage });
                     }
                 }
 
 
                 cm.BedTypeId = cm.BedTypeId == 0 ? null : cm.BedTypeId;
-
+                cm.ColorCode = ColourCodeService.GetUniqueColor(_context, cm.CompanyId);
                 await _context.RoomCategoryMaster.AddAsync(cm);
                 await _context.SaveChangesAsync();
 
@@ -155,11 +158,12 @@ namespace hotel_api.Controllers
                 };
                 _context.RoomRateMaster.Add(roomRate);
                 await _context.SaveChangesAsync();
-
+                await transaction.CommitAsync();
                 return Ok(new { Code = 200, Message = "Room Category created successfully" });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
@@ -209,7 +213,8 @@ namespace hotel_api.Controllers
                         UserId = roomCat.UserId,
                         CompanyId = roomCat.CompanyId,
                         DefaultPax = model.DefaultPax,
-                        ExtraBed = model.ExtraBed
+                        ExtraBed = model.ExtraBed,
+                        ColorCode = ColourCodeService.GetUniqueColor(_context, roomCat.CompanyId)
                     };
                     var result = await validator.ValidateAsync(newRoomCat);
 

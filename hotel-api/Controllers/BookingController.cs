@@ -1102,7 +1102,7 @@ namespace hotel_api.Controllers
                                                             TransactionAmount = x.TransactionAmount,
                                                             TransactionType = x.TransactionType,
                                                             TransactionCharges = x.TransactionCharges,
-                                                            IsEditable = x.PaymentAmount != x.PaymentLeft ? false : true
+                                                            IsEditable = (x.PaymentAmount - x.TransactionAmount) != x.PaymentLeft ? false : true
                                                         }).ToListAsync();
 
 
@@ -2660,7 +2660,7 @@ namespace hotel_api.Controllers
                                                      TransactionAmount = pay.TransactionAmount,
                                                      TransactionType = pay.TransactionType,
                                                      TransactionCharges = pay.TransactionCharges,
-                                                     IsEditable = pay.PaymentAmount != pay.PaymentLeft ? false : true
+                                                     IsEditable = (pay.PaymentAmount - pay.TransactionAmount) != pay.PaymentLeft ? false : true
                                                  }).ToListAsync();
 
                
@@ -2930,7 +2930,7 @@ namespace hotel_api.Controllers
                                                      TransactionAmount = pay.TransactionAmount,
                                                      TransactionType = pay.TransactionType,
                                                      TransactionCharges = pay.TransactionCharges,
-                                                     IsEditable = pay.PaymentAmount != pay.PaymentLeft ? false : true
+                                                     IsEditable = (pay.PaymentAmount - pay.TransactionAmount) != pay.PaymentLeft ? false : true
                                                  }).ToListAsync();
 
 
@@ -4936,11 +4936,16 @@ namespace hotel_api.Controllers
                     PaymentCheckOutSummary paymentSummary = new PaymentCheckOutSummary();
                     foreach(var item in BookingDetails)
                     {
+                        paymentSummary.BookingAmount += item.BookingAmount;
+                        paymentSummary.GstAmount += item.GstAmount;
                         paymentSummary.TotalBookingAmount += item.TotalBookingAmount;
                         paymentSummary.EarlyCheckIn += item.EarlyCheckInCharges;
                         paymentSummary.LateCheckOut += item.LateCheckOutCharges;
+                        paymentSummary.ServicesAmount += item.ServicesAmount;
+                        paymentSummary.ServiceAmountGst += item.ServicesTaxAmount;
                         paymentSummary.TotalServiceAmount += item.TotalServicesAmount;
                         paymentSummary.TotalAmount += item.TotalAmountWithOutDiscount;
+                        paymentSummary.TotalTaxAmount += item.GstAmount + item.ServicesTaxAmount;
                         paymentSummary.CheckOutDiscoutAmount += item.CheckOutDiscoutAmount;
                         paymentSummary.TotalBill += item.TotalAmount;
                         paymentSummary.TotalAmountPaid += item.AdvanceAmount + item.ReceivedAmount + item.RefundAmount + item.ResidualAmount;

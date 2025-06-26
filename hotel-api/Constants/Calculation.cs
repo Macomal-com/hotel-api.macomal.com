@@ -10,7 +10,8 @@ namespace hotel_api.Constants
         {
             if(gstType == Constants.Inclusive)
             {
-                decimal gstAmount = (amount * gst) / (100 + gst);
+                decimal gstAmount = (amount) - (amount * (100 / (100 + gst)));
+                    //(amount * gst) / (100 + gst);
                 decimal netAmount = amount - gstAmount;
                 return (RoundOffDecimal(netAmount), RoundOffDecimal(gstAmount));
             }
@@ -23,7 +24,7 @@ namespace hotel_api.Constants
 
         public static decimal CalculateCGST(decimal gstAmount)
         {
-            return RoundOffDecimal(gstAmount / 2);
+            return (gstAmount / 2);
         }
 
         public static decimal CalculatePercentage(decimal amount, decimal percentage)
@@ -34,7 +35,7 @@ namespace hotel_api.Constants
         
         public static decimal RoundOffDecimal(decimal value)
         {
-            return Math.Round(value, 2);
+            return Math.Round(value, 4);
         }
 
 
