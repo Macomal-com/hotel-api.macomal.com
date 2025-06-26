@@ -4058,9 +4058,12 @@ namespace hotel_api.Controllers
                         RoomNo = g.Key.RoomNo,
                         AssetData = g.Select(x => new MappingDTO
                         {
+                            Id = x.ram.Id,
                             AssetId = x.ram.AssetId,
                             AssetName = x.am.AssetName,
-                            Quantity = x.ram.Quantity
+                            Quantity = x.ram.Quantity,
+                            AssetOwner = x.ram.AssetOwner,
+                            CreatedDate = x.ram.CreatedDate.ToString("dd-MM-yyyy")
                         }).ToList()
                     }
                 ).ToListAsync();
@@ -4082,13 +4085,20 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-                foreach(var item in asset.AssetData)
+
+                var data = await _context.RoomAssetMapping
+                            .Where(x => x.RoomId == asset.RoomId && x.IsActive && x.CompanyId == companyId).ToListAsync();
+
+
+
+                foreach (var item in asset.AssetData)
                 {
                     var a = new RoomAssetMapping
                     {
                         RoomId = asset.RoomId,
                         AssetId = item.AssetId,
                         Quantity = item.Quantity,
+                        AssetOwner = item.AssetOwner,
                         IsActive = true,
                         CreatedDate = DateTime.Now,
                         UpdatedDate = DateTime.Now,
@@ -4096,15 +4106,177 @@ namespace hotel_api.Controllers
                         UserId = userId
                     };
                     _context.RoomAssetMapping.Add(a);
-                    await _context.SaveChangesAsync();
                 }
-
+                await _context.SaveChangesAsync();
                 return Ok(new { Code = 200, Message = "Mapping created successfully" });
             }
             catch (Exception ex)
             {
                 return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
+        }
+
+        [HttpGet("GetRoomAssetById/{id}")]
+        public async Task<IActionResult> GetRoomAssetById(int id)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.RoomAssetMapping
+                             .Where(x => x.RoomId == id && x.IsActive && x.CompanyId == companyId).ToListAsync();
+                    
+                return data == null
+                    ? Ok(new { Code = 404, Message = "Mappings not found", Data = Array.Empty<object>() })
+                    : Ok(new { Code = 200, Message = "Mappings fetched successfully", Data = data });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
+
+        [HttpPost("CheckAssets")]
+        public async Task<IActionResult> CheckAssets([FromBody] RoomAssetMappingDTO asset)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+
+            try
+            {
+                var existingAssets = await (
+                    from ram in _context.RoomAssetMapping
+                    join am in _context.AssetMaster on ram.AssetId equals am.AssetId
+                    where ram.RoomId == asset.RoomId && ram.IsActive && ram.CompanyId == companyId
+                    select new { ram.AssetId, am.AssetName }
+                ).ToListAsync();
+
+                var requestedAssetIds = asset.AssetData.Select(a => a.AssetId).ToList();
+
+                // Find duplicates by matching assetIds
+                var duplicates = existingAssets
+                    .Where(x => requestedAssetIds.Contains(x.AssetId))
+                    .Distinct()
+                    .ToList();
+
+                if (duplicates.Any())
+                {
+                    var duplicateNames = string.Join(", ", duplicates.Select(d => d.AssetName));
+
+                    return Ok(new
+                    {
+                        Code = 409,
+                        Message = $"This Room already contains assets: {duplicateNames}. Do you still want to proceed?",
+                    });
+                }
+
+                return Ok(new
+                {
+                    Code = 200,
+                    Message = "No duplicate assets found."
+                });
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    Code = 500,
+                    Message = Constants.Constants.ErrorMessage
+                });
+            }
+        }
+
+        [HttpPost("UpdateRoomAssetMapping")]
+        public async Task<IActionResult> UpdateRoomAssetMapping([FromBody] RoomAssetMappingDTO asset)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                var data = await _context.RoomAssetMapping
+                            .Where(x => x.RoomId == asset.RoomId && x.IsActive && x.CompanyId == companyId).ToListAsync();
+
+                foreach (var item in asset.AssetData)
+                {
+                    if (item.Id != 0)
+                    {
+                        var existing = data.FirstOrDefault(x => x.Id == item.Id);
+                        if (existing != null)
+                        {
+                            existing.AssetId = item.AssetId;
+                            existing.Quantity = item.Quantity;
+                            existing.UpdatedDate = DateTime.Now;
+                            existing.AssetOwner = item.AssetOwner;
+                            existing.IsActive = item.IsActive;
+                            _context.RoomAssetMapping.Update(existing);
+                        }
+                    }
+                    else
+                    {
+                        var a = new RoomAssetMapping
+                        {
+                            RoomId = asset.RoomId,
+                            AssetId = item.AssetId,
+                            Quantity = item.Quantity,
+                            AssetOwner = item.AssetOwner,
+                            IsActive = true,
+                            CreatedDate = DateTime.Now,
+                            UpdatedDate = DateTime.Now,
+                            CompanyId = companyId,
+                            UserId = userId
+                        };
+                        _context.RoomAssetMapping.Add(a);
+                    }
+                }
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Mappings updated successfully" });
+            }
+
+            catch(Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+        [HttpPost("DeleteRoomAssetMapping")]
+        public async Task<IActionResult> DeleteRoomAssetMapping(string type="", int assetId = 0, int roomId = 0)
+        {
+            int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+            try
+            {
+                if(type == "All")
+                {
+                    var data = await _context.RoomAssetMapping
+                            .Where(x => x.RoomId == roomId && x.IsActive && x.CompanyId == companyId).ToListAsync();
+                    foreach(var item in data)
+                    {
+                        item.IsActive = false;
+                        item.UpdatedDate = DateTime.Now;
+                    }
+                }
+                else
+                {
+                    var data = await _context.RoomAssetMapping
+                            .Where(x => x.Id == assetId && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
+                    if(data == null)
+                    {
+                        return Ok(new { Code = 404, Message = "Asset not Found!" });
+                    }
+                    data.IsActive = false;
+                    data.UpdatedDate = DateTime.Now;
+                }
+
+                await _context.SaveChangesAsync();
+                return Ok(new { Code = 200, Message = "Mappings updated successfully" });
+            }
+
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
         }
     }
 }

@@ -14,6 +14,7 @@ namespace Repository.Models
         public int RoomId { get; set; }
         public int AssetId { get; set; }
         public int Quantity { get; set; }
+        public string AssetOwner { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
@@ -23,9 +24,13 @@ namespace Repository.Models
 
     public class MappingDTO
     {
+        public int Id { get; set; }
         public int AssetId { get; set; }
         public string AssetName { get; set; } = string.Empty;
         public int Quantity { get; set; }
+        public string AssetOwner { get; set; } = string.Empty;
+        public string? CreatedDate { get; set; }
+        public bool IsActive { get; set; }
     }
     public class RoomAssetMappingDTO
     {
