@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Azure;
+using FluentValidation;
 using hotel_api.Constants;
 using hotel_api.GeneralMethods;
 using Microsoft.AspNetCore.Http;
@@ -89,7 +90,7 @@ namespace hotel_api.Controllers
                 response.Services = await (from service in _context.ServicableMaster
                                            join groups in _context.GroupMaster on service.GroupId equals groups.Id
                                            join subgroups in _context.SubGroupMaster on service.SubGroupId equals subgroups.SubGroupId
-                                           where service.IsActive == true && service.CompanyId == companyId
+                                           where service.IsActive == true && service.CompanyId == companyId orderby service.CreatedDate
                                            select new ServicesDTO
                                            {
                                                ServiceId = service.ServiceId,
@@ -99,47 +100,49 @@ namespace hotel_api.Controllers
                                                SubGroupName = subgroups.SubGroupName,
                                                ServiceName = service.ServiceName,
                                                ServiceDescription = service.ServiceDescription,
-                                               Amount = service.Amount,
-                                               Discount = service.Discount,
+
+                                               DiscountAmount = service.Discount,
+                                               ServicePrice = service.Amount,
                                                TaxType = service.TaxType,
-                                               GstPercentage = groups.GST,
+                                               TotalServicePrice = 0
+                                              // GstPercentage = groups.GST,
                                                //(TotalAmount, GstAmount) = Constants.Calculation.CalculateGst(service.Amount, groups.GST, service.TaxType),
-                                               IgstPercentage = groups.IGST,
+                                              // IgstPercentage = groups.IGST,
                                                //IgstAmount = service.IgstAmount,
-                                               SgstPercentage = groups.SGST,
+                                              // SgstPercentage = groups.SGST,
                                                //SgstAmount = service.SgstAmount,
-                                               CgstPercentage = groups.CGST,
+                                              // CgstPercentage = groups.CGST,
                                                //CgstAmount = service.CgstAmount,
                                                //TotalAmount = service.TotalAmount
 
                                            }).ToListAsync();
 
-                foreach(var item in response.Services)
-                {
-                    decimal netAmount = 0;
-                    decimal gst = 0;
-                    (netAmount, gst) = Constants.Calculation.CalculateGst(item.Amount, item.GstPercentage, item.TaxType);
+                //foreach(var item in response.Services)
+                //{
+                //    decimal netAmount = 0;
+                //    decimal gst = 0;
+                //    (netAmount, gst) = Constants.Calculation.CalculateGst(item.Amount, item.GstPercentage, item.TaxType);
 
-                    item.ServicePrice = netAmount;
-                    item.GstAmount = gst;
-                    item.IgstAmount = gst;
-                    (netAmount, gst) = Constants.Calculation.CalculateGst(item.Amount, item.CgstPercentage, item.TaxType);
+                //    item.ServicePrice = netAmount;
+                //    item.GstAmount = gst;
+                //    item.IgstAmount = gst;
+                //    (netAmount, gst) = Constants.Calculation.CalculateGst(item.Amount, item.CgstPercentage, item.TaxType);
 
-                    item.CgstAmount = gst;
+                //    item.CgstAmount = gst;
 
-                    item.SgstAmount = gst;
-                    if (item.TaxType == Constants.Constants.Inclusive)
-                    {
+                //    item.SgstAmount = gst;
+                //    if (item.TaxType == Constants.Constants.Inclusive)
+                //    {
                         
-                        item.InclusiveTotalAmount = item.Amount;
-                    }
-                    else
-                    {
-                        item.ExclusiveTotalAmount = item.Amount + item.GstAmount;
-                    }
+                //        item.InclusiveTotalAmount = item.Amount;
+                //    }
+                //    else
+                //    {
+                //        item.ExclusiveTotalAmount = item.Amount + item.GstAmount;
+                //    }
                     
                     
-                }
+                //}
 
                 return Ok(new { Code = 200, Message = "Data fetched successfully", data = response });
             }
@@ -196,7 +199,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpPost("SaveServices")]
-        public async Task<IActionResult> SaveServices([FromBody]List<AdvanceService> advanceServices)
+        public async Task<IActionResult> SaveServices([FromBody] AddServiceDTO dto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try 
@@ -204,15 +207,62 @@ namespace hotel_api.Controllers
                 
                 var currentTime = DateTime.Now;
 
-                if(advanceServices.Count == 0)
+                if(dto.ServiceItems.Count == 0)
                 {
                     await transaction.RollbackAsync();
                     return Ok(new { Code = 400, Message = "Invalid data" });
                 }
-                foreach(var service in advanceServices)
+
+                foreach(var service in dto.ServiceItems)
                 {
+                    var group = await _context.GroupMaster.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.Id == service.GroupId);
+                    if(group == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return Ok(new { Code = 400, Message = "Group not found" });
+                    }
+                    var advanceService = new AdvanceService
+                    {
+                        GroupId = service.GroupId,
+                        SubGroupId = service.SubGroupId,
+                        BookingId = dto.BookingId,
+                        RoomId = dto.RoomId,
+                        ServiceId = service.ServiceId,
+                        ServiceName = service.ServiceName,
+                        ServicePriceWithoutDiscount = service.ServicePrice,
+                        TotalServicePriceWithoutDiscount = service.ServicePrice * service.Quantity,
+                        ServicePrice = service.ServicePrice,
+                        TotalServicePrice = (service.ServicePrice * service.Quantity )-service.DiscountAmount,
+                        Quantity = service.Quantity,
+                        TaxType = service.TaxType,
+                        GSTPercentage = group.GST,
+                        IGSTPercentage = group.IGST,
+                        SGSTPercentage = group.SGST,
+                        CGSTPercentage = group.CGST,
+                        ServiceDate = dto.ServiceDate,
+                        ServiceTime = dto.ServiceTime,
+                        KotNo = dto.KotNo,
+                        DiscountAmount = service.DiscountAmount,
+                        ReservationNo = dto.ReservationNo
+                        
+                    };
+
+                    Constants.Constants.SetMastersDefault(advanceService, companyId, userId, currentTime);
+                    decimal netAmount = 0;
+                    decimal gst = 0;
+                    (netAmount, gst) = Constants.Calculation.CalculateGst(advanceService.TotalServicePrice, advanceService.GSTPercentage, advanceService.TaxType);
+
+                    var cgst = gst / 2;
+
+                    advanceService.TotalServicePrice = netAmount;
+                    advanceService.GstAmount = gst;
+                    advanceService.TotalAmount = netAmount + gst;
+                    advanceService.SgstAmount = cgst;
+                    advanceService.CgstAmount = cgst;
+                    advanceService.IgstAmount = gst;
+
                     var validator = new AdvanceServicesValidator();
-                    var result = validator.Validate(service);
+                    var result = validator.Validate(advanceService);
                     if (!result.IsValid)
                     {
                         var errors = result.Errors.Select(x => new
@@ -223,19 +273,12 @@ namespace hotel_api.Controllers
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 202, message = errors });
                     }
-
-                    
-                    Constants.Constants.SetMastersDefault(service, companyId, userId, currentTime);
-
-                    await _context.AdvanceServices.AddAsync(service);
-                  
-
-                    
-                    
-
+                    await _context.AdvanceServices.AddAsync(advanceService);
                 }
+
+               
                 await _context.SaveChangesAsync();
-                bool isUpdated = await CalculateTotalServiceAmount(advanceServices[0].BookingId);
+                bool isUpdated = await CalculateTotalServiceAmount(dto.BookingId);
                 if(isUpdated == false)
                 {
                     await transaction.RollbackAsync();
@@ -347,7 +390,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                if(serviceId == 0)
+                if (serviceId == 0)
                 {
                     return Ok(new { Code = 400, Message = "Invalid data" });
                 }
@@ -355,41 +398,41 @@ namespace hotel_api.Controllers
                 var services = await (
                     from roomservice in _context.AdvanceServices
                     join service in _context.ServicableMaster on roomservice.ServiceId equals service.ServiceId
-                                           join groups in _context.GroupMaster on service.GroupId equals groups.Id
-                                           join subgroups in _context.SubGroupMaster on service.SubGroupId equals subgroups.SubGroupId
-                                           where 
-                                           roomservice.IsActive == true && roomservice.Id == serviceId &&
-                                           roomservice.CompanyId == companyId
-                                           select new ServicesDTO
-                                           {
-                                               ServiceId = service.ServiceId,
-                                               GroupId = service.GroupId,
-                                               GroupName = groups.GroupName,
-                                               SubGroupId = service.SubGroupId,
-                                               SubGroupName = subgroups.SubGroupName,
-                                               ServiceName = service.ServiceName,
-                                               ServiceDescription = service.ServiceDescription,
-                                               Amount = service.Amount,
-                                               Discount = roomservice.DiscountAmount,
-                                               TaxType = service.TaxType,
-                                               GstPercentage = groups.GST,
-                                               //(TotalAmount, GstAmount) = Constants.Calculation.CalculateGst(service.Amount, groups.GST, service.TaxType),
-                                               IgstPercentage = groups.IGST,
-                                               //IgstAmount = service.IgstAmount,
-                                               SgstPercentage = groups.SGST,
-                                               //SgstAmount = service.SgstAmount,
-                                               CgstPercentage = groups.CGST,
-                                               //CgstAmount = service.CgstAmount,
-                                              
-                                               Quantity = roomservice.Quantity,
-                                               DiscountAmount = roomservice.DiscountAmount,
-                                               BookingId = roomservice.BookingId,
-                                               Total = service.Amount * roomservice.Quantity - roomservice.DiscountAmount,
-                                               KotNo = roomservice.KotNo,
-                                               ServiceDate = roomservice.ServiceDate,
-                                               ServiceTime = roomservice.ServiceTime,
-                                               Id = roomservice.Id
-                                           }).FirstOrDefaultAsync();
+                    join groups in _context.GroupMaster on service.GroupId equals groups.Id
+                    join subgroups in _context.SubGroupMaster on service.SubGroupId equals subgroups.SubGroupId
+                    where
+                    roomservice.IsActive == true && roomservice.Id == serviceId &&
+                    roomservice.CompanyId == companyId
+                    select new 
+                    {
+                        ServiceId = service.ServiceId,
+                        GroupId = service.GroupId,
+                        GroupName = groups.GroupName,
+                        SubGroupId = service.SubGroupId,
+                        SubGroupName = subgroups.SubGroupName,
+                        ServiceName = service.ServiceName,
+                        ServiceDescription = service.ServiceDescription,
+                        Amount = service.Amount,
+                        DiscountAmount = roomservice.DiscountAmount,
+                        TaxType = service.TaxType,
+                        GstPercentage = groups.GST,
+                        //(TotalAmount, GstAmount) = Constants.Calculation.CalculateGst(service.Amount, groups.GST, service.TaxType),
+                        IgstPercentage = groups.IGST,
+                        //IgstAmount = service.IgstAmount,
+                        SgstPercentage = groups.SGST,
+                        //SgstAmount = service.SgstAmount,
+                        CgstPercentage = groups.CGST,
+                        //CgstAmount = service.CgstAmount,
+                        ServicePrice = roomservice.ServicePriceWithoutDiscount,
+                        Quantity = roomservice.Quantity,
+                        TotalServicePrice = roomservice.TotalServicePriceWithoutDiscount - roomservice.DiscountAmount,
+                        BookingId = roomservice.BookingId,
+                        Total = service.Amount * roomservice.Quantity - roomservice.DiscountAmount,
+                        KotNo = roomservice.KotNo,
+                        ServiceDate = roomservice.ServiceDate,
+                        ServiceTime = roomservice.ServiceTime,
+                        Id = roomservice.Id
+                    }).FirstOrDefaultAsync();
 
 
                 if (services == null)
@@ -397,56 +440,35 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = "Service not found" });
                 }
 
-                decimal netAmount = 0;
-                    decimal gst = 0;
-                    (netAmount, gst) = Constants.Calculation.CalculateGst(services.Amount, services.GstPercentage, services.TaxType);
-
-                    services.ServicePrice = netAmount;
-                    services.GstAmount = gst;
-                    services.IgstAmount = gst;
-                    (netAmount, gst) = Constants.Calculation.CalculateGst(services.Amount, services.CgstPercentage, services.TaxType);
-
-                    services.CgstAmount = gst;
-
-                    services.SgstAmount = gst;
-                    if (services.TaxType == Constants.Constants.Inclusive)
-                    {
-
-                        services.InclusiveTotalAmount = services.Amount;
-                    }
-                    else
-                    {
-                        services.ExclusiveTotalAmount = services.Amount + services.GstAmount;
-                    }
+               
 
 
-           
 
 
-           
-             
+
+
 
                 var booking = await (from bd in _context.BookingDetail
-                                  join rm in _context.RoomMaster on bd.RoomId equals rm.RoomId
-                                  join guest in _context.GuestDetails on bd.GuestId equals guest.GuestId
-                                  where bd.BookingId == services.BookingId && bd.IsActive == true && rm.IsActive == true && guest.IsActive == true &&
-                                  bd.CompanyId == companyId && rm.CompanyId == companyId && guest.CompanyId == companyId 
-                                  select new
-                                  {
-                                      bd.BookingId,
-                                      bd.ReservationNo,
-                                      bd.RoomId,
-                                      rm.RoomNo,
-                                      guest.GuestName,
-                                      bd.CheckInDateTime,
-                                      bd.CheckOutDateTime,
-                                      CheckInDate = bd.CheckInDate.ToString("yyyy-MM-dd"),
-                                      CheckOutDate = bd.CheckOutDate.ToString("yyyy-MM-dd"),
-                                      bd.CheckOutTime,
-                                      bd.CheckInTime
+                                     join rm in _context.RoomMaster on bd.RoomId equals rm.RoomId
+                                     join guest in _context.GuestDetails on bd.GuestId equals guest.GuestId
+                                     where bd.BookingId == services.BookingId && bd.IsActive == true && rm.IsActive == true && guest.IsActive == true &&
+                                     bd.CompanyId == companyId && rm.CompanyId == companyId && guest.CompanyId == companyId
+                                     select new
+                                     {
+                                         bd.BookingId,
+                                         bd.ReservationNo,
+                                         bd.RoomId,
+                                         rm.RoomNo,
+                                         guest.GuestName,
+                                         bd.CheckInDateTime,
+                                         bd.CheckOutDateTime,
+                                         CheckInDate = bd.CheckInDate.ToString("yyyy-MM-dd"),
+                                         CheckOutDate = bd.CheckOutDate.ToString("yyyy-MM-dd"),
+                                         bd.CheckOutTime,
+                                         bd.CheckInTime
 
-                                  }).FirstOrDefaultAsync();
-                if(booking == null)
+                                     }).FirstOrDefaultAsync();
+                if (booking == null)
                 {
                     return Ok(new { Code = 400, Message = "Booking not found" });
                 }
@@ -459,7 +481,7 @@ namespace hotel_api.Controllers
 
                 return Ok(new { Code = 200, Message = "Service fetched successfully", data = result });
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
@@ -467,7 +489,7 @@ namespace hotel_api.Controllers
 
 
         [HttpPost("UpdateServices")]
-        public async Task<IActionResult> UpdateServices([FromBody] List<AdvanceService> advanceServices)
+        public async Task<IActionResult> UpdateServices([FromBody] UpdateServiceDTO dto)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
@@ -475,60 +497,64 @@ namespace hotel_api.Controllers
 
                 var currentTime = DateTime.Now;
 
-                if (advanceServices.Count == 0)
+                if (dto == null)
                 {
                     await transaction.RollbackAsync();
                     return Ok(new { Code = 400, Message = "Invalid data" });
                 }
-                foreach (var service in advanceServices)
-                {
-                    var validator = new AdvanceServicesValidator();
-                    var result = validator.Validate(service);
-                    if (!result.IsValid)
-                    {
-                        var errors = result.Errors.Select(x => new
-                        {
-                            Error = x.ErrorMessage,
-                            Field = x.PropertyName
-                        }).ToList();
-                        await transaction.RollbackAsync();
-                        return Ok(new { Code = 202, message = errors });
-                    }
+               
+                   
 
 
 
-                    var advanceService = await _context.AdvanceServices.FirstOrDefaultAsync(x => x.IsActive == true && x.Id == service.Id && x.CompanyId == companyId);
+                    var existingService = await _context.AdvanceServices.FirstOrDefaultAsync(x => x.IsActive == true && x.Id == dto.Id && x.CompanyId == companyId);
 
-                    if(advanceService == null)
+                    if(existingService == null)
                     {
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, message = "Service not found" });
                     }
+                    existingService.Quantity = dto.Quantity;
+                    existingService.TotalServicePriceWithoutDiscount = existingService.ServicePrice * dto.Quantity;
+                    existingService.TotalServicePrice = (existingService.ServicePrice * dto.Quantity) - dto.DiscountAmount;
+                    existingService.DiscountAmount = dto.DiscountAmount;
+                    existingService.ServiceDate = dto.ServiceDate;
+                    existingService.ServiceTime = dto.ServiceTime;
 
                     
 
-                    advanceService.ServicePrice = service.ServicePrice;
-                    advanceService.Quantity = service.Quantity;
-                    advanceService.TaxType = service.TaxType;
-                    advanceService.TotalAmount = service.TotalAmount;
-                    advanceService.GSTPercentage = service.GSTPercentage;
-                    advanceService.GstAmount = service.GstAmount;
-                    advanceService.IgstAmount = service.IgstAmount;
-                    advanceService.IGSTPercentage = service.IGSTPercentage;
-                    advanceService.CGSTPercentage = service.CGSTPercentage;
-                    advanceService.CgstAmount = service.CgstAmount;
-                    advanceService.SgstAmount = service.SgstAmount;
-                    advanceService.SGSTPercentage = service.SGSTPercentage;
-                    advanceService.TotalServicePrice = service.TotalServicePrice;
-                    advanceService.ServiceDate = service.ServiceDate;
-                    advanceService.ServiceTime = service.ServiceTime;
-                    advanceService.UpdatedDate = currentTime;
-                    advanceService.ServicePriceWithoutDiscount = service.ServicePriceWithoutDiscount;
-                    advanceService.DiscountAmount = service.DiscountAmount;
-                    _context.AdvanceServices.Update(advanceService);
+                   
+                    decimal netAmount = 0;
+                    decimal gst = 0;
+                    (netAmount, gst) = Constants.Calculation.CalculateGst(existingService.TotalServicePrice, existingService.GSTPercentage, existingService.TaxType);
+
+                    var cgst = gst / 2;
+
+                    existingService.TotalServicePrice = netAmount;
+                    existingService.GstAmount = gst;
+                    existingService.TotalAmount = netAmount + gst;
+                    existingService.SgstAmount = cgst;
+                    existingService.CgstAmount = cgst;
+                    existingService.IgstAmount = gst;
+                    existingService.UpdatedDate = currentTime;
+
+                var validator = new AdvanceServicesValidator();
+                var result = validator.Validate(existingService);
+                if (!result.IsValid)
+                {
+                    var errors = result.Errors.Select(x => new
+                    {
+                        Error = x.ErrorMessage,
+                        Field = x.PropertyName
+                    }).ToList();
+                    await transaction.RollbackAsync();
+                    return Ok(new { Code = 202, message = errors });
                 }
+
+                _context.AdvanceServices.Update(existingService);
+                
                 await _context.SaveChangesAsync();
-                bool isUpdated = await CalculateTotalServiceAmount(advanceServices[0].BookingId);
+                bool isUpdated = await CalculateTotalServiceAmount(existingService.BookingId);
                 if (isUpdated == false)
                 {
                     await transaction.RollbackAsync();

@@ -49,34 +49,34 @@ namespace Repository.Models
         public string SubGroupName { get; set; } = string.Empty;
         public string ServiceName { get; set; } = string.Empty;
         public string ServiceDescription { get; set; } = string.Empty;
-        public decimal Amount { get; set; } // amount that show in table
-        public decimal Discount { get; set; }
+   
+        public decimal DiscountAmount { get; set; }
         public string TaxType { get; set; } = string.Empty;
 
-        public decimal GstPercentage { get; set; }
-        public decimal GstAmount { get; set; }
-        public decimal IgstPercentage { get; set; }
-        public decimal IgstAmount { get; set; }
-        public decimal SgstPercentage { get; set; }
+        //public decimal GstPercentage { get; set; }
+        //public decimal GstAmount { get; set; }
+        //public decimal IgstPercentage { get; set; }
+        //public decimal IgstAmount { get; set; }
+        //public decimal SgstPercentage { get; set; }
 
-        public decimal SgstAmount { get; set; }
-        public decimal CgstPercentage { get; set; }
-        public decimal CgstAmount { get; set; }
+        //public decimal SgstAmount { get; set; }
+        //public decimal CgstPercentage { get; set; }
+        //public decimal CgstAmount { get; set; }
 
-        public decimal InclusiveTotalAmount { get; set; } //inclusive total amount
-        public decimal ExclusiveTotalAmount { get; set; } //exclusive total amount
+        //public decimal InclusiveTotalAmount { get; set; } //inclusive total amount
+        //public decimal ExclusiveTotalAmount { get; set; } //exclusive total amount
         public decimal ServicePrice { get; set; } // set to service price in advanceservices
 
         public int Quantity { get; set; }
 
-        public decimal DiscountAmount { get; set; }
-        public int BookingId { get; set; }
-        public string KotNo { get; set; } = string.Empty;
-        public decimal Total { get; set; }
-        public DateOnly ServiceDate { get; set; }
-        public string ServiceTime { get; set; } = string.Empty;
-        public int Id { get; set; }
-        public decimal TotalAmount { get; set; }
+        //public decimal DiscountAmount { get; set; }
+        //public int BookingId { get; set; }
+        //public string KotNo { get; set; } = string.Empty;
+        //public decimal Total { get; set; }
+        //public DateOnly ServiceDate { get; set; }
+        //public string ServiceTime { get; set; } = string.Empty;
+        //public int Id { get; set; }
+        public decimal TotalServicePrice { get; set; }
     }
 
     public class ServiveValidator : AbstractValidator<ServicableMaster>

@@ -42,6 +42,37 @@ namespace Repository.Models
         public bool IsActive { get; set; }
         public string ReservationNo { get; set; } = string.Empty;
         public decimal ServicePriceWithoutDiscount { get; set; }
+
+        public decimal TotalServicePriceWithoutDiscount { get; set; }
+    }
+
+    public class AddServiceDTO
+    {
+        public int BookingId { get; set; }
+        public DateOnly CheckInDate { get; set; }
+        public DateTime CheckInDateTime { get; set; }
+        public string CheckInTime { get; set; } = string.Empty;
+        public DateOnly CheckOutDate { get; set; }
+        public DateTime CheckOutDateTime { get; set; }
+        public string CheckOutTime { get; set; } = string.Empty;
+        public string GuestName { get; set; } = string.Empty;
+        public int Id { get; set; }
+        public string KotNo { get; set; } = string.Empty;
+        public string ReservationNo { get; set; } = string.Empty;
+        public int RoomId { get; set; }
+        public string RoomNo { get; set; } = string.Empty;
+        public DateOnly ServiceDate { get; set; }
+        public string ServiceTime { get; set; } = string.Empty;
+        public List<ServicesDTO> ServiceItems { get; set; } = new List<ServicesDTO>();
+    }
+
+    public class UpdateServiceDTO
+    {
+        public int Id { get; set; }
+        public DateOnly ServiceDate { get; set; }
+        public string ServiceTime { get; set; } = string.Empty;
+        public int Quantity { get; set; }
+        public decimal DiscountAmount { get; set; }
     }
 
     public class AdvanceServicesValidator : AbstractValidator<AdvanceService>
