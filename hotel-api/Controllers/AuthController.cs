@@ -65,7 +65,14 @@ namespace hotel_api.Controllers
             //if (isUserExists.Roles == Constants.Constants.SuperAdmin)
             if (true)
             {
+                if(clustersList.Count == 0 && propertiesList.Count == 0)
+                {
+                    return Ok(new { Code = 404, Message = "No data found" });
+                }
+                else
+                {
                     return Ok(new { Code = 200, Message = "Data fetched successfully", clustersList, propertiesList });
+                }
             }
             //else
             //{
@@ -192,6 +199,10 @@ namespace hotel_api.Controllers
                                 x.CancelBookingNotification
                             }).ToListAsync();
 
+                            if(propertiesList.Count == 0)
+                            {
+                                return Ok(new { Code = 404, Message = "No data found", data = propertiesList });
+                            }
                             return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
                         }
                            
