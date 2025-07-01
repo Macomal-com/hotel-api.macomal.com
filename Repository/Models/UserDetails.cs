@@ -40,7 +40,7 @@ namespace Repository.Models
         public string Other3 { get; set; } = string.Empty;
         public string Other4 { get; set; } = string.Empty;
         public string Other5 { get; set; } = string.Empty;
-
+        public int RefUserId { get; set; } 
         
     }
 

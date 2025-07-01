@@ -42,12 +42,12 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = error });
                 }
                 var isUserExists = await _context.UserDetails.FirstOrDefaultAsync(x => x.UserName == model.Username && x.Password == model.Password && x.IsActive == true);
-
+               
                 if(isUserExists == null)
                 {
                     return Ok(new { Code = 404, Message = "Invalid username or password" });
                 }
-
+                isUserExists.UserId = isUserExists.RefUserId;
                 return Ok(new { Code = 200, Message = "Logged-In successfully", user = isUserExists });
                 
             }
