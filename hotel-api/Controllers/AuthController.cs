@@ -6,6 +6,7 @@ using Microsoft.Identity.Client;
 using Repository.DTO;
 using Repository.Models;
 using RepositoryModels.Repository;
+using System.Diagnostics.Metrics;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace hotel_api.Controllers
@@ -83,51 +84,64 @@ namespace hotel_api.Controllers
         [HttpGet("GetClusterOrProperty")]
         public async Task<IActionResult> GetClusterOrProperty()
         {
-            int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]).ToString() != null ? Convert.ToInt32(HttpContext.Request.Headers["UserId"]) : 0;
-            var clustersList = await _context.ClusterMaster.Where(x => x.IsActive == true).ToListAsync();
-            var propertiesList = await _context.CompanyDetails.Where(x => x.IsActive == true && x.ClusterId == 0).ToListAsync();
-            //if (isUserExists.Roles == Constants.Constants.SuperAdmin)
-            if (true)
+            try
             {
-                if(clustersList.Count == 0 && propertiesList.Count == 0)
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]).ToString() != null ? Convert.ToInt32(HttpContext.Request.Headers["UserId"]) : 0;
+                var clustersList = await _context.ClusterMaster.Where(x => x.IsActive == true).ToListAsync();
+                var propertiesList = await _context.CompanyDetails.Where(x => x.IsActive == true && x.ClusterId == 0).ToListAsync();
+
+                bool isAnyClusterOrProperty = clustersList.Count > 0 || propertiesList.Count > 0;
+
+                var isUserExists = await _context.UserDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.UserId == userId);
+                if (isUserExists == null)
                 {
-                    return Ok(new { Code = 404, Message = "No data found" });
+                    return Ok(new { Code = 500, Message = "User not found" });
+                }
+                //if ()
+                if (isUserExists.Roles == Constants.Constants.SuperAdmin)
+                {
+                    if (clustersList.Count == 0 && propertiesList.Count == 0)
+                    {
+                        return Ok(new { Code = 404, Message = "No data found" });
+                    }
+                    else
+                    {
+                        return Ok(new { Code = 200, Message = "Data fetched successfully", clustersList, propertiesList, isAnyClusterOrProperty });
+                    }
                 }
                 else
                 {
-                    return Ok(new { Code = 200, Message = "Data fetched successfully", clustersList, propertiesList });
+                    var authClusterList =  (from cluster in clustersList
+                                                 join auth in _context.UserPropertyMapping on cluster.ClusterId equals auth.ClusterId
+                                                 where auth.IsActive == true && auth.UserId == userId
+                                                 select new ClusterMaster
+                                                 {
+                                                     ClusterId = cluster.ClusterId,
+                                                     ClusterName = cluster.ClusterName,
+                                                     ClusterDescription = cluster.ClusterDescription,
+                                                     ClusterLocation = cluster.ClusterDescription,
+                                                     NoOfProperties = cluster.NoOfProperties
+                                                 }).ToList();
+
+
+                    var authPropertyList = (from property in propertiesList
+                                            join auth in _context.UserPropertyMapping on property.PropertyId equals auth.PropertyId
+                                            where auth.IsActive == true && auth.UserId == userId
+                                            select new CompanyDetails
+                                            {
+                                                PropertyId = property.PropertyId,
+                                                CompanyName = property.CompanyName
+                                            }).ToList();
+
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", clustersList = authClusterList, propertiesList = authPropertyList , isAnyClusterOrProperty });
+
                 }
             }
-            //else
-            //{
-            //    if (clustersList.Count == 0)
-            //    {
-            //        var propertiesList = await (from mapp in _context.UserPropertyMapping
-            //                                    join prop in _context.CompanyDetails on mapp.PropertyId equals prop.PropertyId
-            //                                    where mapp.UserId == isUserExists.UserId && mapp.IsActive == true
-            //                                    select new
-            //                                    {
-            //                                        PropertyId = prop.PropertyId,
-            //                                        CompanyName = prop.CompanyName
-            //                                    }).ToListAsync();
-            //        return Ok(new { Code = 200, Message = "Login successfully", user = isUserExists, clustersList = new List<object>(), propertiesList = propertiesList });
-
-
-            //    }
-            //    else
-            //    {
-            //        var propertiesList = await (from mapp in _context.UserPropertyMapping
-            //                                    join prop in _context.ClusterMaster on mapp.ClusterId equals prop.ClusterId
-            //                                    where mapp.UserId == isUserExists.UserId && mapp.IsActive == true
-            //                                    select new
-            //                                    {
-            //                                        ClusterId = prop.ClusterId,
-            //                                        ClusterName = prop.ClusterName
-            //                                    }).ToListAsync();
-            //        return Ok(new { Code = 200, Message = "Login successfully", user = isUserExists, clustersList = propertiesList, propertiesList = new List<object>() });
-            //    }
-
-            //}
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+            
         }
         [HttpGet("GetPropertiesByUser/{clusterId}")]
         public async Task<IActionResult> GetPropertiesByUser(int clusterId)
