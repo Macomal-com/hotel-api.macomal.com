@@ -87,7 +87,18 @@ namespace hotel_api.Controllers
             try
             {
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]).ToString() != null ? Convert.ToInt32(HttpContext.Request.Headers["UserId"]) : 0;
-                var clustersList = await _context.ClusterMaster.Where(x => x.IsActive == true).ToListAsync();
+                var clustersList = await _context.ClusterMaster.Select(x => new
+                {
+                   
+                        ClusterId = x.ClusterId,
+                        ClusterName = x.ClusterName,
+                        ClusterDescription =x.ClusterDescription,
+                        AllProperties = true,
+                        x.IsActive
+
+                    
+                }).Where(x => x.IsActive == true).ToListAsync();
+
                 var propertiesList = await _context.CompanyDetails.Where(x => x.IsActive == true && x.ClusterId == 0).ToListAsync();
 
                 bool isAnyClusterOrProperty = clustersList.Count > 0 || propertiesList.Count > 0;
@@ -111,17 +122,21 @@ namespace hotel_api.Controllers
                 }
                 else
                 {
-                    var authClusterList =  (from cluster in clustersList
-                                                 join auth in _context.UserPropertyMapping on cluster.ClusterId equals auth.ClusterId
-                                                 where auth.IsActive == true && auth.UserId == userId
-                                                 select new ClusterMaster
-                                                 {
-                                                     ClusterId = cluster.ClusterId,
-                                                     ClusterName = cluster.ClusterName,
-                                                     ClusterDescription = cluster.ClusterDescription,
-                                                     ClusterLocation = cluster.ClusterDescription,
-                                                     NoOfProperties = cluster.NoOfProperties
-                                                 }).ToList();
+                    var authClusterList =  (
+                            from c in clustersList
+                            join up in _context.UserPropertyMapping
+                                on c.ClusterId equals up.ClusterId
+                            where up.IsActive == true && up.UserId == userId
+                            group c by new { c.ClusterId, c.ClusterName, c.ClusterDescription, up.AllProperties } into g
+                            select new 
+                            {
+                                ClusterId = g.Key.ClusterId,
+                                ClusterName = g.Key.ClusterName,
+                                ClusterDescription = g.Key.ClusterDescription,
+                                AllProperties = g.Key.AllProperties
+                                
+                            }
+                        ).ToList();
 
 
                     var authPropertyList = (from property in propertiesList
@@ -143,179 +158,125 @@ namespace hotel_api.Controllers
             }
             
         }
-        [HttpGet("GetPropertiesByUser/{clusterId}")]
-        public async Task<IActionResult> GetPropertiesByUser(int clusterId)
+        [HttpGet("GetPropertiesByUser/{clusterId}/{allProperties}")]
+        public async Task<IActionResult> GetPropertiesByUser(int clusterId, bool allProperties)
         {
             try
             {
+                if(clusterId == 0)
+                {
+                    return Ok(new { Code = 400, Message = "Invalid data" });
+                }
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]).ToString() != null ? Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]) : 0;
 
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]).ToString() != null ? Convert.ToInt32(HttpContext.Request.Headers["UserId"]) : 0;
                 var isUserExists = await _context.UserDetails.FirstOrDefaultAsync(x => x.UserId == userId);
-                if(isUserExists == null)
+                if (isUserExists == null)
                 {
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
                 }
                 else
                 {
-                    //if(isUserExists.Roles == Constants.Constants.SuperAdmin)
-                        if (true)
+                    var properties = await _context.CompanyDetails.Where(x => x.ClusterId == clusterId && x.IsActive == true).Select(x => new
+                    {
+                        PropertyId = x.PropertyId,
+                        PropertyName = x.CompanyName,
+                        PropertyAddress = x.CompanyAddress,
+                        PropertyLogo = x.PropertyLogo,
+                        Gstin = x.Gstin,
+                        CheckInTime = x.CheckInTime,
+                        CheckOutTime = x.CheckOutTime,
+                        CheckOutFormat = x.CheckOutFormat,
+                        IsCheckOutApplicable = x.IsCheckOutApplicable,
+                        IsRoomRateEditable = x.IsRoomRateEditable,
+                        GstType = x.GstType,
+                        ApproveReservation = x.ApproveReservation,
+                        x.HotelTagline,
+                        x.ContactNo1,
+                        x.Email,
+                        x.CancelCalculatedBy,
+                        x.CancelMethod,
+                        x.CheckOutInvoice,
+                        x.IsEarlyCheckInPolicyEnable,
+                        x.IsDefaultCheckInTimeApplicable,
+                        x.IsLateCheckOutPolicyEnable,
+                        x.IsDefaultCheckOutTimeApplicable,
+                        x.IsEmailNotification,
+                        x.IsWhatsappNotification,
+                        x.CheckoutWithBalance,
+                        x.CalculateRoomRates,
+                        x.ReservationNotification,
+                        x.CheckinNotification,
+                        x.CheckOutNotification,
+                        x.RoomShiftNotification,
+                        x.CancelBookingNotification
+                    }).ToListAsync();
+                    if (isUserExists.Roles == Constants.Constants.SuperAdmin)
+                    {
+                        if (properties.Count == 0)
                         {
-                        if (clusterId == 0)
-                        {
-                            var propertiesList = await _context.CompanyDetails.Where(x => x.IsActive == true).Select(x => new
-                            {
-                                PropertyId = x.PropertyId,
-                                PropertyName = x.CompanyName,
-                                PropertyAddress = x.CompanyAddress,
-                                PropertyLogo = x.PropertyLogo,
-                                Gstin = x.Gstin,
-                                CheckInTime = x.CheckInTime,
-                                CheckOutTime = x.CheckOutTime,
-                                CheckOutFormat = x.CheckOutFormat,
-                                IsCheckOutApplicable = x.IsCheckOutApplicable,
-                                IsRoomRateEditable = x.IsRoomRateEditable,
-                                GstType = x.GstType,
-                                ApproveReservation = x.ApproveReservation,
-                                x.HotelTagline,
-                                x.ContactNo1,
-                                x.Email,
-                                x.CancelCalculatedBy,
-                                x.CancelMethod,
-                                x.CheckOutInvoice,
-                                x.IsEarlyCheckInPolicyEnable,
-                                x.IsDefaultCheckInTimeApplicable,
-                                x.IsLateCheckOutPolicyEnable,
-                                x.IsDefaultCheckOutTimeApplicable,
-                                x.IsEmailNotification,
-                                x.IsWhatsappNotification,
-                                x.CheckoutWithBalance,
-                                x.ReservationNotification,
-                                x.CheckinNotification,
-                                x.CheckOutNotification,
-                                x.RoomShiftNotification,
-                                x.CancelBookingNotification
-                            }).ToListAsync();
-
-                            return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
+                            return Ok(new { Code = 404, Message = "No data found", data = properties, isAnyProperty = false });
                         }
 
-                        else
-                        {
-                            var propertiesList = await _context.CompanyDetails.Where(x => x.ClusterId == clusterId && x.IsActive == true).Select(x => new
-                            {
-                                PropertyId = x.PropertyId,
-                                PropertyName = x.CompanyName,
-                                PropertyAddress = x.CompanyAddress,
-                                PropertyLogo = x.PropertyLogo,
-                                Gstin = x.Gstin,
-                                CheckInTime = x.CheckInTime,
-                                CheckOutTime = x.CheckOutTime,
-                                CheckOutFormat = x.CheckOutFormat,
-                                IsCheckOutApplicable = x.IsCheckOutApplicable,
-                                IsRoomRateEditable = x.IsRoomRateEditable,
-                                GstType = x.GstType,
-                                ApproveReservation = x.ApproveReservation,
-                                x.HotelTagline,
-                                x.ContactNo1,
-                                x.Email,
-                                x.CancelCalculatedBy,
-                                x.CancelMethod,
-                                x.CheckOutInvoice,
-                                x.IsEarlyCheckInPolicyEnable,
-                                x.IsDefaultCheckInTimeApplicable,
-                                x.IsLateCheckOutPolicyEnable,
-                                x.IsDefaultCheckOutTimeApplicable,
-                                x.IsEmailNotification,
-                                x.IsWhatsappNotification,
-                                x.CheckoutWithBalance,
-                                x.CalculateRoomRates,
-                                x.ReservationNotification,
-                                x.CheckinNotification,
-                                x.CheckOutNotification,
-                                x.RoomShiftNotification,
-                                x.CancelBookingNotification
-                            }).ToListAsync();
+                        return Ok(new { Code = 200, Message = "Property found successfully", data = properties, isAnyProperty = true });
 
-                            if(propertiesList.Count == 0)
-                            {
-                                return Ok(new { Code = 404, Message = "No data found", data = propertiesList });
-                            }
-                            return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
-                        }
-                           
                     }
                     else
                     {
-                        if(clusterId == 0)
+                        if (properties.Count == 0)
                         {
-                            var propertiesList = await (from mapp in _context.UserPropertyMapping
-                                                        join prop in _context.CompanyDetails on mapp.PropertyId equals prop.PropertyId
-                                                        where mapp.UserId == isUserExists.UserId && mapp.IsActive == true
-                                                        select new
-                                                        {
-                                                            PropertyId = prop.PropertyId,
-                                                            PropertyName = prop.CompanyName,
-                                                            PropertyAddress = prop.CompanyAddress,
-                                                            PropertyLogo = prop.PropertyLogo,
-                                                            Gstin = prop.Gstin,
-                                                            CheckInTime = prop.CheckInTime,
-                                                            CheckOutTime = prop.CheckOutTime,
-                                                            CheckOutFormat = prop.CheckOutFormat,
-                                                            IsCheckOutApplicable = prop.IsCheckOutApplicable,
-                                                            IsRoomRateEditable= prop.IsRoomRateEditable,
-                                                            GstType = prop.GstType,
-                                                            prop.HotelTagline,
-                                                            prop.ContactNo1,
-                                                            prop.Email,
-                                                            prop.CancelCalculatedBy,
-                                                            prop.CancelMethod,
-                                                            prop.CheckOutInvoice,
-                                                            prop.IsEarlyCheckInPolicyEnable,
-                                                            prop.IsDefaultCheckInTimeApplicable,
-                                                            prop.IsLateCheckOutPolicyEnable,
-                                                            prop.IsDefaultCheckOutTimeApplicable,
-                                                            prop.IsEmailNotification,
-                                                            prop.IsWhatsappNotification
-                                                        }).ToListAsync();
-
-                            return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
+                            return Ok(new { Code = 404, Message = "No data found", data = properties, isAnyProperty = false });
+                        }
+                        if (allProperties)
+                        {
+                                                      
+                            return Ok(new { Code = 200, Message = "Property found successfully", data = properties, isAnyProperty = true });
                         }
                         else
                         {
-                            var propertiesList = await (from mapp in _context.UserPropertyMapping
-                                                        join prop in _context.CompanyDetails on mapp.PropertyId equals prop.PropertyId
-                                                        where mapp.UserId == isUserExists.UserId && mapp.ClusterId == clusterId && mapp.IsActive == true
-                                                        select new
-                                                        {
-                                                            PropertyId = prop.PropertyId,
-                                                            PropertyName = prop.CompanyName,
-                                                            PropertyAddress = prop.CompanyAddress,
-                                                            PropertyLogo = prop.PropertyLogo,
-                                                            Gstin = prop.Gstin,
-                                                            CheckInTime = prop.CheckInTime,
-                                                            CheckOutTime = prop.CheckOutTime,
-                                                            CheckOutFormat = prop.CheckOutFormat,
-                                                            IsCheckOutApplicable = prop.IsCheckOutApplicable,
-                                                            IsRoomRateEditable = prop.IsRoomRateEditable,
-                                                            GstType = prop.GstType,
-                                                            prop.HotelTagline,
-                                                            prop.ContactNo1,
-                                                            prop.Email,
-                                                            prop.CancelCalculatedBy,
-                                                            prop.CancelMethod,
-                                                            prop.CheckOutInvoice,
-                                                            prop.IsEarlyCheckInPolicyEnable,
-                                                            prop.IsDefaultCheckInTimeApplicable,
-                                                            prop.IsLateCheckOutPolicyEnable,
-                                                            prop.IsDefaultCheckOutTimeApplicable,
-                                                            prop.IsEmailNotification,
-                                                            prop.IsWhatsappNotification
-                                                        }).ToListAsync();
+                            var authProperties = (from x in properties
+                                                  join up in _context.UserPropertyMapping on x.PropertyId equals up.PropertyId
+                                                  where up.IsActive == true && up.UserId == userId
+                                                  select new
+                                                  {
+                                                      PropertyId = x.PropertyId,
+                                                      PropertyName = x.PropertyName,
+                                                      PropertyAddress = x.PropertyAddress,
+                                                      PropertyLogo = x.PropertyLogo,
+                                                      Gstin = x.Gstin,
+                                                      CheckInTime = x.CheckInTime,
+                                                      CheckOutTime = x.CheckOutTime,
+                                                      CheckOutFormat = x.CheckOutFormat,
+                                                      IsCheckOutApplicable = x.IsCheckOutApplicable,
+                                                      IsRoomRateEditable = x.IsRoomRateEditable,
+                                                      GstType = x.GstType,
+                                                      ApproveReservation = x.ApproveReservation,
+                                                      x.HotelTagline,
+                                                      x.ContactNo1,
+                                                      x.Email,
+                                                      x.CancelCalculatedBy,
+                                                      x.CancelMethod,
+                                                      x.CheckOutInvoice,
+                                                      x.IsEarlyCheckInPolicyEnable,
+                                                      x.IsDefaultCheckInTimeApplicable,
+                                                      x.IsLateCheckOutPolicyEnable,
+                                                      x.IsDefaultCheckOutTimeApplicable,
+                                                      x.IsEmailNotification,
+                                                      x.IsWhatsappNotification,
+                                                      x.CheckoutWithBalance,
+                                                      x.CalculateRoomRates,
+                                                      x.ReservationNotification,
+                                                      x.CheckinNotification,
+                                                      x.CheckOutNotification,
+                                                      x.RoomShiftNotification,
+                                                      x.CancelBookingNotification
+                                                  }).ToList();
 
-                            return Ok(new { Code = 200, Message = "Property found successfully", data = propertiesList });
+                            return Ok(new { Code = 200, Message = "Property found successfully", data = authProperties, isAnyProperty = true });
                         }
                     }
+
+
                 }
 
                 
