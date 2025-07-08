@@ -652,6 +652,153 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+        
 
+        [HttpGet("GetAuthFormData")]
+        public async Task<IActionResult> GetAuthFormData()
+        {
+            try
+            {
+                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x => new
+                {
+                    UserId = x.UserId,
+                    UserName = x.UserName
+                }).ToListAsync(); 
+               
+                return Ok(new { Code = 200, Message = "Data fetched successfully",users = users });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        
+        }
+
+
+        [HttpGet("GetPages")]
+        public async Task<IActionResult> GetPages(int userId)
+        {
+            try
+            {
+               
+                var authPages = await (
+                                from page in _context.UserPages
+                                join auth in _context.UserPagesAuth
+                                    on page.PageId equals auth.PageId into pauth
+                                from pageauth in pauth
+                                    .Where(a => a.UserId == userId && a.CompanyId == companyId)
+                                    .DefaultIfEmpty()
+
+                                orderby page.IsParent descending
+                                select new
+                                {
+                                    PageId = page.PageId,
+                                    PageName = page.PageName,
+                                    IsAuth = pageauth == null ? false : true,
+                                    ParentName = page.PageParent,
+                                    IsParent = page.IsParent,
+                                    ContainsChild = page.ContainsChild,
+                                    
+                                }
+                            ).ToListAsync();
+                Dictionary<string, List<UserAuthDto>> pages = new Dictionary<string, List<UserAuthDto>>();
+                List<UserAuthDto> dto = null;
+                foreach (var item in authPages)
+                {
+                    dto = new List<UserAuthDto>();
+                    if (item.IsParent)
+                    {
+                        if (!item.ContainsChild)
+                        {
+                            dto.Add(new UserAuthDto
+                            {
+                                PageId = item.PageId,
+                                PageName = item.PageName,
+                                IsAuth = item.IsAuth,
+                                IsParent = item.IsParent
+                            });
+                        }
+
+
+                        pages.Add(item.PageName, dto);
+                    }
+                    else
+                    {
+
+                        if (pages.ContainsKey(item.ParentName))
+                        {
+                            pages.TryGetValue(item.ParentName, out dto);
+                            dto.Add(new UserAuthDto
+                            {
+                                PageId = item.PageId,
+                                PageName = item.PageName,
+                                IsAuth = item.IsAuth,
+                                IsParent = false
+                            });
+
+                            pages[item.ParentName] = dto;
+                        }
+                        else
+                        {
+                            dto.Add(new UserAuthDto
+                            {
+                                PageId = item.PageId,
+                                PageName = item.PageName,
+                                IsAuth = item.IsAuth,
+                                IsParent = false
+                            });
+
+                            pages.Add(item.ParentName
+                                , dto);
+                        }
+                    }
+                }
+                return Ok(new { Code = 200, Message = "Data fetched successfully",  data = pages });
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+        [HttpPost("SavePageAuth")]
+        public async Task<IActionResult> SavePageAuth(int selectedUserId, [FromBody]List<UserAuthDto> dto)
+        {
+            var transaction = await _context.Database.BeginTransactionAsync();
+            var currentDate = DateTime.Now;
+            try
+            {
+                var existingAuth = await _context.UserPagesAuth.Where(x => x.IsActive == true && x.CompanyId == companyId && x.UserId == selectedUserId).ToListAsync();
+                if(existingAuth.Count > 0)
+                {
+                    _context.UserPagesAuth.RemoveRange(existingAuth);
+                }
+
+                foreach(var item in dto)
+                {
+                    var userPage = new UserPagesAuth
+                    {
+                        PageId = item.PageId,
+                        UserId = selectedUserId,
+                        CompanyId = companyId,
+                        IsActive = true,
+                        CreatedDate = currentDate,
+                        CreatedBy = userId
+                    };
+                    await _context.UserPagesAuth.AddAsync(userPage);
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Ok(new { Code = 200, Message = "Changes saved successfully" });
+            }
+            catch(Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
     }
 }

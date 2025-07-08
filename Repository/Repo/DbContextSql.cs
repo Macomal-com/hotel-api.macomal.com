@@ -74,7 +74,8 @@ namespace RepositoryModels.Repository
         public DbSet<RoomAssetMapping> RoomAssetMapping { get; set; }
 
         public DbSet<DynamicActionJs> DynamicActionJs { get; set; }
-
+        public DbSet<UserPages> UserPages { get; set; }
+        public DbSet<UserPagesAuth> UserPagesAuth { get; set; }
         //protected override void OnModelCreating(ModelBuilder modelBuilder)
         //{
         //    modelBuilder.Entity<ValidationData>().HasNoKey();
