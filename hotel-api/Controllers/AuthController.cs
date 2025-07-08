@@ -38,7 +38,7 @@ namespace hotel_api.Controllers
                 }
 
                 if (headers.TryGetValue("UserId", out var userIdHeader) &&
-                int.TryParse(companyIdHeader, out int id))
+                int.TryParse(userIdHeader, out int id))
                 {
                     this.userId = id;
                 }
@@ -73,7 +73,10 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 404, Message = "Invalid username or password" });
                 }
                 isUserExists.UserId = isUserExists.RefUserId;
-                return Ok(new { Code = 200, Message = "Logged-In successfully", user = isUserExists });
+
+                
+
+                return Ok(new { Code = 200, Message = "Logged-In successfully", user = isUserExists  });
                 
             }
             catch(Exception ex)
@@ -674,13 +677,38 @@ namespace hotel_api.Controllers
         
         }
 
+        //[HttpGet("GetPagesForBinding")]
+        //public async Task<IActionResult> GetPagesForBinding(int loggedInUserId, string role)
+        //{
+        //    try
+        //    {
+        //        //if(role == Constants.Constants.SuperAdmin)
+        //        //{
+
+        //        //}
+        //        //else
+        //        //{
+
+        //        //}
+
+                  
+
+
+        //        //return Ok(new { Code = 200, Message = "Data fetched successfully", parentPages = parents, childPages });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+        //    }
+        //}
+
 
         [HttpGet("GetPages")]
         public async Task<IActionResult> GetPages(int userId)
         {
             try
             {
-               
+                
                 var authPages = await (
                                 from page in _context.UserPages
                                 join auth in _context.UserPagesAuth
@@ -701,6 +729,8 @@ namespace hotel_api.Controllers
                                     
                                 }
                             ).ToListAsync();
+
+                
                 Dictionary<string, List<UserAuthDto>> pages = new Dictionary<string, List<UserAuthDto>>();
                 List<UserAuthDto> dto = null;
                 foreach (var item in authPages)
@@ -769,14 +799,39 @@ namespace hotel_api.Controllers
             var currentDate = DateTime.Now;
             try
             {
+                var allPages = await _context.UserPages.ToListAsync();
+
                 var existingAuth = await _context.UserPagesAuth.Where(x => x.IsActive == true && x.CompanyId == companyId && x.UserId == selectedUserId).ToListAsync();
                 if(existingAuth.Count > 0)
                 {
                     _context.UserPagesAuth.RemoveRange(existingAuth);
                 }
 
+                List<int> parentPageIds = new List<int>();
+
                 foreach(var item in dto)
                 {
+                    var currentPageIsChild = allPages.FirstOrDefault(x => x.PageId == item.PageId && x.IsParent == false);
+                    if (currentPageIsChild!=null)
+                    {
+                        var parentPage = allPages.FirstOrDefault(x => x.PageName == currentPageIsChild.PageParent);
+                        if(parentPage != null && !parentPageIds.Contains(parentPage.PageId))
+                        {
+                            var parentUserAuth = new UserPagesAuth
+                            {
+                                PageId = parentPage.PageId,
+                                UserId = selectedUserId,
+                                CompanyId = companyId,
+                                IsActive = true,
+                                CreatedDate = currentDate,
+                                CreatedBy = userId
+                            };
+                            parentPageIds.Add(parentPage.PageId);
+                            await _context.UserPagesAuth.AddAsync(parentUserAuth);
+                        }
+                        
+                    }
+
                     var userPage = new UserPagesAuth
                     {
                         PageId = item.PageId,
