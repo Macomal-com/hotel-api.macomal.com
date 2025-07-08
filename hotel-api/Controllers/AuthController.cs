@@ -677,30 +677,201 @@ namespace hotel_api.Controllers
         
         }
 
-        //[HttpGet("GetPagesForBinding")]
-        //public async Task<IActionResult> GetPagesForBinding(int loggedInUserId, string role)
-        //{
-        //    try
-        //    {
-        //        //if(role == Constants.Constants.SuperAdmin)
-        //        //{
+        [HttpGet("GetPagesForBinding")]
+        public async Task<IActionResult> GetPagesForBinding(int loggedInUserId, string role)
+        {
+            var uniqueRoutes = new HashSet<string> ();
 
-        //        //}
-        //        //else
-        //        //{
+            try
+            {
+                if(role == Constants.Constants.SuperAdmin)
+                {
+                    var authPages = await (
+                                  from page in _context.UserPages
+                                  
 
-        //        //}
+                                  orderby page.IsParent descending
+                                  select new
+                                  {
+                                      PageId = page.PageId,
+                                      PageName = page.PageName,
+                                      PageRoute = page.PageRoute,
+                                      PageAliasName = page.PageAliasName,
+                                      PageIcon = page.PageIcon,
+                                      IsParent = page.IsParent,
+                                      ProcedureName = page.ProcedureName,
+                                      Other1 = page.Other1,
+                                      PageOrder = page.PageOrder,
+                                      ContainsChild = page.ContainsChild,
+                                      PageParent = page.PageParent,
+                                      StyleChild = page.StyleChild
+                                  }
+                              ).ToListAsync();
 
-                  
+                    var parents = authPages.Where(x => x.IsParent == true).OrderBy(x=>x.PageOrder).ToList();
+                    Dictionary<string, List<UserPages>> childPages = new Dictionary<string, List<UserPages>>();
+                    List<UserPages> dto = null;
+                    foreach (var item in authPages)
+                    {
+                        uniqueRoutes.Add(item.PageRoute);
+                        dto = new List<UserPages>();
+                        if (item.IsParent)
+                        {
 
+                        }
+                        else
+                        {
 
-        //        //return Ok(new { Code = 200, Message = "Data fetched successfully", parentPages = parents, childPages });
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
-        //    }
-        //}
+                            if (childPages.ContainsKey(item.PageParent))
+                            {
+                                childPages.TryGetValue(item.PageParent, out dto);
+                                dto.Add(new UserPages
+                                {
+                                    PageId = item.PageId,
+                                    PageName = item.PageName,
+                                    PageRoute = item.PageRoute,
+                                    PageAliasName = item.PageAliasName,
+                                    PageIcon = item.PageIcon,
+                                    IsParent = item.IsParent,
+                                    ProcedureName = item.ProcedureName,
+                                    Other1 = item.Other1,
+                                    PageOrder = item.PageOrder,
+                                    ContainsChild = item.ContainsChild,
+                                    PageParent = item.PageParent,
+                                    StyleChild = item.StyleChild
+                                });
+
+                                childPages[item.PageParent] = dto;
+                            }
+                            else
+                            {
+                                dto.Add(new UserPages
+                                {
+                                    PageId = item.PageId,
+                                    PageName = item.PageName,
+                                    PageRoute = item.PageRoute,
+                                    PageAliasName = item.PageAliasName,
+                                    PageIcon = item.PageIcon,
+                                    IsParent = item.IsParent,
+                                    ProcedureName = item.ProcedureName,
+                                    Other1 = item.Other1,
+                                    PageOrder = item.PageOrder,
+                                    ContainsChild = item.ContainsChild,
+                                    PageParent = item.PageParent,
+                                    StyleChild = item.StyleChild
+                                });
+
+                                childPages[item.PageParent] = dto;
+                            }
+                        }
+                    }
+
+                    foreach (var key in childPages.Keys.ToList()) // Use ToList() to avoid modifying during iteration
+                    {
+                        childPages[key] = childPages[key].OrderBy(x=>x.PageOrder).ToList(); // Example: multiply each value by 10
+                    }
+
+                    
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", parentPages = parents, childPages, uniqueRoutes });
+                }
+                else
+                {
+                    var authPages = await (
+                                  from page in _context.UserPages
+                                  join auth in _context.UserPagesAuth on page.PageId equals auth.PageId
+                                  where
+                                  auth.UserId == loggedInUserId
+
+                                  orderby page.IsParent descending
+                                  select new
+                                  {
+                                      PageId = page.PageId,
+                                      PageName = page.PageName,
+                                      PageRoute = page.PageRoute,
+                                      PageAliasName = page.PageAliasName,
+                                      PageIcon = page.PageIcon,
+                                      IsParent = page.IsParent,
+                                      ProcedureName = page.ProcedureName,
+                                      Other1 = page.Other1,
+                                      PageOrder = page.PageOrder,
+                                      ContainsChild = page.ContainsChild,
+                                      PageParent = page.PageParent,
+                                      StyleChild = page.StyleChild
+                                  }
+                              ).ToListAsync();
+
+                    var parents = authPages.Where(x => x.IsParent == true);
+                    Dictionary<string, List<UserPages>> childPages = new Dictionary<string, List<UserPages>>();
+                    List<UserPages> dto = null;
+                    foreach (var item in authPages)
+                    {
+                        uniqueRoutes.Add(item.PageRoute);
+                        dto = new List<UserPages>();
+                        if (item.IsParent)
+                        {
+
+                        }
+                        else
+                        {
+
+                            if (childPages.ContainsKey(item.PageParent))
+                            {
+                                childPages.TryGetValue(item.PageParent, out dto);
+                                dto.Add(new UserPages
+                                {
+                                    PageId = item.PageId,
+                                    PageName = item.PageName,
+                                    PageRoute = item.PageRoute,
+                                    PageAliasName = item.PageAliasName,
+                                    PageIcon = item.PageIcon,
+                                    IsParent = item.IsParent,
+                                    ProcedureName = item.ProcedureName,
+                                    Other1 = item.Other1,
+                                    PageOrder = item.PageOrder,
+                                    ContainsChild = item.ContainsChild,
+                                    PageParent = item.PageParent,
+                                    StyleChild = item.StyleChild
+                                });
+
+                                childPages[item.PageParent] = dto;
+                            }
+                            else
+                            {
+                                dto.Add(new UserPages
+                                {
+                                    PageId = item.PageId,
+                                    PageName = item.PageName,
+                                    PageRoute = item.PageRoute,
+                                    PageAliasName = item.PageAliasName,
+                                    PageIcon = item.PageIcon,
+                                    IsParent = item.IsParent,
+                                    ProcedureName = item.ProcedureName,
+                                    Other1 = item.Other1,
+                                    PageOrder = item.PageOrder,
+                                    ContainsChild = item.ContainsChild,
+                                    PageParent = item.PageParent,
+                                    StyleChild = item.StyleChild
+                                });
+
+                                childPages[item.PageParent] = dto;
+                            }
+                        }
+                    }
+
+                    foreach (var key in childPages.Keys.ToList()) // Use ToList() to avoid modifying during iteration
+                    {
+                        childPages[key] = childPages[key].OrderBy(x => x.PageOrder).ToList(); // Example: multiply each value by 10
+                    }
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", parentPages = parents, childPages, uniqueRoutes });
+                }
+
+                    
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
 
         [HttpGet("GetPages")]

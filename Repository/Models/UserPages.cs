@@ -36,5 +36,7 @@ namespace Repository.Models
         public int PageOrder { get; set; }
 
         public bool ContainsChild { get; set; }
+
+        public int StyleChild { get; set; }
     }
 }
