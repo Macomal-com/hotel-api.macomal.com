@@ -354,7 +354,7 @@ namespace hotel_api.Controllers
     orderby g.Key.UserName
     select new
     {
-        Id = g.Key.AllProperties ? g.Max(x => x.up.Id) : 0,
+        Id = g.Key.AllProperties ? g.Max(x => x.up.Id) : -1,
         ClusterId = g.Key.ClusterId,
         UserId = g.Key.UserId,
         ClusterName = g.Key.ClusterName,
@@ -466,7 +466,7 @@ namespace hotel_api.Controllers
         .DefaultIfEmpty() // LEFT JOIN
     select new
     {
-        Id = up.PropertyId == 0 ? 0 : up.Id,
+        Id = up.PropertyId == 0 ? -1 : up.Id,
         PropertyName = p.CompanyName
     }
 ).ToListAsync();
