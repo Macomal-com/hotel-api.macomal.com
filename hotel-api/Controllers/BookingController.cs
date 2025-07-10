@@ -281,7 +281,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("ReservationRoomRate")]
-        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate, int noOfRooms, int noOfNights, string gstType, int noOfHours = 0, string checkInTime = "", string checkOutTime = "", string discountType = "", decimal discount = 0, string checkOutFormat = "", string calculateRoomRates = "")
+        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate, int noOfRooms, int noOfNights, string gstType, int noOfHours = 0, string checkInTime = "", string checkOutTime = "", string discountType = "", decimal discount = 0, string checkOutFormat = "", string calculateRoomRates = "", bool isEditRate = false, decimal eachNightRate = 0)
         {
             try
             {
@@ -295,7 +295,7 @@ namespace hotel_api.Controllers
 
                
                           
-                var (code, message, response) = await CalculateRoomRateAsync(companyId, roomTypeId, checkInDate, checkOutDate,  noOfRooms, noOfNights, gstType, noOfHours, checkInTime, checkOutTime, discountType, discount, checkOutFormat == "" ? property.CheckOutFormat : checkOutFormat, calculateRoomRates == "" ? property.CalculateRoomRates : calculateRoomRates, property);
+                var (code, message, response) = await CalculateRoomRateAsync(companyId, roomTypeId, checkInDate, checkOutDate,  noOfRooms, noOfNights, gstType, noOfHours, checkInTime, checkOutTime, discountType, discount, checkOutFormat == "" ? property.CheckOutFormat : checkOutFormat, calculateRoomRates == "" ? property.CalculateRoomRates : calculateRoomRates, property, isEditRate, eachNightRate);
                 return Ok(new { Code = code, Message = message, Data = response });
 
             }
@@ -5350,7 +5350,7 @@ namespace hotel_api.Controllers
         //CALCULATE ROOM RATE DATE WISE
         private async Task<(int Code, string Message, RoomRateResponse? Response)> CalculateRoomRateAsync(
             int companyId, int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate,
-            int noOfRooms, int noOfNights, string gstType, int noOfHours, string checkInTime, string checkOutTime, string discountType, decimal discount, string checkOutFormat, string roomRatesCalculatedBy, CompanyDetails property)
+            int noOfRooms, int noOfNights, string gstType, int noOfHours, string checkInTime, string checkOutTime, string discountType, decimal discount, string checkOutFormat, string roomRatesCalculatedBy, CompanyDetails property, bool isEditRate = false, decimal eachNightRate = 0)
         {
             var roomRateResponse = new RoomRateResponse();
 
@@ -5360,7 +5360,7 @@ namespace hotel_api.Controllers
                 //return Ok(new { Code = 400, Message = "Invalid data" });
             }
 
-          
+            
 
             var gstPercentage = await GetGstPercetage(Constants.Constants.Reservation);
             if (gstPercentage == null)
@@ -5550,43 +5550,113 @@ namespace hotel_api.Controllers
                     roomRateDate.BookingDate = checkInDate;
                     roomRateDate.GstType = gstType;
                     roomRateDate.RoomTypeId = roomTypeId;
-                    //find custom rates
-                    var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= checkInDate && x.ToDate >= checkInDate) && x.RoomTypeId == roomTypeId).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
-                    if (customRoomRates == null)
+
+                    //check room rate edit table
+                    if(isEditRate == true)
                     {
-                        //fetch standard room rates
-                        var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == 0).FirstOrDefaultAsync();
-                        if (roomRates == null)
+                        roomRateDate.RoomRateWithoutDiscount = eachNightRate;
+                        if (discount > 0)
                         {
-                            return (400, "No Room Rates found", roomRateResponse);
+                            roomRateDate.DiscountType = discountType;
+                            //discount type is percentage
+                            if (discountType == Constants.Constants.DeductionByPercentage)
+                            {
+                                roomRateDate.DiscountPercentage = discount;
+                                roomRateDate.DiscountAmount = Constants.Calculation.CalculatePercentage(eachNightRate, discount);
+                                roomRateDate.RoomRate = eachNightRate - roomRateDate.DiscountAmount;
+
+                            }
+                            //discount type is amount
+                            else
+                            {
+                                roomRateDate.DiscountAmount = discount;
+                                roomRateDate.RoomRate = eachNightRate - Constants.Calculation.CalculatePercentage(eachNightRate, discount);
+                            }
                         }
                         else
                         {
-                            roomRateDate.RoomRateWithoutDiscount = roomRates.RoomRate;                            
-                                                      
+                            roomRateDate.RoomRate = eachNightRate;
+                        }
+                        if (roomRateDate.RoomRate < 0)
+                        {
+                            return (400, "Room rate is cannot be less than discount amount", roomRateResponse);
+                        }
+                        roomRateResponse.DiscountTotalAmount = roomRateResponse.DiscountTotalAmount + roomRateDate.DiscountAmount;
+                    }
+                    //room rate not editable
+                    else
+                    {
+                        //find custom rates
+                        var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= checkInDate && x.ToDate >= checkInDate) && x.RoomTypeId == roomTypeId).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
+                        if (customRoomRates == null)
+                        {
+                            //fetch standard room rates
+                            var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId && x.HourId == 0).FirstOrDefaultAsync();
+                            if (roomRates == null)
+                            {
+                                return (400, "No Room Rates found", roomRateResponse);
+                            }
+                            else
+                            {
+                                roomRateDate.RoomRateWithoutDiscount = roomRates.RoomRate;
+
+                                //if any discount
+                                if (discount > 0)
+                                {
+                                    roomRateDate.DiscountType = discountType;
+                                    //discount type is percentage
+                                    if (discountType == Constants.Constants.DeductionByPercentage)
+                                    {
+                                        roomRateDate.DiscountPercentage = discount;
+                                        roomRateDate.DiscountAmount = Constants.Calculation.CalculatePercentage(roomRates.RoomRate, discount);
+                                        roomRateDate.RoomRate = roomRates.RoomRate - roomRateDate.DiscountAmount;
+
+                                    }
+                                    //discount type is amount
+                                    else
+                                    {
+                                        roomRateDate.DiscountAmount = discount;
+                                        roomRateDate.RoomRate = roomRates.RoomRate - discount;
+                                    }
+                                }
+                                //no discount
+                                else
+                                {
+                                    roomRateDate.RoomRate = roomRates.RoomRate;
+                                }
+                                if (roomRateDate.RoomRate < 0)
+                                {
+                                    return (400, "Room rate is cannot be less than discount amount", roomRateResponse);
+                                }
+                                roomRateResponse.DiscountTotalAmount = roomRateResponse.DiscountTotalAmount + roomRateDate.DiscountAmount;
+                            }
+                        }
+                        else
+                        {
+                            roomRateDate.RoomRateWithoutDiscount = customRoomRates.RoomRate;
+
                             //if any discount
-                            if(discount > 0)
+                            if (discount > 0)
                             {
                                 roomRateDate.DiscountType = discountType;
                                 //discount type is percentage
-                                if(discountType == Constants.Constants.DeductionByPercentage)
+                                if (discountType == Constants.Constants.DeductionByPercentage)
                                 {
                                     roomRateDate.DiscountPercentage = discount;
-                                    roomRateDate.DiscountAmount = Constants.Calculation.CalculatePercentage(roomRates.RoomRate, discount);
-                                    roomRateDate.RoomRate = roomRates.RoomRate - roomRateDate.DiscountAmount;
+                                    roomRateDate.DiscountAmount = Constants.Calculation.CalculatePercentage(customRoomRates.RoomRate, discount);
+                                    roomRateDate.RoomRate = customRoomRates.RoomRate - roomRateDate.DiscountAmount;
 
                                 }
                                 //discount type is amount
                                 else
                                 {
                                     roomRateDate.DiscountAmount = discount;
-                                    roomRateDate.RoomRate = roomRates.RoomRate - discount;
+                                    roomRateDate.RoomRate = customRoomRates.RoomRate - Constants.Calculation.CalculatePercentage(customRoomRates.RoomRate, discount);
                                 }
                             }
-                            //no discount
                             else
                             {
-                                roomRateDate.RoomRate = roomRates.RoomRate;
+                                roomRateDate.RoomRate = customRoomRates.RoomRate;
                             }
                             if (roomRateDate.RoomRate < 0)
                             {
@@ -5595,39 +5665,8 @@ namespace hotel_api.Controllers
                             roomRateResponse.DiscountTotalAmount = roomRateResponse.DiscountTotalAmount + roomRateDate.DiscountAmount;
                         }
                     }
-                    else
-                    {
-                        roomRateDate.RoomRateWithoutDiscount = customRoomRates.RoomRate;
 
-                        //if any discount
-                        if (discount > 0)
-                        {
-                            roomRateDate.DiscountType = discountType;
-                            //discount type is percentage
-                            if (discountType == Constants.Constants.DeductionByPercentage)
-                            {
-                                roomRateDate.DiscountPercentage = discount;
-                                roomRateDate.DiscountAmount = Constants.Calculation.CalculatePercentage(customRoomRates.RoomRate, discount);
-                                roomRateDate.RoomRate = roomRateDate.RoomRate - roomRateDate.DiscountAmount;
-
-                            }
-                            //discount type is amount
-                            else
-                            {
-                                roomRateDate.DiscountAmount = discount;
-                                roomRateDate.RoomRate = customRoomRates.RoomRate - Constants.Calculation.CalculatePercentage(customRoomRates.RoomRate, discount);
-                            }
-                        }
-                        else
-                        {
-                            roomRateDate.RoomRate = customRoomRates.RoomRate;
-                        }
-                        if (roomRateDate.RoomRate < 0)
-                        {
-                            return (400, "Room rate is cannot be less than discount amount", roomRateResponse);
-                        }
-                        roomRateResponse.DiscountTotalAmount = roomRateResponse.DiscountTotalAmount + roomRateDate.DiscountAmount;
-                    }
+                        
 
                     if (gstPercentage.GstType == Constants.Constants.MultipleGst)
                     {
@@ -5645,6 +5684,9 @@ namespace hotel_api.Controllers
                     {
                         roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
                     }
+
+                    roomRateResponse.RoomRateEachNight = roomRateDate.RoomRate ;
+
                     (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(roomRateDate.RoomRate), roomRateDate.GstPercentage, gstType);
 
                     roomRateDate.TotalRoomRate = Calculation.RoundOffDecimal(roomRateDate.RoomRate + roomRateDate.GstAmount);
@@ -5658,6 +5700,8 @@ namespace hotel_api.Controllers
                     //set amount for day one if early check in applicable                    
                     bookingAmount = roomRateDate.RoomRate;
                     totalBookingAmount = roomRateDate.TotalRoomRate;
+
+                    
 
                     roomRateResponse.BookingAmount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmount + roomRateDate.RoomRate);
 

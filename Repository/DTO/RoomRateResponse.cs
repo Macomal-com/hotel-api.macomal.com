@@ -54,6 +54,8 @@ namespace Repository.DTO
         public decimal DiscountTotalAmount { get; set; }
 
         public string CalculateRoomRates { get; set; } = string.Empty;
+
+        public decimal RoomRateEachNight { get; set; }
     }
 
     

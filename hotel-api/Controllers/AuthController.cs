@@ -212,7 +212,8 @@ namespace hotel_api.Controllers
                         x.CheckinNotification,
                         x.CheckOutNotification,
                         x.RoomShiftNotification,
-                        x.CancelBookingNotification
+                        x.CancelBookingNotification,
+                        
                     }).ToListAsync();
                     if (isUserExists.Roles == Constants.Constants.SuperAdmin)
                     {
