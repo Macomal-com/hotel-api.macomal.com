@@ -498,6 +498,8 @@ namespace hotel_api.Controllers
                         bookingDetails.BookingSource = request.ReservationDetailsDTO.BookingSource;
                         bookingDetails.TotalAmount = BookingCalulation.BookingTotalAmount(bookingDetails);
                         bookingDetails.TotalAmountWithOutDiscount = bookingDetails.TotalAmount;
+                       
+
                         roomCount++;
 
                         await _context.BookingDetail.AddAsync(bookingDetails);
@@ -1050,7 +1052,10 @@ namespace hotel_api.Controllers
                                             DiscountTotalAmount = booking.DiscountTotalAmount,
                                             BookingAmountWithoutDiscount = booking.BookingAmountWithoutDiscount,
                                             CalculateRoomRates = booking.CalculateRoomRates,
+                                            EachNightRate = booking.EachNightRate,
+                                            EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount,
                                             IsSelectedValue = false,
+
                                             // NotMapped fields
                                             RoomTypeName = category.Type == null ? "" : category.Type,
                                             RoomNo = bookrooms.RoomNo == null ? "" : bookrooms.RoomNo
@@ -1212,7 +1217,8 @@ namespace hotel_api.Controllers
                         bookingDetails.GuestId = item.GuestDetails.GuestId;
                         bookingDetails.BookingSource = reservationDetails.BookingSource;
                         bookingDetails.ReservationNo = reservationDetails.ReservationNo;
-                        
+                        bookingDetails.EachNightRate = item.EachNightRate;
+                        bookingDetails.EachNightRateWithoutDiscount = item.EachNightRateWithoutDiscount;
                         bookingDetails.TotalAmount = BookingCalulation.BookingTotalAmount(bookingDetails);
                         bookingDetails.TotalAmountWithOutDiscount = bookingDetails.TotalAmount;
                         await _context.BookingDetail.AddAsync(bookingDetails);
@@ -1304,6 +1310,9 @@ namespace hotel_api.Controllers
                         bookingDetails.DiscountPercentage = item.DiscountPercentage;
                         bookingDetails.DiscountAmount = item.DiscountAmount;
                         bookingDetails.DiscountTotalAmount = item.DiscountTotalAmount;
+
+                        bookingDetails.EachNightRate = item.EachNightRate;
+                        bookingDetails.EachNightRateWithoutDiscount = item.EachNightRateWithoutDiscount;
 
                         bookingDetails.TotalAmount = BookingCalulation.BookingTotalAmount(bookingDetails);
                         bookingDetails.TotalAmountWithOutDiscount = bookingDetails.TotalAmount;
@@ -1813,7 +1822,8 @@ namespace hotel_api.Controllers
                         CheckOutDiscountType = booking.CheckOutDiscountType,
                         CheckOutDiscountPercentage = booking.CheckOutDiscountPercentage,
                         CheckOutDiscoutAmount = booking.CheckOutDiscoutAmount,
-
+                        EachNightRate = booking.EachNightRate,
+                        EachNightRateWithoutDiscount  = booking.EachNightRateWithoutDiscount
                     };
 
                     if (booking.CheckoutFormat == Constants.Constants.SameDayFormat)
@@ -1886,7 +1896,7 @@ namespace hotel_api.Controllers
                         //calculate no of nights
                         int nights = Constants.Calculation.FindNightsAndHours(request.ShiftDate, Constants.Constants.DayStartTime, booking.CheckOutDate, booking.CheckOutTime, booking.CheckoutFormat);
 
-                        var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, 1, nights, booking.GstType, booking.NoOfHours, Constants.Constants.DayStartTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, 1, nights, booking.GstType, booking.NoOfHours, Constants.Constants.DayStartTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount);
 
                         //calculate room rates
                         //var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
@@ -1936,7 +1946,8 @@ namespace hotel_api.Controllers
                     var newbookedRoomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == newBooking.BookingId).OrderBy(x => x.BookingDate).ToListAsync();
 
                     (newBooking.BookingAmount, newBooking.GstAmount, newBooking.TotalBookingAmount) = CalculateTotalBookedRoomRate(newbookedRoomRates);
-
+                    newBooking.EachNightRate = request.EachNightRate;
+                    newBooking.EachNightRateWithoutDiscount = request.EachNightRateWithoutDiscount;
                     newBooking.TotalAmount = BookingCalulation.BookingTotalAmount(newBooking);
                     newBooking.TotalAmountWithOutDiscount = newBooking.TotalAmount;
                     _context.BookingDetail.Update(newBooking);
@@ -3805,6 +3816,8 @@ namespace hotel_api.Controllers
                                                     BookingAmountWithoutDiscount = booking.BookingAmountWithoutDiscount,
                                                     CalculateRoomRates = booking.CalculateRoomRates,
                                                     IsSelectedValue = false,
+                                                    EachNightRate = booking.EachNightRate,
+                                                    EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount,
                                                     // NotMapped fields
                                                     RoomTypeName = category.Type == null ? "" : category.Type,
                                                     RoomNo = bookrooms.RoomNo == null ? "" : bookrooms.RoomNo,
@@ -5458,7 +5471,7 @@ namespace hotel_api.Controllers
 
                         if (roomRateDate.RoomRate < 0)
                         {
-                            return (400, "Room rate is cannot be less than discount amount", roomRateResponse);
+                            return (400, "Room rate cannot be less than discount amount", roomRateResponse);
                         }
 
                         roomRateResponse.DiscountAmount = roomRateResponse.DiscountAmount + roomRateDate.DiscountAmount;
@@ -5555,6 +5568,8 @@ namespace hotel_api.Controllers
                     if(isEditRate == true)
                     {
                         roomRateDate.RoomRateWithoutDiscount = eachNightRate;
+                        roomRateResponse.EachNightRateWithoutDiscount = eachNightRate;
+                     
                         if (discount > 0)
                         {
                             roomRateDate.DiscountType = discountType;
@@ -5570,7 +5585,7 @@ namespace hotel_api.Controllers
                             else
                             {
                                 roomRateDate.DiscountAmount = discount;
-                                roomRateDate.RoomRate = eachNightRate - Constants.Calculation.CalculatePercentage(eachNightRate, discount);
+                                roomRateDate.RoomRate = eachNightRate - roomRateDate.DiscountAmount;
                             }
                         }
                         else
@@ -5599,7 +5614,8 @@ namespace hotel_api.Controllers
                             else
                             {
                                 roomRateDate.RoomRateWithoutDiscount = roomRates.RoomRate;
-
+                                roomRateResponse.EachNightRateWithoutDiscount = roomRates.RoomRate;
+                             
                                 //if any discount
                                 if (discount > 0)
                                 {
@@ -5634,7 +5650,8 @@ namespace hotel_api.Controllers
                         else
                         {
                             roomRateDate.RoomRateWithoutDiscount = customRoomRates.RoomRate;
-
+                            roomRateResponse.EachNightRateWithoutDiscount = customRoomRates.RoomRate;
+                            
                             //if any discount
                             if (discount > 0)
                             {
@@ -5651,7 +5668,7 @@ namespace hotel_api.Controllers
                                 else
                                 {
                                     roomRateDate.DiscountAmount = discount;
-                                    roomRateDate.RoomRate = customRoomRates.RoomRate - Constants.Calculation.CalculatePercentage(customRoomRates.RoomRate, discount);
+                                    roomRateDate.RoomRate = customRoomRates.RoomRate - roomRateDate.DiscountAmount;
                                 }
                             }
                             else
@@ -5685,8 +5702,8 @@ namespace hotel_api.Controllers
                         roomRateDate.GstPercentage = gstPercentage.TaxPercentage;
                     }
 
-                    roomRateResponse.RoomRateEachNight = roomRateDate.RoomRate ;
 
+                    roomRateResponse.RoomRateEachNight = roomRateDate.RoomRate;
                     (roomRateDate.RoomRate, roomRateDate.GstAmount) = Calculation.CalculateGst(Calculation.RoundOffDecimal(roomRateDate.RoomRate), roomRateDate.GstPercentage, gstType);
 
                     roomRateDate.TotalRoomRate = Calculation.RoundOffDecimal(roomRateDate.RoomRate + roomRateDate.GstAmount);
@@ -5715,7 +5732,31 @@ namespace hotel_api.Controllers
                     DateOnly currentDate = checkInDate.AddDays(1);
                     while (nights > 0)
                     {
-                        var eachDateRoomRate = roomRateDate;
+                        var eachDateRoomRate = new BookedRoomRate
+                        {
+                            BookingId = roomRateDate.BookingId,
+                            RoomId = roomRateDate.RoomId,
+                            ReservationNo = roomRateDate.ReservationNo,
+                            RoomRate = roomRateDate.RoomRate,
+                            GstPercentage = roomRateDate.GstPercentage,
+                            GstAmount = roomRateDate.GstAmount,
+                            TotalRoomRate = roomRateDate.TotalRoomRate,
+                            GstType = roomRateDate.GstType,
+                            CreatedDate = roomRateDate.CreatedDate,
+                            UpdatedDate = roomRateDate.UpdatedDate,
+                            UserId = roomRateDate.UserId,
+                            CompanyId = roomRateDate.CompanyId,
+                            IsActive = roomRateDate.IsActive,
+                            CGST = roomRateDate.CGST,
+                            CGSTAmount = roomRateDate.CGSTAmount,
+                            SGST = roomRateDate.SGST,
+                            SGSTAmount = roomRateDate.SGSTAmount,
+                            DiscountType = roomRateDate.DiscountType,
+                            DiscountPercentage = roomRateDate.DiscountPercentage,
+                            DiscountAmount = roomRateDate.DiscountAmount,
+                            RoomRateWithoutDiscount = roomRateDate.RoomRateWithoutDiscount,
+                            RoomTypeId = roomRateDate.RoomTypeId,
+                        }; 
                         eachDateRoomRate.BookingDate = currentDate;
                         roomRateResponse.BookedRoomRates.Add(eachDateRoomRate);
 
@@ -5724,12 +5765,12 @@ namespace hotel_api.Controllers
 
                         roomRateResponse.GstAmount = Calculation.RoundOffDecimal(roomRateResponse.GstAmount + roomRateDate.GstAmount);
 
-                        roomRateResponse.DiscountAmount = roomRateResponse.DiscountAmount + roomRateDate.DiscountAmount;
+                        roomRateResponse.DiscountTotalAmount = roomRateResponse.DiscountTotalAmount + roomRateDate.DiscountAmount;
 
                         roomRateResponse.BookingAmountWithoutDiscount = Calculation.RoundOffDecimal(roomRateResponse.BookingAmountWithoutDiscount + roomRateDate.RoomRateWithoutDiscount);
-
+                        currentDate =  currentDate.AddDays(1);
                         nights--;
-                        currentDate.AddDays(1);
+                        
                     }
                 }
 
@@ -6453,164 +6494,7 @@ namespace hotel_api.Controllers
             return (agentAdvance, advance, received);
         }
 
-        //[HttpGet("GetCancellableBookings")]
-        //public async Task<IActionResult> GetCancellableBookings(string reservationNo, int guestId)
-        //{
-        //    try
-        //    {
-        //        var checkInResponse = new CheckInResponse();
-        //        if (string.IsNullOrEmpty(reservationNo) || guestId == 0)
-        //        {
-        //            return Ok(new { Code = 500, Message = "Invalid data" });
-        //        }
-        //        int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
-        //        int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
-
-        //        //Get reservation details
-        //        checkInResponse.ReservationDetails = await _context.ReservationDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo);
-        //        if (checkInResponse.ReservationDetails == null)
-        //        {
-        //            return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
-        //        }
-
-        //        checkInResponse.GuestDetails = await _context.GuestDetails.Where(x => x.CompanyId == companyId && x.IsActive && x.GuestId == guestId).FirstOrDefaultAsync();
-        //        if (checkInResponse.GuestDetails == null)
-        //        {
-        //            return Ok(new { Code = 400, Message = $"No details for {reservationNo} reservation" });
-        //        }
-
-        //        var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo).ToListAsync();
-
-
-        //        checkInResponse.BookingDetailCheckInDTO = await (
-        //                                from booking in _context.BookingDetail
-        //                                join room in _context.RoomMaster
-        //                                    on new { RoomId = booking.RoomId, CompanyId = companyId }
-        //                                    equals new { RoomId = room.RoomId, CompanyId = room.CompanyId } into rooms
-        //                                from bookrooms in rooms.DefaultIfEmpty()
-        //                                join category in _context.RoomCategoryMaster
-        //                                    on new { RoomTypeId = booking.RoomTypeId, CompanyId = companyId }
-        //                                    equals new { RoomTypeId = category.Id, CompanyId = category.CompanyId }
-
-        //                                where booking.IsActive == true
-        //                                    && booking.CompanyId == companyId
-        //                                    && booking.ReservationNo == reservationNo
-        //                                select new BookingDetailCheckInDTO
-        //                                {
-        //                                    BookingId = booking.BookingId,
-        //                                    GuestId = booking.GuestId,
-        //                                    RoomId = booking.RoomId,
-        //                                    RoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
-        //                                    OriginalRoomId = booking.RoomId,
-        //                                    OriginalRoomNo = bookrooms == null ? "" : bookrooms.RoomNo,
-        //                                    RoomTypeId = booking.RoomTypeId,
-        //                                    RoomCategoryName = category.Type,
-        //                                    OriginalRoomTypeId = booking.RoomTypeId,
-        //                                    OriginalRoomCategoryName = category.Type,
-        //                                    CheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
-        //                                    CheckInTime = booking.CheckInTime,
-        //                                    CheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
-        //                                    CheckOutTime = booking.CheckOutTime,
-        //                                    CheckInDateTime = booking.CheckInDateTime,
-        //                                    CheckOutDateTime = booking.CheckOutDateTime,
-        //                                    NoOfNights = booking.NoOfNights,
-        //                                    NoOfHours = booking.NoOfHours,
-                                            
-        //                                    Status = booking.Status,
-        //                                    Remarks = booking.Remarks,
-        //                                    ReservationNo = booking.ReservationNo,
-        //                                    UserId = booking.UserId,
-        //                                    CompanyId = booking.CompanyId,
-        //                                    BookingAmount = booking.BookingAmount,
-        //                                    GstType = booking.GstType,
-        //                                    GstAmount = booking.GstAmount,
-        //                                    TotalBookingAmount = booking.TotalBookingAmount,
-        //                                    BookingSource = booking.BookingSource,
-        //                                    ReservationDate = booking.ReservationDate.ToString("yyyy-MM-dd"),
-        //                                    ReservationTime = booking.ReservationTime,
-        //                                    ReservationDateTime = booking.ReservationDateTime,
-        //                                    Pax = booking.Pax,
-        //                                    OriginalPax = booking.Pax,
-        //                                    IsSameGuest = booking.PrimaryGuestId == booking.GuestId ? true : false,
-        //                                    OriginalReservationDateTime = booking.ReservationDateTime,
-        //                                    OriginalReservationDate = booking.ReservationDate.ToString("yyyy-MM-dd"),
-        //                                    OriginalReservationTime = booking.ReservationTime,
-        //                                    OriginalCheckInDate = booking.CheckInDate.ToString("yyyy-MM-dd"),
-        //                                    OriginalCheckInTime = booking.CheckInTime,
-        //                                    OriginalCheckOutDate = booking.CheckOutDate.ToString("yyyy-MM-dd"),
-        //                                    OriginalCheckOutTime = booking.CheckOutTime,
-        //                                    CheckOutFormat = booking.CheckoutFormat,
-        //                                    IsCheckBox = booking.Status != Constants.Constants.CheckOut && _context.AdvanceServices.Any(s => s.BookingId == booking.BookingId && s.CompanyId == companyId && s.IsActive)
-        //                                }
-        //                            ).ToListAsync();
-
-        //        foreach (var item in checkInResponse.BookingDetailCheckInDTO)
-        //        {
-        //            item.BookedRoomRates = roomRates.Where(x => x.BookingId == item.BookingId).ToList();
-        //            item.GuestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.GuestId == item.GuestId) ?? new GuestDetails();
-        //        }
-
-
-
-        //        //payment details
-        //        checkInResponse.PaymentDetails = await (from x in _context.PaymentDetails
-        //                                                join room in _context.RoomMaster on x.RoomId equals room.RoomId into roomT
-        //                                                from rm in roomT.DefaultIfEmpty()
-        //                                                where x.IsActive == true && x.CompanyId == companyId && x.ReservationNo == reservationNo
-        //                                                select new PaymentDetails
-        //                                                {
-        //                                                    PaymentId = x.PaymentId,
-        //                                                    BookingId = x.BookingId,
-        //                                                    ReservationNo = x.ReservationNo,
-        //                                                    PaymentDate = x.PaymentDate,
-        //                                                    PaymentMethod = x.PaymentMethod,
-        //                                                    TransactionId = x.TransactionId,
-        //                                                    PaymentStatus = x.PaymentStatus,
-        //                                                    PaymentType = x.PaymentType,
-        //                                                    BankName = x.BankName,
-        //                                                    PaymentReferenceNo = x.PaymentReferenceNo,
-        //                                                    PaidBy = x.PaidBy,
-        //                                                    Remarks = x.Remarks,
-        //                                                    Other1 = x.Other1,
-        //                                                    Other2 = x.Other2,
-        //                                                    IsActive = x.IsActive,
-        //                                                    IsReceived = x.IsReceived,
-        //                                                    RoomId = x.RoomId,
-        //                                                    UserId = x.UserId,
-        //                                                    PaymentFormat = x.PaymentFormat,
-        //                                                    RefundAmount = x.RefundAmount,
-        //                                                    PaymentAmount = x.PaymentAmount,
-        //                                                    CreatedDate = x.CreatedDate,
-        //                                                    UpdatedDate = x.UpdatedDate,
-        //                                                    CompanyId = x.CompanyId,
-        //                                                    RoomNo = rm != null ? rm.RoomNo : ""
-        //                                                }).ToListAsync();
-
-
-
-        //        //payment summary
-        //        var paymentSummary = new PaymentSummary();
-        //        paymentSummary.TotalRoomAmount = checkInResponse.ReservationDetails.TotalRoomPayment;
-        //        paymentSummary.TotalGstAmount = checkInResponse.ReservationDetails.TotalGst;
-        //        paymentSummary.TotalAmount = checkInResponse.ReservationDetails.TotalAmount;
-        //        paymentSummary.AgentPaid = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.AgentPayment).Sum(x => x.PaymentAmount);
-        //        paymentSummary.AdvanceAmount = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.AdvancePayment).Sum(x => x.PaymentAmount);
-        //        paymentSummary.ReceivedAmount = checkInResponse.PaymentDetails.Where(x => x.PaymentStatus == Constants.Constants.ReceivedPayment).Sum(x => x.PaymentAmount);
-        //        var balance = paymentSummary.TotalAmount - (paymentSummary.AgentPaid + paymentSummary.AdvanceAmount + paymentSummary.ReceivedAmount);
-        //        paymentSummary.BalanceAmount = balance > 0 ? balance : 0;
-        //        paymentSummary.RefundAmount = balance < 0 ? Math.Abs(balance) : 0;
-
-        //        //checkInResponse.PaymentSummary = paymentSummary;
-
-
-
-        //        return Ok(new { Code = 200, Message = "Data fetched successfully", data = checkInResponse });
-        //    }
-        //    catch (Exception)
-        //    {
-        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
-        //    }
-        //}
+       
 
 
         [HttpGet("GetCheckAvailabilityFormData")]
@@ -6722,118 +6606,123 @@ namespace hotel_api.Controllers
                 string discountType = "";
                 
                 
-                    var bookingDetails = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == roomEditDTO.BookingId);
+                var bookingDetails = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == roomEditDTO.BookingId);
 
-                    if (bookingDetails == null)
+                if (bookingDetails == null)
+                {
+                    return Ok(new { Code = 400, Message = "Booking not found" });
+                }
+                checkOutFormat = bookingDetails.CheckoutFormat ;
+                roomRatesCalcuatedBy = bookingDetails.CalculateRoomRates;
+                discountType = bookingDetails.DiscountType;
+                discount = bookingDetails.DiscountType == Constants.Constants.DeductionByPercentage ? bookingDetails.DiscountPercentage : bookingDetails.DiscountAmount;
+
+
+                if(roomEditDTO.RoomTypeId == bookingDetails.RoomTypeId && roomEditDTO.ValueChanged != "eachNightRateWithoutDiscount")
+                {
+                    roomEditDTO.isEditRate = true;
+                    roomEditDTO.EachNightRate = bookingDetails.EachNightRateWithoutDiscount;
+                }
+
+                DateOnly startDate;
+                DateOnly endDate;
+                string startTime;
+                string endTime;
+
+                //set start and end date time
+                if (roomEditDTO.ValueChanged == "reservationDate" || roomEditDTO.ValueChanged == "reservationTime" )
+                {
+
+                    startDate = roomEditDTO.ReservationDate;
+                    startTime = roomEditDTO.ReservationTime;                       
+
+                    //reservation date selected is before original reservation date
+                    int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(startDate,startTime, bookingDetails.ReservationDate, bookingDetails.ReservationTime);
+                    if(minutesDiff > 0)
                     {
-                        return Ok(new { Code = 400, Message = "Booking not found" });
-                    }
-                    checkOutFormat = bookingDetails.CheckoutFormat ;
-                    roomRatesCalcuatedBy = bookingDetails.CalculateRoomRates;
-                    discountType = bookingDetails.DiscountType;
-                    discount = bookingDetails.DiscountType == Constants.Constants.DeductionByPercentage ? bookingDetails.DiscountPercentage : bookingDetails.DiscountAmount;
+                        (endDate, endTime) = Constants.DateTimeMethod.GetAMinuteBefore(bookingDetails.ReservationDate, bookingDetails.ReservationTime);
 
-                    DateOnly startDate;
-                    DateOnly endDate;
-                    string startTime;
-                    string endTime;
-
-                    //set start and end date time
-                    if (roomEditDTO.ValueChanged == "reservationDate" || roomEditDTO.ValueChanged == "reservationTime" )
-                    {
-
-                        startDate = roomEditDTO.ReservationDate;
-                        startTime = roomEditDTO.ReservationTime;
-                        
-
-
-                        //reservation date selected is before original reservation date
-                        int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(startDate,startTime, bookingDetails.ReservationDate, bookingDetails.ReservationTime);
-                        if(minutesDiff > 0)
-                        {
-                            (endDate, endTime) = Constants.DateTimeMethod.GetAMinuteBefore(bookingDetails.ReservationDate, bookingDetails.ReservationTime);
-
-                            var (code1, message1) = await CheckRoomAvailability(startDate, startTime, endDate, endTime, roomEditDTO.RoomTypeId, roomEditDTO.RoomId);
-                            if(code1 == 200)
-                            {
-                                isAvailable = true;
-                            }
-                            else
-                            {
-                                return Ok(new { Code = code1, Message = message1 });
-                            }
-                        }
-                        else
-                        {
-                            isAvailable = true;
-                        } 
-                    }
-                    else if(roomEditDTO.ValueChanged == "checkInDate" || roomEditDTO.ValueChanged == "checkInTime")
-                    {
-                        startDate = roomEditDTO.CheckInDate;
-                        startTime = roomEditDTO.CheckInTime;
-                        int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(startDate, startTime, bookingDetails.ReservationDate, bookingDetails.ReservationTime);
-                        if (minutesDiff > 0)
-                        {
-                            (endDate, endTime) = Constants.DateTimeMethod.GetAMinuteBefore(bookingDetails.ReservationDate, bookingDetails.ReservationTime);
-
-                            var (code1, message1) = await CheckRoomAvailability(startDate, startTime, endDate, endTime, roomEditDTO.RoomTypeId, roomEditDTO.RoomId);
-                            if (code1 == 200)
-                            {
-                                isAvailable = true;
-                            }
-                            else
-                            {
-                                return Ok(new { Code = code1, Message = message1 });
-                            }
-                        }
-                        else
+                        var (code1, message1) = await CheckRoomAvailability(startDate, startTime, endDate, endTime, roomEditDTO.RoomTypeId, roomEditDTO.RoomId);
+                        if(code1 == 200)
                         {
                             isAvailable = true;
                         }
-
-                        roomEditDTO.ReservationDate = startDate;
-                        roomEditDTO.ReservationTime = startTime;
-
-                    }
-                    else if(roomEditDTO.ValueChanged == "checkOutDate" || roomEditDTO.ValueChanged == "checkOutTime")
-                    {
-                        endDate = roomEditDTO.CheckOutDate;
-                        endTime = roomEditDTO.CheckOutTime;
-
-
-
-                        //checkout date selected is after actual checkout date
-                        int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(bookingDetails.CheckOutDate, bookingDetails.CheckOutTime, endDate, endTime);
-                        if (minutesDiff > 0)
-                        {
-                            if(bookingDetails.Status == Constants.Constants.CheckIn)
-                        {
-                            return Ok(new { Code = 400, Message = "Use ROOM EXTEND to extend Check Out." });
-                        }
-                            (startDate, startTime) = Constants.DateTimeMethod.GetAMinuteAfter(bookingDetails.CheckOutDate, bookingDetails.CheckOutTime);
-
-                            var (code1, message1) = await CheckRoomAvailability(startDate, startTime, endDate, endTime, roomEditDTO.RoomTypeId, roomEditDTO.RoomId);
-                            if (code1 == 200)
-                            {
-                                isAvailable = true;
-                            }
-                            else
-                            {
-                                return Ok(new { Code = code1, Message = message1 });
-                            }
-                        }
                         else
+                        {
+                            return Ok(new { Code = code1, Message = message1 });
+                        }
+                    }
+                    else
+                    {
+                        isAvailable = true;
+                    } 
+                }
+                else if(roomEditDTO.ValueChanged == "checkInDate" || roomEditDTO.ValueChanged == "checkInTime")
+                {
+                    startDate = roomEditDTO.CheckInDate;
+                    startTime = roomEditDTO.CheckInTime;
+                    int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(startDate, startTime, bookingDetails.ReservationDate, bookingDetails.ReservationTime);
+                    if (minutesDiff > 0)
+                    {
+                        (endDate, endTime) = Constants.DateTimeMethod.GetAMinuteBefore(bookingDetails.ReservationDate, bookingDetails.ReservationTime);
+
+                        var (code1, message1) = await CheckRoomAvailability(startDate, startTime, endDate, endTime, roomEditDTO.RoomTypeId, roomEditDTO.RoomId);
+                        if (code1 == 200)
                         {
                             isAvailable = true;
                         }
+                        else
+                        {
+                            return Ok(new { Code = code1, Message = message1 });
+                        }
+                    }
+                    else
+                    {
+                        isAvailable = true;
                     }
 
-                else if(roomEditDTO.ValueChanged == "roomTypeId")
+                    roomEditDTO.ReservationDate = startDate;
+                    roomEditDTO.ReservationTime = startTime;
+
+                }
+                else if(roomEditDTO.ValueChanged == "checkOutDate" || roomEditDTO.ValueChanged == "checkOutTime")
+                {
+                    endDate = roomEditDTO.CheckOutDate;
+                    endTime = roomEditDTO.CheckOutTime;
+
+
+
+                    //checkout date selected is after actual checkout date
+                    int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(bookingDetails.CheckOutDate, bookingDetails.CheckOutTime, endDate, endTime);
+                    if (minutesDiff > 0)
+                    {
+                        if(bookingDetails.Status == Constants.Constants.CheckIn)
+                    {
+                        return Ok(new { Code = 400, Message = "Use ROOM EXTEND to extend Check Out." });
+                    }
+                        (startDate, startTime) = Constants.DateTimeMethod.GetAMinuteAfter(bookingDetails.CheckOutDate, bookingDetails.CheckOutTime);
+
+                        var (code1, message1) = await CheckRoomAvailability(startDate, startTime, endDate, endTime, roomEditDTO.RoomTypeId, roomEditDTO.RoomId);
+                        if (code1 == 200)
+                        {
+                            isAvailable = true;
+                        }
+                        else
+                        {
+                            return Ok(new { Code = code1, Message = message1 });
+                        }
+                    }
+                    else
+                    {
+                        isAvailable = true;
+                    }
+                }
+
+                else if(roomEditDTO.ValueChanged == "roomTypeId" || roomEditDTO.ValueChanged == "eachNightRateWithoutDiscount")
                 {
                     isAvailable = true;
                 }
-
+                    
 
                 if (isAvailable)
                 {
@@ -6888,7 +6777,7 @@ namespace hotel_api.Controllers
 
 
                     //calcuate rates
-                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property);
+                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property, roomEditDTO.isEditRate, roomEditDTO.EachNightRate);
                     return Ok(new { Code = code, Message = message, AvailableRooms = rows, AvailableCount = AvailableCount, Data = response, RoomDates = roomEditDTO });
                 }
 
@@ -6990,7 +6879,7 @@ namespace hotel_api.Controllers
                 //if category and gst selected then calculate rates
                 if (roomEditDTO.RoomTypeId > 0 && roomEditDTO.GstType != "")
                 {
-                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property);
+                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property, roomEditDTO.isEditRate, roomEditDTO.EachNightRate);
                     
                         return Ok(new { Code = code, Message = message, AvailableRooms = rows, AvailableCount = AvailableCount, RoomRates = response, RoomDates = roomEditDTO });
                     
@@ -7145,8 +7034,64 @@ namespace hotel_api.Controllers
             }
         }
 
+        [HttpGet("GetRatesByDate")]
+        public async Task<IActionResult> GetRatesByDate(int roomTypeId, int bookingId, DateOnly selectedDate)
+        {
+            try
+            {
+                var booking = await _context.BookingDetail.Where(x => x.BookingId == bookingId && x.CompanyId == companyId && x.IsActive == true).FirstOrDefaultAsync();
+                if(booking == null)
+                {
+                    return Ok(new { Code = 400, Message = "Booking not found" });
+                }
+
+                if (booking.CheckoutFormat == Constants.Constants.SameDayFormat)
+                {
+                    return Ok(new { Code = 400, Message = "Under Development!" });
+                }
+                else
+                {
+                    var customRoomRates = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && (x.FromDate <= selectedDate && x.ToDate >= selectedDate) && x.RoomTypeId == roomTypeId).OrderByDescending(x => x.RatePriority).FirstOrDefaultAsync();
+                    if (customRoomRates == null)
+                    {
+                        var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomTypeId).FirstOrDefaultAsync();
+                        if (roomRates != null)
+                        {
 
 
+                            var data = new
+                            {
+                                RateWithOutDiscount = roomRates.RoomRate,
+                                RoomRate = booking.DiscountType == Constants.Constants.DeductionByPercentage ? (roomRates.RoomRate - (Constants.Calculation.CalculatePercentage(roomRates.RoomRate, booking.DiscountPercentage))) : (roomRates.RoomRate - booking.DiscountAmount)
+                            
+                            };
+
+                            return Ok(new { Code = 200, Message = "Rates fetched successfully", data = data });
+                        }
+                        else
+                        {
+                            return Ok(new { Code = 400, Message = "Room rate not found" });
+                        }
+
+                    }
+                    else
+                    {
+                        var data = new
+                        {
+                            RateWithOutDiscount = customRoomRates.RoomRate,
+                            RoomRate = booking.DiscountType == Constants.Constants.DeductionByPercentage ? (customRoomRates.RoomRate - (Constants.Calculation.CalculatePercentage(customRoomRates.RoomRate, booking.DiscountPercentage))) : (customRoomRates.RoomRate - booking.DiscountAmount)
+
+                        };
+
+                        return Ok(new { Code = 200, Message = "Rates fetched successfully", data = data });
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
         private MemoryStream GenerateInvoicePdf(CheckOutResponse invoiceData, string outputPath)
         {

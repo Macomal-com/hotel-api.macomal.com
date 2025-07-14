@@ -19,7 +19,7 @@ namespace Repository.RequestDTO
 
     public class RoomEditDTO
     {
-       
+
 
         public DateOnly ReservationDate { get; set; }
         public string ReservationTime { get; set; } = string.Empty;
@@ -38,11 +38,15 @@ namespace Repository.RequestDTO
 
         public string GstType { get; set; } = string.Empty;
         public string DiscountType { get; set; } = string.Empty;
-        public decimal Discount { get; set; } 
+        public decimal Discount { get; set; }
         public int NoOfHours { get; set; }
         public int NoOfNights { get; set; }
 
         public string ValueChanged { get; set; } = string.Empty;
+
+        public decimal EachNightRate { get; set; }
+
+        public bool isEditRate { get; set; } = false;
 
     }
 }

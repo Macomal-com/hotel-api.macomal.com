@@ -24,6 +24,10 @@ namespace Repository.RequestDTO
         public DateOnly ExtendedDate { get; set; } = new DateOnly(1900, 01, 01);
 
         public int ExtendHour { get; set; }
+
+        public bool IsEditRate { get; set; }
+        public decimal EachNightRate { get; set; }
+        public decimal EachNightRateWithoutDiscount { get; set; }
     }
 
     public class ShiftExtentRequestValidator : AbstractValidator<ShiftExtentRequest>

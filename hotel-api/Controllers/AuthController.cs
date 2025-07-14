@@ -298,7 +298,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var users = await _context.UserDetails.Where(x => x.IsActive == true).Select(x => new
+                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x => new
                 {
                     UserId = x.UserId,
                     UserName = x.UserName
@@ -522,7 +522,7 @@ namespace hotel_api.Controllers
         ClusterLocation = x.ClusterLocation,
         ClusterItem = x.ClusterName + " : " + x.ClusterLocation,
         IsDisabled = disabledClusterIds.Contains(x.ClusterId) ||
-                     properties.Where(p => p.ClusterId == x.ClusterId).All(p => p.IsDisabled)
+                     (properties.Count(p => p.ClusterId == x.ClusterId) > 0 ? properties.Where(p => p.ClusterId == x.ClusterId).All(p => p.IsDisabled): false)
     })
     .ToList();
 

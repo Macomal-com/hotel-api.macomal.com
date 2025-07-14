@@ -125,6 +125,9 @@ namespace Repository.Models
 
         public decimal TotalAmountWithOutDiscount { get; set; }
 
+        public decimal EachNightRate { get; set; }
+        public decimal EachNightRateWithoutDiscount { get; set; }
+
         [NotMapped]
         public bool IsSelectedValue { get; set; }
 
@@ -205,6 +208,9 @@ namespace Repository.Models
         public decimal DiscountAmount { get; set; }
         public decimal BookingAmountWithoutDiscount { get; set; }
         public string CalculateRoomRates { get; set; } = string.Empty;
+        public decimal EachNightRate { get; set; }
+        public decimal EachNightRateWithoutDiscount { get; set; }
+
     }
 
     public class BookingDetailCheckInDTO
