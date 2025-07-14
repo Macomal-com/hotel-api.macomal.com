@@ -2150,7 +2150,7 @@ namespace hotel_api.Controllers
                             return Ok(new { Code = 400, Message = isRoomAvailable });
                         }
 
-                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.ReservationDate, booking.CheckOutDate, 1, 0, booking.GstType, request.ExtendHour, booking.ReservationTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.ReservationDate, booking.CheckOutDate, 1, 0, booking.GstType, request.ExtendHour, booking.ReservationTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount);
 
                         if (code != 200)
                         {
@@ -2193,7 +2193,7 @@ namespace hotel_api.Controllers
                         //calculate nights
                         int nights = Constants.Calculation.FindNightsAndHours(booking.CheckOutDate, booking.CheckOutTime, request.ExtendedDate, booking.CheckOutTime, booking.CheckoutFormat);
 
-                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, 1, nights, booking.GstType, 0, booking.CheckOutTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage :  booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property);
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, 1, nights, booking.GstType, 0, booking.CheckOutTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage :  booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount);
 
                         //var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
                         if (code != 200)
