@@ -5283,7 +5283,7 @@ namespace hotel_api.Controllers
             {
                 using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
                 {
-                    using (var command = new SqlCommand("check_room_availaibility", connection))
+                    using (var command = new SqlCommand("check_room_availaibility_new", connection))
                     {
                         command.CommandTimeout = 120;
                         command.CommandType = CommandType.StoredProcedure;
@@ -6567,6 +6567,7 @@ namespace hotel_api.Controllers
                     }
 
                     var countRows = new List<Dictionary<string, object>>();
+                    var countCategoryBooking = new List<Dictionary<string, object>>();
                     var dataTable2 = dataSet.Tables[1];
                     foreach (DataRow row in dataTable2.Rows)
                     {
@@ -6577,7 +6578,22 @@ namespace hotel_api.Controllers
                         }
                         countRows.Add(dict);
                     }
-                    return Ok(new { Code = 200, message = "Room availability retrieved successfully.", data = rows, countRows = countRows });
+
+                    if(dataSet.Tables.Count > 2)
+                    {
+                        dataTable2 = dataSet.Tables[2];
+                        foreach (DataRow row in dataTable2.Rows)
+                        {
+                            var dict = new Dictionary<string, object>();
+                            foreach (DataColumn col in dataTable2.Columns)
+                            {
+                                dict[col.ColumnName] = row[col];
+                            }
+                            countCategoryBooking.Add(dict);
+                        }
+                            
+                    }
+                    return Ok(new { Code = 200, message = "Room availability retrieved successfully.", data = rows, countRows = countRows , countCategoryBooking = countCategoryBooking });
                 }
             }
             catch (Exception ex)

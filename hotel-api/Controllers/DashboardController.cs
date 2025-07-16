@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using RepositoryModels.Repository;
@@ -103,13 +104,22 @@ namespace hotel_api.Controllers
             {
                 using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
                 {
-                    using (var command = new SqlCommand("DashboardData", connection))
+                    using (var command = new SqlCommand("check_room_availaibility_new", connection))
                     {
                         command.CommandTimeout = 120;
                         command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@userCheckInDate", startDate);
+                        command.Parameters.AddWithValue("@userCheckOutDate", endDate);
+                        command.Parameters.AddWithValue("@userCheckInTime", "");
+                        command.Parameters.AddWithValue("@userCheckOutTime", "");
                         command.Parameters.AddWithValue("@companyId", companyId);
-                        command.Parameters.AddWithValue("@startDate", endDate);
-                        command.Parameters.AddWithValue("@endDate", startDate);
+                        command.Parameters.AddWithValue("@pageName", "dashboarddata");
+                        command.Parameters.AddWithValue("@roomTypeId", 0);
+                        command.Parameters.AddWithValue("@roomId", 0);
+                        command.Parameters.AddWithValue("@roomStatus", "");
+                        //command.Parameters.AddWithValue("@companyId", companyId);
+                        //command.Parameters.AddWithValue("@startDate", endDate);
+                        //command.Parameters.AddWithValue("@endDate", startDate);
 
                         using (var adapter = new SqlDataAdapter(command))
                         {

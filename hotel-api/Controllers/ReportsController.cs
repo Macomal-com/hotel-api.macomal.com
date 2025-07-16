@@ -294,7 +294,7 @@ namespace hotel_api.Controllers
             }
             catch (Exception ex)
             {
-                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                return Ok(new { Code = 500, Message = ex.Message });
             }
         }
 
