@@ -4018,9 +4018,10 @@ namespace hotel_api.Controllers
                 List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == property.CancelCalculatedBy).ToListAsync();
 
 
-                
 
-                bool flag = CalculateCancelAmount(bookingDetails, property.CancelMethod, cancelPolicies, cancelDateTime);
+                bool flag;
+                string message = "";
+                (flag,message) = CalculateCancelAmount(bookingDetails, property.CancelMethod, cancelPolicies, cancelDateTime);
                 if (flag == false)
                 {
                     return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
@@ -4110,7 +4111,7 @@ namespace hotel_api.Controllers
                                         where booking.IsActive == true
                                               && booking.CompanyId == companyId
                                               && statusList.Contains(booking.Status)
-                                              && !(booking.Status == Constants.Constants.CheckIn || booking.ServicesAmount > 0)
+                                              && !(booking.ServicesAmount > 0)
                                               && booking.ReservationNo == request.ReservationNo
                                               && request.BookingIds.Contains(booking.BookingId)
 
@@ -4217,11 +4218,12 @@ namespace hotel_api.Controllers
 
                 List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == property.CancelCalculatedBy).ToListAsync();
 
-               
-                bool flag = CalculateCancelAmount(bookingDetails, property.CancelMethod, cancelPolicies, request.CancelDate);
+                bool flag;
+                string message = "";
+                (flag,message) = CalculateCancelAmount(bookingDetails, property.CancelMethod, cancelPolicies, request.CancelDate);
                 if (flag == false)
                 {
-                    return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                    return Ok(new { Code = 500, Message = message });
                 }
 
                 CancelSummary cancelSummary = new CancelSummary();
@@ -4369,7 +4371,7 @@ namespace hotel_api.Controllers
         }
 
         //CANCEL BOOKING INVOICE CANCELLATION
-        private bool CalculateCancelAmount(List<BookingDetail> bookings, string cancelMethod, List<CancelPolicyMaster> cancelPolicies, DateTime cancelDate)
+        private (bool,string) CalculateCancelAmount(List<BookingDetail> bookings, string cancelMethod, List<CancelPolicyMaster> cancelPolicies, DateTime cancelDate)
         {
             bool flag = true;
 
@@ -4384,7 +4386,7 @@ namespace hotel_api.Controllers
 
                     item.RoomCancelHistory.Add(CreateRoomCancelHistory(item, cancelPolicy, cancelDate, bookings.Count, noOfHours, item.ReservationDateTime, item.CancelAmount, cancelMethod));
                 }
-                return true;
+                return (true, "success");
 
             }
 
@@ -4415,7 +4417,7 @@ namespace hotel_api.Controllers
                                 if (dateWiseRate == null)
                                 {
                                     flag = false;
-                                    return flag;
+                                    return (flag,"Room rate not found");
                                 }
                                 decimal cancelAmt = 0;
                                 if (cancelPolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
@@ -4437,7 +4439,7 @@ namespace hotel_api.Controllers
                         else
                         {
                             flag = false;
-                            return flag;
+                            return (flag,"Cancel Policy not found");
                         }
 
                         dateTime = dateTime.AddDays(1);
@@ -4485,7 +4487,7 @@ namespace hotel_api.Controllers
                     }
                 }
             }
-            return flag;
+            return (flag,"Success");
         }
 
         private RoomCancelHistory CreateRoomCancelHistory(BookingDetail booking, CancelPolicyMaster cancelPolicy, DateTime cancelDate, int noOfRooms, int noOfHours, DateTime toTime, decimal CancelAmount, string cancelMethod)

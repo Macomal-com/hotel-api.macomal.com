@@ -24,7 +24,7 @@ namespace hotel_api.Controllers
         public string Name { get; set; } = string.Empty; //booking type
         public List<int> Data { get; set; } = new List<int>(); // 
         public string Color { get; set; } = string.Empty;//colour
-        public List<DateTime> Dates = new List<DateTime>();
+        public List<string> Dates = new List<string>();
     }
 
 
@@ -200,8 +200,8 @@ namespace hotel_api.Controllers
 
                         foreach (DataRow row in dataSet.Tables[5].Rows)
                         {
-                            bookingSourceOTA.Dates.Add(row.Field<DateTime>(0));
-                            bookingSourceOther.Dates.Add(row.Field<DateTime>(0));
+                            bookingSourceOTA.Dates.Add(row.Field<string>(0));
+                            bookingSourceOther.Dates.Add(row.Field<string>(0));
                             bookingSourceOTA.Data.Add(row.Field<int>(1));
                             bookingSourceOther.Data.Add(row.Field<int>(2));
                         }
