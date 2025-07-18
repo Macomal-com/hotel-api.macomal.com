@@ -110,8 +110,8 @@ namespace hotel_api.Controllers
                         command.CommandType = CommandType.StoredProcedure;
                         command.Parameters.AddWithValue("@userCheckInDate", startDate);
                         command.Parameters.AddWithValue("@userCheckOutDate", endDate);
-                        command.Parameters.AddWithValue("@userCheckInTime", "");
-                        command.Parameters.AddWithValue("@userCheckOutTime", "");
+                        command.Parameters.AddWithValue("@userCheckInTime", "00:00");
+                        command.Parameters.AddWithValue("@userCheckOutTime", "23:59");
                         command.Parameters.AddWithValue("@companyId", companyId);
                         command.Parameters.AddWithValue("@pageName", "dashboarddata");
                         command.Parameters.AddWithValue("@roomTypeId", 0);

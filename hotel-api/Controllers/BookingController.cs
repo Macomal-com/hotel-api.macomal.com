@@ -3047,7 +3047,7 @@ namespace hotel_api.Controllers
 
                             int differenceHours = DateTimeMethod.FindLateCheckOutHourDifference(property.CheckOutTime, item.CheckOutTime);
 
-                            var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.LATECHECKOUT).ToListAsync();
+                            var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.LATECHECKOUT && x.CompanyId == companyId).ToListAsync();
                             if (extraPolicy.Count == 0)
                             {
                                 return Ok(new { Code = 400, Message = "Late check out policies not found", data = response });
@@ -3058,7 +3058,13 @@ namespace hotel_api.Controllers
                                 var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour > differenceHours);
                                 if (applicablePolicy == null)
                                 {
-                                    return Ok(new { Code = 400, Message = "Suitable late checkout policy not found", data = response });
+                                    item.IsLateCheckOut = false;
+                                    item.LateCheckOutPolicyName = "";
+                                    item.LateCheckOutDeductionBy = "";
+                                    item.LateCheckOutApplicableOn = "";
+                                    item.LateCheckOutFromHour = 0;
+                                    item.LateCheckOutToHour = 0;
+                                    item.LateCheckOutCharges = 0;
                                 }
                                 else
                                 {
@@ -6361,7 +6367,7 @@ namespace hotel_api.Controllers
                 }
             }
 
-            summary.TotalAmount = summary.RoomAmount + summary.GstAmount + summary.EarlyCheckIn + summary.LateCheckOut + summary.AgentServiceCharge + summary.TransactionCharges;
+            summary.TotalAmount = summary.RoomAmount + summary.GstAmount + summary.EarlyCheckIn + summary.LateCheckOut + summary.AgentServiceCharge;
 
             var balance = (summary.TotalAmount) - (summary.AdvanceAmount + summary.ReceivedAmount);
             if (balance > 0)
@@ -7184,6 +7190,16 @@ namespace hotel_api.Controllers
                 guestTable.AddCell(new Cell().Add(new Paragraph("Room No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                 guestTable.AddCell(new Cell().Add(new Paragraph(room.RoomNo).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
+                if(invoiceData.PageName == "CheckOutPage")
+                {
+                    guestTable.AddCell(new Cell().Add(new Paragraph("Check In:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    guestTable.AddCell(new Cell().Add(new Paragraph(room.CheckInDateTime.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+
+
+                    guestTable.AddCell(new Cell().Add(new Paragraph("Check Out:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    guestTable.AddCell(new Cell().Add(new Paragraph(room.CheckOutDateTime.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                }
+
                 if (invoiceData.PageName == "CANCELPAGE")
                 {
                     guestTable.AddCell(new Cell().Add(new Paragraph("Room Category:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
@@ -7203,6 +7219,17 @@ namespace hotel_api.Controllers
                 invoiceTable.AddCell(new Cell().Add(new Paragraph("Pax:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                 invoiceTable.AddCell(new Cell().Add(new Paragraph(room.Pax.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
+                if (invoiceData.PageName == "CheckOutPage" && room.CheckoutFormat == Constants.Constants.SameDayFormat)
+                {
+                    invoiceTable.AddCell(new Cell().Add(new Paragraph("No of Hours:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    invoiceTable.AddCell(new Cell().Add(new Paragraph(room.NoOfHours.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                }
+
+                if (invoiceData.PageName == "CheckOutPage" && room.CheckoutFormat != Constants.Constants.SameDayFormat)
+                {
+                    invoiceTable.AddCell(new Cell().Add(new Paragraph("No of Nights:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    invoiceTable.AddCell(new Cell().Add(new Paragraph(room.NoOfNights.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                }
 
                 // === Wrapper Table with 2 columns, full width ===
                 iText.Layout.Element.Table wrapper = new iText.Layout.Element.Table(2);
@@ -7487,6 +7514,12 @@ namespace hotel_api.Controllers
 
                     roomDetails.AddCell(new Cell().Add(new Paragraph("Room No:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                     roomDetails.AddCell(new Cell().Add(new Paragraph(room.RoomNo).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+
+                    roomDetails.AddCell(new Cell().Add(new Paragraph("Check In:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    roomDetails.AddCell(new Cell().Add(new Paragraph(room.CheckInDateTime.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+
+                    roomDetails.AddCell(new Cell().Add(new Paragraph("Check Out:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    roomDetails.AddCell(new Cell().Add(new Paragraph(room.CheckOutDateTime.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
                     roomDetails.AddCell(new Cell().Add(new Paragraph(room.CheckoutFormat == Constants.Constants.SameDayFormat ? "No of Hours:" :  "No of Nights:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                     roomDetails.AddCell(new Cell().Add(new Paragraph(room.CheckoutFormat == Constants.Constants.SameDayFormat ? room.NoOfHours.ToString() : room.NoOfNights.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
