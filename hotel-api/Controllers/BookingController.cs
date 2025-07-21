@@ -2756,7 +2756,7 @@ namespace hotel_api.Controllers
                 var response = new CheckOutResponse();
                 if (request.Bookings.Count == 0)
                 {
-                    return Ok(new { Code = 400, Message = "Invalid data", data = response });
+                    return Ok(new { Code = 400, Message = "Please select at least one room", data = response });
                 }
 
                 ICollection<int> keys = request.Bookings.Keys;
@@ -3016,27 +3016,103 @@ namespace hotel_api.Controllers
                     }
                     else
                     {
-                        item.NoOfNights = Constants.Calculation.FindNightsAndHours(item.ReservationDate, item.ReservationTime, item.CheckOutDate, item.CheckOutTime, item.CheckoutFormat);
+                        int noofNights = Constants.Calculation.FindNightsAndHours(item.ReservationDate, item.ReservationTime, item.CheckOutDate, item.CheckOutTime, item.CheckoutFormat);
                         item.BookingAmount = 0;
                         item.GstAmount = 0;
                         item.TotalBookingAmount = 0;
                         item.TotalAmount = 0;
 
-
-                        var eachRoomRate = item.BookedRoomRates.Where(x => x.BookingId == item.BookingId && (item.NoOfNights == 1
-                        ? x.BookingDate == item.CheckInDate : x.BookingDate < item.CheckOutDate)).OrderBy(x => x.BookingDate).ToList();
-
-
-
-                        item.BookedRoomRates = eachRoomRate;
-
-                        foreach (var rate in eachRoomRate)
+                        //for 24 hours 
+                        if(item.CheckoutFormat == Constants.Constants.Hour24Format)
                         {
-                            item.BookingAmount = item.BookingAmount + rate.RoomRate;
-                            item.GstAmount = item.GstAmount + rate.GstAmount;
-                            item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+                            if(item.NoOfNights >= noofNights)
+                            {
+                                item.NoOfNights = noofNights;
+                                var eachRoomRate = item.BookedRoomRates.Where(x => x.BookingId == item.BookingId && (item.NoOfNights == 1
+                                ? x.BookingDate == item.CheckInDate : x.BookingDate <= item.CheckOutDate)).OrderBy(x => x.BookingDate).ToList();
 
+
+
+                                item.BookedRoomRates = eachRoomRate;
+
+                                foreach (var rate in eachRoomRate)
+                                {
+                                    item.BookingAmount = item.BookingAmount + rate.RoomRate;
+                                    item.GstAmount = item.GstAmount + rate.GstAmount;
+                                    item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+
+                                }
+                            }
+                            else
+                            {
+                                item.NoOfNights = noofNights;
+                                var (code1, message1, ratesResponse1) = await CalculateRoomRateAsync(companyId, item.RoomTypeId, item.CheckOutDate, item.CheckOutDate, 1, 1, item.GstType, 0, item.ReservationTime, item.CheckOutTime, item.DiscountType, item.DiscountType == Constants.Constants.DeductionByPercentage ? item.DiscountPercentage : (index >= 0 && index < equallyDivide.Count ? equallyDivide[index] : 0), item.CheckoutFormat, item.CalculateRoomRates, property, item.EachNightRateWithoutDiscount > 0 ? true : false, item.EachNightRateWithoutDiscount);
+                                if (code1 == 200)
+                                {
+                                   
+                                    var bookedRoomRates = (from rates in ratesResponse1.BookedRoomRates
+                                                           join type in _context.RoomCategoryMaster on rates.RoomTypeId equals type.Id
+
+                                                           select new BookedRoomRate
+                                                           {
+                                                               Id = rates.Id,
+                                                               BookingId = rates.BookingId,
+                                                               RoomId = rates.RoomId,
+                                                               ReservationNo = rates.ReservationNo,
+                                                               RoomRate = rates.RoomRate,
+                                                               GstPercentage = rates.GstPercentage,
+                                                               GstAmount = rates.GstAmount,
+                                                               TotalRoomRate = rates.TotalRoomRate,
+                                                               GstType = rates.GstType,
+                                                               BookingDate = rates.BookingDate,
+                                                               CreatedDate = rates.CreatedDate,
+                                                               UpdatedDate = rates.UpdatedDate,
+                                                               UserId = rates.UserId,
+                                                               CompanyId = rates.CompanyId,
+                                                               IsActive = rates.IsActive,
+                                                               CGST = rates.CGST,
+                                                               CGSTAmount = rates.CGSTAmount,
+                                                               SGST = rates.SGST,
+                                                               SGSTAmount = rates.SGSTAmount,
+                                                               DiscountType = rates.DiscountType,
+                                                               DiscountPercentage = rates.DiscountPercentage,
+                                                               DiscountAmount = rates.DiscountAmount,
+                                                               RoomRateWithoutDiscount = rates.RoomRateWithoutDiscount,
+                                                               RoomTypeId = rates.RoomTypeId,
+                                                               RoomTypeName = type.Type
+                                                           }).ToList();
+                                    item.BookedRoomRates.AddRange(bookedRoomRates);
+
+                                    foreach (var rate in item.BookedRoomRates)
+                                    {
+                                        item.BookingAmount = item.BookingAmount + rate.RoomRate;
+                                        item.GstAmount = item.GstAmount + rate.GstAmount;
+                                        item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+
+                                    }
+                                }
+                            }
                         }
+                        //for night
+                        else
+                        {
+                            item.NoOfNights = noofNights;
+                            var eachRoomRate = item.BookedRoomRates.Where(x => x.BookingId == item.BookingId && (item.NoOfNights == 1
+                            ? x.BookingDate == item.CheckInDate : x.BookingDate < item.CheckOutDate)).OrderBy(x => x.BookingDate).ToList();
+
+
+
+                            item.BookedRoomRates = eachRoomRate;
+
+                            foreach (var rate in eachRoomRate)
+                            {
+                                item.BookingAmount = item.BookingAmount + rate.RoomRate;
+                                item.GstAmount = item.GstAmount + rate.GstAmount;
+                                item.TotalBookingAmount = item.TotalBookingAmount + rate.TotalRoomRate;
+
+                            }
+                        }
+                            
 
                         // calculate late checkout
 
@@ -3535,7 +3611,8 @@ namespace hotel_api.Controllers
                     //    return Ok(new { Code = 400, Message = "Check Out Date is not equal to today's date" });
                     //}
 
-                    if(item.CheckoutFormat == Constants.Constants.SameDayFormat)
+                    if(item.CheckoutFormat == Constants.Constants.SameDayFormat 
+                        || item.CheckoutFormat == Constants.Constants.Hour24Format)
                     {
                         var roomRates = await _context.BookedRoomRates.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == item.BookingId).ToListAsync();
 
@@ -3556,27 +3633,31 @@ namespace hotel_api.Controllers
 
                         int noOfnights = Constants.Calculation.FindNightsAndHours(item.ReservationDate, item.ReservationTime, item.CheckOutDate, item.CheckOutTime, item.CheckoutFormat);
 
-                        foreach (var rate in roomRates)
-                        {
-                            if(noOfnights == 1)
+                        
+                            foreach (var rate in roomRates)
                             {
-                                
+                                if (noOfnights == 1)
+                                {
+
+                                }
+
+                                if (noOfnights == 1 ? rate.BookingDate == item.CheckInDate : rate.BookingDate < item.CheckOutDate)
+                                {
+                                }
+                                else
+                                {
+                                    rate.IsActive = false;
+                                    rate.UpdatedDate = currentTime;
+                                    _context.BookedRoomRates.Update(rate);
+
+                                }
+
+
                             }
-
-                            if (noOfnights == 1 ? rate.BookingDate == item.CheckInDate : rate.BookingDate < item.CheckOutDate)
-                            {
-                            }
-                            else
-                            {
-                                rate.IsActive = false;
-                                rate.UpdatedDate = currentTime;
-                                _context.BookedRoomRates.Update(rate);
-
-                            }
-
-
                         }
-                    }
+
+                       
+                    
 
                     //item.TotalAmount = Constants.Calculation.BookingTotalAmount(item);
                 }
@@ -7339,13 +7420,13 @@ namespace hotel_api.Controllers
                 {
                     document.Add(new Paragraph("Room Services").SetFont(font).SetFontSize(12));
 
-                    var serviceTable = new iText.Layout.Element.Table(9)
+                    var serviceTable = new iText.Layout.Element.Table(12)
                 .SetWidth(UnitValue.CreatePercentValue(100));
 
 
 
 
-                    string[] serviceHeaders = { "Date", "Service Name", "Price", "CGST", "SGST", "Qty", "Total" };
+                    string[] serviceHeaders = { "Date", "Service Name", "Tax Type", "Service Price", "Discount", "Quantity" , "Total Service Price", "CGST", "SGST",  "Total Amount" };
 
                     foreach (var header in serviceHeaders)
                     {
@@ -7371,12 +7452,19 @@ namespace hotel_api.Controllers
                     {
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceName).SetFontSize(10)));
-                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePrice.ToString("F2")).SetFontSize(10)));
+                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.TaxType).SetFontSize(10)));
+                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePriceWithoutDiscount.ToString("F2")).SetFontSize(10)));
+
+                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.DiscountAmount.ToString("F2")).SetFontSize(10)));
+                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.Quantity.ToString()).SetFontSize(10)));
+
+                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.TotalServicePrice.ToString("F2")).SetFontSize(10)));
+
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.CGSTPercentage.ToString("F2")).SetFontSize(10)));
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.CgstAmount.ToString("F2")).SetFontSize(10)));
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.SGSTPercentage.ToString("F2")).SetFontSize(10)));
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.SgstAmount.ToString("F2")).SetFontSize(10)));
-                        serviceTable.AddCell(new Cell().Add(new Paragraph(service.Quantity.ToString()).SetFontSize(10)));
+                        
                         serviceTable.AddCell(new Cell().Add(new Paragraph(service.TotalAmount.ToString("F2")).SetFontSize(10)));
                     }
 
@@ -7610,13 +7698,13 @@ namespace hotel_api.Controllers
                     {
                         document.Add(new Paragraph("Room Services").SetFont(font).SetFontSize(12));
 
-                        var serviceTable = new iText.Layout.Element.Table(12)
+                        var serviceTable = new iText.Layout.Element.Table(13)
                                     .SetWidth(UnitValue.CreatePercentValue(100));
 
 
 
 
-                        string[] serviceHeaders = { "Room No", "Date", "Service Name", "Price", "CGST", "SGST", "Quantity", "Total", "Discount", "Total Amount" };
+                        string[] serviceHeaders = {"Room No", "Date", "Service Name", "Tax Type", "Service Price", "Discount", "Quantity", "Total Service Price", "CGST", "SGST", "Total Amount" };
 
                         foreach (var header in serviceHeaders)
                         {
@@ -7644,15 +7732,19 @@ namespace hotel_api.Controllers
 
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)));
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServiceName).SetFontSize(10)));
-                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePrice.ToString("F2")).SetFontSize(10)));
+                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.TaxType).SetFontSize(10)));
+
+                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePriceWithoutDiscount.ToString("F2")).SetFontSize(10)));
+
+                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.DiscountAmount.ToString("F2")).SetFontSize(10)));
+                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.Quantity.ToString()).SetFontSize(10)));
+
+                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.TotalServicePrice.ToString("F2")).SetFontSize(10)));
+
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.CGSTPercentage.ToString("F2")).SetFontSize(10)));
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.CgstAmount.ToString("F2")).SetFontSize(10)));
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.SGSTPercentage.ToString("F2")).SetFontSize(10)));
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.SgstAmount.ToString("F2")).SetFontSize(10)));
-                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.Quantity.ToString()).SetFontSize(10)));
-                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.ServicePriceWithoutDiscount.ToString("F2")).SetFontSize(10)));
-
-                            serviceTable.AddCell(new Cell().Add(new Paragraph(service.DiscountAmount.ToString("F2")).SetFontSize(10)));
 
                             serviceTable.AddCell(new Cell().Add(new Paragraph(service.TotalAmount.ToString("F2")).SetFontSize(10)));
 

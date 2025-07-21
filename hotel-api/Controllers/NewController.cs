@@ -706,7 +706,7 @@ namespace hotel_api.Controllers
             {
                 if(roomRateList == null || roomRateList.Count == 0)
                 {
-                    return Ok(new { Code = 400, Message = "Invalid Data" });
+                    return Ok(new { Code = 400, Message = "Please enter room rates" });
                 }
                 foreach(var item in roomRateList)
                 {

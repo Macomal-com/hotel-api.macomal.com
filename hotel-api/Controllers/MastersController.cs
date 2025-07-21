@@ -18,6 +18,7 @@ using System.Xml.Linq;
 using System.Diagnostics.Metrics;
 using System.Globalization;
 using static System.Runtime.InteropServices.JavaScript.JSType;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -2451,7 +2452,12 @@ namespace hotel_api.Controllers
                 cmd.Parameters.AddWithValue("@role", user.Roles);
                 cmd.Parameters.AddWithValue("@createdby", userid);
                 cmd.Parameters.AddWithValue("@isactive", user.IsActive);
-
+                SqlParameter returnValueParam = new SqlParameter("@ReturnValue", SqlDbType.Int)
+                {
+                    Direction = ParameterDirection.Output
+                };
+                cmd.Parameters.Add(returnValueParam);
+                string message = "";
                 try
                 {
                     conn.Open();
@@ -2459,12 +2465,14 @@ namespace hotel_api.Controllers
                     {
                         while (reader.Read())
                         {
-                            return (200, reader["Message"].ToString() ?? "");
-                            
+                            message = reader["Message"]?.ToString() ?? "";
+
                         }
                     }
 
-                    return (400, "Error while saving data");
+                    int code = (int)(cmd.Parameters["@ReturnValue"].Value ?? 400);
+
+                    return (code, message);
                 }
                 catch (Exception ex)
                 {

@@ -77,6 +77,8 @@ namespace Repository.Models
         //public string ServiceTime { get; set; } = string.Empty;
         //public int Id { get; set; }
         public decimal TotalServicePrice { get; set; }
+
+        public decimal CurrentDiscountAmount { get; set; }
     }
 
     public class ServiveValidator : AbstractValidator<ServicableMaster>
