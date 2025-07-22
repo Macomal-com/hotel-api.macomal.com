@@ -3050,7 +3050,7 @@ namespace hotel_api.Controllers
                 {
                     await transaction.RollbackAsync();
 
-                    return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+                    return StatusCode(500, new { Code = 500, Message = ex.Message });
                 }
             }
         }
