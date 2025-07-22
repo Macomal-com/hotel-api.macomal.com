@@ -2745,10 +2745,11 @@ namespace hotel_api.Controllers
             {
                 //var data = await _context.CompanyDetails.Where(bm => bm.IsActive).ToListAsync();
                 var data = await (from com in _context.CompanyDetails
-                                       join cluster in _context.ClusterMaster on com.ClusterId equals cluster.ClusterId
+                                  join cl in _context.ClusterMaster on com.ClusterId equals cl.ClusterId  into cls
+                                  from cluster in cls.DefaultIfEmpty()
                                   join landlord in _context.LandlordDetails on com.OwnerId equals landlord.LandlordId into landlordJoin
                                   from landlord in landlordJoin.DefaultIfEmpty()
-                                  where com.IsActive && cluster.IsActive && (landlord == null || landlord.IsActive)
+                                  where com.IsActive && (cluster == null || cluster.IsActive) && (landlord == null || landlord.IsActive)
                                   select new
                                        {
                                             com.PropertyId,
@@ -2765,7 +2766,7 @@ namespace hotel_api.Controllers
                                             com.PanNo,
                                             com.ClusterId,
                                             com.OwnerId,
-                                            cluster.ClusterName,
+                                      ClusterName = cluster.ClusterName ?? "",
                                             landlord.LandlordName,
                                             com.CommissionType,
                                             com.CommissionCharge
