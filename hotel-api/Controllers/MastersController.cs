@@ -4052,7 +4052,7 @@ namespace hotel_api.Controllers
                     from ram in _context.RoomAssetMapping
                     join rm in _context.RoomMaster on ram.RoomId equals rm.RoomId
                     join am in _context.AssetMaster on ram.AssetId equals am.AssetId
-                    where ram.IsActive
+                    where ram.IsActive && ram.CompanyId == companyId && rm.CompanyId == companyId && am.CompanyId == companyId
                     group new { ram, rm, am } by new { ram.RoomId, rm.RoomNo } into g
                     select new RoomAssetMappingDTO
                     {
