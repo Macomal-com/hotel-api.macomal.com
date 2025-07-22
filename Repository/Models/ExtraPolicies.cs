@@ -79,9 +79,19 @@ namespace Repository.Models
                 .WithMessage("Policy already exists");
 
             RuleFor(x => x).Cascade(CascadeMode.Stop)
+               .MustAsync(IsUniquePolicyHour)
+               .When(x => x.PolicyId == 0)
+               .WithMessage("Policy for hour already exists");
+
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdatePolicyName)
                 .When(x => x.PolicyId > 0)
                 .WithMessage("Policy already exists");
+
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
+                .MustAsync(IsUniqueUpdatePolicyHour)
+                .When(x => x.PolicyId > 0)
+                .WithMessage("Policy for hour already exists");
         }
         private async Task<bool> IsUniquePolicyName(ExtraPolicies cm, CancellationToken cancellationToken)
         {
@@ -93,6 +103,22 @@ namespace Repository.Models
         private async Task<bool> IsUniqueUpdatePolicyName(ExtraPolicies cm, CancellationToken cancellationToken)
         {
             return !await _context.ExtraPolicies.AnyAsync(x => x.PolicyName == cm.PolicyName && x.PolicyId != cm.PolicyId && x.IsActive == true && x.CompanyId == cm.CompanyId && x.Status == cm.Status, cancellationToken);
+        }
+
+        private async Task<bool> IsUniquePolicyHour(ExtraPolicies cm, CancellationToken cancellationToken)
+        {
+            return !await _context.ExtraPolicies.AnyAsync(x=>x.Status == cm.Status && x.CompanyId == cm.CompanyId && x.IsActive == true && ((cm.FromHour >= x.FromHour && cm.FromHour <= x.ToHour) ||
+                (cm.ToHour >= x.FromHour && cm.ToHour <= x.ToHour) ||
+                (x.FromHour >= cm.ToHour && x.FromHour <= cm.ToHour) ||
+                (x.ToHour >= cm.ToHour && x.ToHour <= cm.ToHour) ));
+        }
+
+        private async Task<bool> IsUniqueUpdatePolicyHour(ExtraPolicies cm, CancellationToken cancellationToken)
+        {
+            return !await _context.ExtraPolicies.AnyAsync(x => x.Status == cm.Status && x.CompanyId == cm.CompanyId && x.PolicyId != cm.PolicyId && x.IsActive == true && ((cm.FromHour >= x.FromHour && cm.FromHour <= x.ToHour) ||
+                (cm.ToHour >= x.FromHour && cm.ToHour <= x.ToHour) ||
+                (x.FromHour >= cm.ToHour && x.FromHour <= cm.ToHour) ||
+                (x.ToHour >= cm.ToHour && x.ToHour <= cm.ToHour)));
         }
     }
 }

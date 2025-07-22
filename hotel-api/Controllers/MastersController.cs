@@ -28,14 +28,7 @@ namespace hotel_api.Controllers
         private readonly DbContextSql _context = context;
         private readonly IMapper _mapper = mapper;
 
-        private static void SetClusterDefaults(ICommonParams model, int companyid, int userId)
-        {
-            model.CreatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            model.UpdatedDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-            model.IsActive = true;
-            model.CompanyId = companyid;
-            model.UserId = userId;
-        }
+        
 
         private static void SetMastersDefault(ICommonProperties model, int companyid, int userId)
         {
