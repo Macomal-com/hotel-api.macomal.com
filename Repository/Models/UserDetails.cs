@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -40,7 +41,10 @@ namespace Repository.Models
         public string Other3 { get; set; } = string.Empty;
         public string Other4 { get; set; } = string.Empty;
         public string Other5 { get; set; } = string.Empty;
-        public int RefUserId { get; set; } 
+        public int RefUserId { get; set; }
+
+        [NotMapped]
+        public int MainUserId { get; set; }
         
     }
 

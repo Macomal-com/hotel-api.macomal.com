@@ -72,6 +72,7 @@ namespace hotel_api.Controllers
                 {
                     return Ok(new { Code = 404, Message = "Invalid username or password" });
                 }
+                isUserExists.MainUserId = isUserExists.UserId;
                 isUserExists.UserId = isUserExists.RefUserId;
 
                 
@@ -116,7 +117,7 @@ namespace hotel_api.Controllers
                 {
                     if (clustersList.Count == 0 && propertiesList.Count == 0)
                     {
-                        return Ok(new { Code = 404, Message = "No data found" });
+                        return Ok(new { Code = 200, Message = "Data fetched successfully", clustersList, propertiesList, isAnyClusterOrProperty });
                     }
                     else
                     {
@@ -219,7 +220,7 @@ namespace hotel_api.Controllers
                     {
                         if (properties.Count == 0)
                         {
-                            return Ok(new { Code = 404, Message = "No data found", data = properties, isAnyProperty = false });
+                            return Ok(new { Code = 200, Message = "Property found successfully", data = properties, isAnyProperty = false });
                         }
 
                         return Ok(new { Code = 200, Message = "Property found successfully", data = properties, isAnyProperty = true });
@@ -681,7 +682,7 @@ namespace hotel_api.Controllers
         [HttpGet("GetPagesForBinding")]
         public async Task<IActionResult> GetPagesForBinding(int loggedInUserId, string role)
         {
-            var uniqueRoutes = new HashSet<string> ();
+            var uniqueRoutes = new HashSet<string> { "/"};
 
             try
             {

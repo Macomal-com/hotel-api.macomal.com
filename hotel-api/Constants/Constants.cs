@@ -8,7 +8,7 @@ namespace hotel_api.Constants
         public static DateOnly DefaultDate = new DateOnly(1900, 01, 01);
 
         //user roles
-        public static string SuperAdmin = "superadmin";
+        public static string SuperAdmin = "SuperAdmin";
 
         //room rates type
         public static string Standard = "Standard";
