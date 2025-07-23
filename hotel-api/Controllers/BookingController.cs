@@ -3288,6 +3288,8 @@ namespace hotel_api.Controllers
                                 pay.PaymentLeft = 0;
                                 pay.IsReceived = true;
 
+                                booking.BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(booking) : CalculateBalanceCancelAmount(booking);
+
                             }
                             //payment left is greater than balance
                             else
@@ -3299,6 +3301,8 @@ namespace hotel_api.Controllers
                                 pay.IsReceived = true;
                                 pay.PaymentLeft = 0;
                                 pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, balance));
+
+                                booking.BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(booking) : CalculateBalanceCancelAmount(booking);
                             }
 
 
@@ -3310,11 +3314,15 @@ namespace hotel_api.Controllers
                             pay.IsReceived = true;
                             booking.RefundAmount = booking.RefundAmount + pay.RefundAmount;
                             pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, 0));
+
+                            booking.BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(booking) : CalculateBalanceCancelAmount(booking);
                         }
 
                     }
                 }
             }
+
+            bookings = bookings.OrderByDescending(x => x.BalanceAmount).ToList();
 
             //calculate advance
             decimal agentAdvance = 0;
@@ -3374,6 +3382,8 @@ namespace hotel_api.Controllers
                                     bookings[i].AgentAdvanceAmount += currentBalance;
                                     payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
                                     currentBalance = 0;
+
+                                    bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
                                 else
                                 {
@@ -3383,6 +3393,8 @@ namespace hotel_api.Controllers
                                     payments[paymentIndex].IsReceived = true;
 
                                     payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+
+                                    bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
                                 paymentIndex++;
                             }
@@ -3395,6 +3407,8 @@ namespace hotel_api.Controllers
                 }
 
             }
+
+            bookings = bookings.OrderByDescending(x => x.BalanceAmount).ToList();
 
             //advance allocation
             if (advanceAmount > 0)
@@ -3448,6 +3462,8 @@ namespace hotel_api.Controllers
                                     bookings[i].AdvanceAmount += currentBalance;
                                     payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
                                     currentBalance = 0;
+
+                                    bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
                                 else
                                 {
@@ -3457,6 +3473,8 @@ namespace hotel_api.Controllers
                                     payments[paymentIndex].IsReceived = true;
 
                                     payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+
+                                    bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
 
                                 paymentIndex++;
@@ -3469,7 +3487,7 @@ namespace hotel_api.Controllers
                 }
 
             }
-
+            bookings = bookings.OrderByDescending(x => x.BalanceAmount).ToList();
             //receive amount
             if (receivedAmount > 0)
             {
@@ -3521,6 +3539,8 @@ namespace hotel_api.Controllers
                                     bookings[i].ReceivedAmount += currentBalance;
                                     payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], currentBalance));
                                     currentBalance = 0;
+
+                                    bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
                                 else
                                 {
@@ -3530,6 +3550,8 @@ namespace hotel_api.Controllers
                                     payments[paymentIndex].IsReceived = true;
 
                                     payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+
+                                    bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
                                 paymentIndex++;
                             }
@@ -3541,7 +3563,7 @@ namespace hotel_api.Controllers
                 }
 
             }
-
+           
 
         }
 

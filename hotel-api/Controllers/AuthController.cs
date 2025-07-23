@@ -299,7 +299,8 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x => new
+                
+                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Roles != Constants.Constants.SuperAdmin).Select(x => new
                 {
                     UserId = x.UserId,
                     UserName = x.UserName
@@ -664,7 +665,7 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId).Select(x => new
+                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Roles != Constants.Constants.SuperAdmin).Select(x => new
                 {
                     UserId = x.UserId,
                     UserName = x.UserName
