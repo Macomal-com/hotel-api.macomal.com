@@ -311,6 +311,7 @@ namespace hotel_api.Controllers
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             var currentDate = DateTime.Now;
+            List<CheckInNotificationDTO> notificationDTOs = new List<CheckInNotificationDTO>();
             try
             {
                 if (request == null || request.GuestDetailsDTO == null || request.BookingDetailsDTO == null || request.BookingDetailsDTO.Count == 0 || request.PaymentDetailsDTO == null || request.ReservationDetailsDTO == null || request.AgentPaymentDetailsDTO == null)
@@ -459,6 +460,7 @@ namespace hotel_api.Controllers
                 {
                     foreach (var room in item.AssignedRooms)
                     {
+                        
                         var bookingDetails = _mapper.Map<BookingDetail>(item);
                         Constants.Constants.SetMastersDefault(bookingDetails, companyId, userId, currentDate);
 
@@ -489,6 +491,22 @@ namespace hotel_api.Controllers
                         await _context.SaveChangesAsync();
 
                         bookings.Add(bookingDetails);
+
+                        if (request.ReservationDetailsDTO.IsCheckIn)
+                        {
+                            CheckInNotificationDTO inNotificationDTO = new CheckInNotificationDTO();
+                            inNotificationDTO.RoomNo = room.RoomNo ?? "";
+                            inNotificationDTO.Pax = bookingDetails.Pax;
+                            inNotificationDTO.CheckInDateTime = bookingDetails.CheckInDateTime.ToString("f");
+                            inNotificationDTO.CheckOutDateTime = bookingDetails.CheckOutDateTime.ToString("f");
+                            inNotificationDTO.GuestName = guest.GuestName;
+                            inNotificationDTO.GuestPhoneNo = guest.PhoneNumber;
+                            inNotificationDTO.GuestEmail = guest.Email;
+                            inNotificationDTO.ReservationNo = bookingDetails.ReservationNo;
+                            inNotificationDTO.RoomType = item.RoomCategoryName;
+
+                            notificationDTOs.Add(inNotificationDTO);
+                        }
 
                         //room availability
                         RoomAvailability roomAvailability = new RoomAvailability();
@@ -624,8 +642,18 @@ namespace hotel_api.Controllers
                 //send email
                 if (property.IsEmailNotification && property.ReservationNotification)
                 {
-                    ReservationEmailNotification emailNotification = new ReservationEmailNotification(_context, property, request.ReservationDetailsDTO.ReservationNo, roomCount - 1, guest, companyId);
-                    await emailNotification.SendEmail();
+                    if (request.ReservationDetailsDTO.IsCheckIn == false)
+                    {
+                        ReservationEmailNotification emailNotification = new ReservationEmailNotification(_context, property, request.ReservationDetailsDTO.ReservationNo, roomCount - 1, guest, companyId);
+                        await emailNotification.SendEmail();
+                    }
+                    else
+                    {
+                        CheckInEmailNotification inEmailNotification = new CheckInEmailNotification(_context, notificationDTOs, companyId, property);
+
+                        await inEmailNotification.SendEmail();
+                    }
+                    
                 }
 
                 //if (property.IsWhatsappNotification && property.ReservationNotification)
@@ -7799,25 +7827,50 @@ namespace hotel_api.Controllers
                     var summaryTable = new iText.Layout.Element.Table(2).SetWidth(300).SetHorizontalAlignment(HorizontalAlignment.RIGHT);
 
                     summaryTable.AddCell(CreateLabelCell("Booking Amount:"));
-                    summaryTable.AddCell(CreateValueCell(room.TotalBookingAmount.ToString("F2")));
+                    summaryTable.AddCell(CreateValueCell(room.BookingAmount.ToString("F2")));
 
-                    summaryTable.AddCell(CreateLabelCell("Early/Late CheckIn Charges:"));
-                    summaryTable.AddCell(CreateValueCell((room.EarlyCheckInCharges + room.LateCheckOutCharges).ToString("F2")));
+                    decimal extraCharges = room.EarlyCheckInCharges + room.LateCheckOutCharges;
 
-                    summaryTable.AddCell(CreateLabelCell("Service Amount:"));
-                    summaryTable.AddCell(CreateValueCell(room.TotalServicesAmount.ToString("F2")));
+                    if(extraCharges > 0)
+                    {
+                        summaryTable.AddCell(CreateLabelCell("Early/Late CheckIn Charges:"));
+                        summaryTable.AddCell(CreateValueCell((room.EarlyCheckInCharges + room.LateCheckOutCharges).ToString("F2")));
 
-                    summaryTable.AddCell(CreateLabelCell("Total Amount:"));
-                    summaryTable.AddCell(CreateValueCell(room.TotalAmountWithOutDiscount.ToString("F2")));
+                    }
 
-                    summaryTable.AddCell(CreateLabelCell("Discount Amount:"));
-                    summaryTable.AddCell(CreateValueCell(room.CheckOutDiscoutAmount.ToString("F2")));
+                    if(room.ServicesAmount > 0)
+                    {
+                        summaryTable.AddCell(CreateLabelCell("Service Amount:"));
+                        summaryTable.AddCell(CreateValueCell(room.ServicesAmount.ToString("F2")));
+                    }
+
+                    decimal totalTax = room.GstAmount + room.ServicesTaxAmount;
+                    summaryTable.AddCell(CreateLabelCell("Total Tax:"));
+                    summaryTable.AddCell(CreateValueCell(totalTax.ToString("F2")));
+
+                    if(room.CheckOutDiscoutAmount > 0)
+                    {
+                        summaryTable.AddCell(CreateLabelCell("Total Amount:"));
+                        summaryTable.AddCell(CreateValueCell(room.TotalAmountWithOutDiscount.ToString("F2")));
+
+                        string discountHeading = room.CheckOutDiscountType == Constants.Constants.DeductionByPercentage ? $"Discount Amount:({room.CheckOutDiscountPercentage}%)" : "Discount Amount:";
+
+                        summaryTable.AddCell(CreateLabelCell(discountHeading));
+                        summaryTable.AddCell(CreateValueCell(room.CheckOutDiscoutAmount.ToString("F2")));
+                    }
+
+                    
+
+                    
 
                     summaryTable.AddCell(CreateLabelCell("Total Bill:"));
                     summaryTable.AddCell(CreateValueCell(room.TotalAmount.ToString("F2")));
 
-                    summaryTable.AddCell(CreateLabelCell("Total Paid:"));
-                    summaryTable.AddCell(CreateValueCell((room.AdvanceAmount + room.ReceivedAmount + room.RefundAmount + room.ResidualAmount).ToString("F2")));
+                    summaryTable.AddCell(CreateLabelCell("Advance :"));
+                    summaryTable.AddCell(CreateValueCell((room.AdvanceAmount).ToString("F2")));
+
+                    summaryTable.AddCell(CreateLabelCell("Received :"));
+                    summaryTable.AddCell(CreateValueCell((room.ReceivedAmount).ToString("F2")));
 
                     summaryTable.AddCell(CreateLabelCell("Balance Amount:"));
                     summaryTable.AddCell(CreateValueCell(room.BalanceAmount.ToString("F2")));

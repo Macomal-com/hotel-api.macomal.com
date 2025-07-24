@@ -70,7 +70,7 @@ namespace hotel_api.Notifications.Email
                         <td style=""padding: 8px; color: #555555;"">{item.ReservationNo}</td>
                     </tr>
 <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Type:</strong></td>
+                        <td style=""padding: 8px; color: #555555;""><strong>Room No:</strong></td>
                         <td style=""padding: 8px; color: #555555;"">{item.RoomNo}</td>
                     </tr>
 
