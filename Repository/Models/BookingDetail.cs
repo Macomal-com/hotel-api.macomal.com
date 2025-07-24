@@ -128,6 +128,9 @@ namespace Repository.Models
         public decimal EachNightRate { get; set; }
         public decimal EachNightRateWithoutDiscount { get; set; }
 
+        public bool IsEarlyCheckInZeroAmount { get; set; }
+        public bool IsLateCheckOutZeroAmount { get; set; }
+
         [NotMapped]
         public bool IsSelectedValue { get; set; }
 
@@ -210,7 +213,8 @@ namespace Repository.Models
         public string CalculateRoomRates { get; set; } = string.Empty;
         public decimal EachNightRate { get; set; }
         public decimal EachNightRateWithoutDiscount { get; set; }
-
+        public bool IsEarlyCheckInZeroAmount { get; set; }
+        public bool IsLateCheckOutZeroAmount { get; set; }
     }
 
     public class BookingDetailCheckInDTO

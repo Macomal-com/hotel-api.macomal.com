@@ -48,5 +48,8 @@ namespace Repository.RequestDTO
 
         public bool isEditRate { get; set; } = false;
 
+        public bool IsEarlyCheckInZeroAmount { get; set; }
+        public bool IsLateCheckOutZeroAmount { get; set; }
+
     }
 }

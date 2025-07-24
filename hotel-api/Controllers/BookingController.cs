@@ -264,7 +264,7 @@ namespace hotel_api.Controllers
         }
 
         [HttpGet("ReservationRoomRate")]
-        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate, int noOfRooms, int noOfNights, string gstType, int noOfHours = 0, string checkInTime = "", string checkOutTime = "", string discountType = "", decimal discount = 0, string checkOutFormat = "", string calculateRoomRates = "", bool isEditRate = false, decimal eachNightRate = 0)
+        public async Task<IActionResult> ReservationRoomRate(int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate, int noOfRooms, int noOfNights, string gstType, int noOfHours = 0, string checkInTime = "", string checkOutTime = "", string discountType = "", decimal discount = 0, string checkOutFormat = "", string calculateRoomRates = "", bool isEditRate = false, decimal eachNightRate = 0, bool earlyCheckIn = false, bool lateCheckOut = false)
         {
             try
             {
@@ -278,7 +278,7 @@ namespace hotel_api.Controllers
 
 
 
-                var (code, message, response) = await CalculateRoomRateAsync(companyId, roomTypeId, checkInDate, checkOutDate, noOfRooms, noOfNights, gstType, noOfHours, checkInTime, checkOutTime, discountType, discount, checkOutFormat == "" ? property.CheckOutFormat : checkOutFormat, calculateRoomRates == "" ? property.CalculateRoomRates : calculateRoomRates, property, isEditRate, eachNightRate);
+                var (code, message, response) = await CalculateRoomRateAsync(companyId, roomTypeId, checkInDate, checkOutDate, noOfRooms, noOfNights, gstType, noOfHours, checkInTime, checkOutTime, discountType, discount, checkOutFormat == "" ? property.CheckOutFormat : checkOutFormat, calculateRoomRates == "" ? property.CalculateRoomRates : calculateRoomRates, property, isEditRate, eachNightRate, earlyCheckIn, lateCheckOut);
                 return Ok(new { Code = code, Message = message, Data = response });
 
             }
@@ -1038,7 +1038,8 @@ namespace hotel_api.Controllers
                                             EachNightRate = booking.EachNightRate,
                                             EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount,
                                             IsSelectedValue = false,
-
+                                            IsEarlyCheckInZeroAmount = booking.IsEarlyCheckInZeroAmount,
+                                            IsLateCheckOutZeroAmount = booking.IsLateCheckOutZeroAmount,
                                             // NotMapped fields
                                             RoomTypeName = category.Type == null ? "" : category.Type,
                                             RoomNo = bookrooms.RoomNo == null ? "" : bookrooms.RoomNo
@@ -1202,6 +1203,8 @@ namespace hotel_api.Controllers
                         bookingDetails.ReservationNo = reservationDetails.ReservationNo;
                         bookingDetails.EachNightRate = item.EachNightRate;
                         bookingDetails.EachNightRateWithoutDiscount = item.EachNightRateWithoutDiscount;
+                        bookingDetails.IsEarlyCheckInZeroAmount = item.IsEarlyCheckInZeroAmount;
+                        bookingDetails.IsLateCheckOutZeroAmount = item.IsLateCheckOutZeroAmount;
                         bookingDetails.TotalAmount = BookingCalulation.BookingTotalAmount(bookingDetails);
                         bookingDetails.TotalAmountWithOutDiscount = bookingDetails.TotalAmount;
                         await _context.BookingDetail.AddAsync(bookingDetails);
@@ -1288,6 +1291,9 @@ namespace hotel_api.Controllers
                         bookingDetails.LateCheckOutFromHour = item.LateCheckOutFromHour;
                         bookingDetails.LateCheckOutToHour = item.LateCheckOutToHour;
                         bookingDetails.LateCheckOutCharges = item.LateCheckOutCharges;
+
+                        bookingDetails.IsEarlyCheckInZeroAmount = item.IsEarlyCheckInZeroAmount;
+                        bookingDetails.IsLateCheckOutZeroAmount = item.IsLateCheckOutZeroAmount;
 
                         bookingDetails.DiscountType = item.DiscountType;
                         bookingDetails.DiscountPercentage = item.DiscountPercentage;
@@ -1806,7 +1812,9 @@ namespace hotel_api.Controllers
                         CheckOutDiscountPercentage = booking.CheckOutDiscountPercentage,
                         CheckOutDiscoutAmount = booking.CheckOutDiscoutAmount,
                         EachNightRate = booking.EachNightRate,
-                        EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount
+                        EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount,
+                        IsEarlyCheckInZeroAmount = booking.IsEarlyCheckInZeroAmount,
+                        IsLateCheckOutZeroAmount = booking.IsLateCheckOutZeroAmount
                     };
 
                     if (booking.CheckoutFormat == Constants.Constants.SameDayFormat)
@@ -1879,7 +1887,7 @@ namespace hotel_api.Controllers
                         //calculate no of nights
                         int nights = Constants.Calculation.FindNightsAndHours(request.ShiftDate, Constants.Constants.DayStartTime, booking.CheckOutDate, booking.CheckOutTime, booking.CheckoutFormat);
 
-                        var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, 1, nights, booking.GstType, booking.NoOfHours, property.CheckInTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount);
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, 1, nights, booking.GstType, booking.NoOfHours, property.CheckInTime, property.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount);
 
                         //calculate room rates
                         //var (code, message, response) = await CalculateRoomRateAsync(companyId, request.ShiftRoomTypeId, request.ShiftDate, booking.CheckOutDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
@@ -2178,7 +2186,7 @@ namespace hotel_api.Controllers
                         //calculate nights
                         int nights = Constants.Calculation.FindNightsAndHours(booking.CheckOutDate, booking.CheckOutTime, request.ExtendedDate, booking.CheckOutTime, booking.CheckoutFormat);
 
-                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, 1, nights, booking.GstType, 0, booking.CheckOutTime, booking.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount);
+                        var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, 1, nights, booking.GstType, 0, property.CheckInTime, property.CheckOutTime, booking.DiscountType, booking.DiscountType == Constants.Constants.DeductionByPercentage ? booking.DiscountPercentage : booking.DiscountAmount, booking.CheckoutFormat, booking.CalculateRoomRates, property, request.IsEditRate, request.EachNightRateWithoutDiscount, booking.IsEarlyCheckInZeroAmount, booking.IsLateCheckOutZeroAmount);
 
                         //var (code, message, response) = await CalculateRoomRateAsync(companyId, booking.RoomTypeId, booking.CheckOutDate, request.ExtendedDate, booking.CheckoutFormat, 1, nights, booking.GstType, 0);
                         if (code != 200)
@@ -2577,6 +2585,11 @@ namespace hotel_api.Controllers
                                                      CheckOutDiscountType = Constants.Constants.DeductionByPercentage,
                                                      CheckOutDiscountPercentage = 0,
                                                      CheckOutDiscoutAmount = 0,
+                                                     IsLateCheckOutZeroAmount = booking.IsLateCheckOutZeroAmount,
+                                                     IsEarlyCheckInZeroAmount = booking.IsEarlyCheckInZeroAmount,
+                                                     EachNightRate = booking.EachNightRate,
+                                                     EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount,
+                                                     
                                                      // NotMapped fields
                                                      RoomTypeName = roomType.Type,
                                                      RoomNo = rooms.RoomNo,
@@ -2856,6 +2869,8 @@ namespace hotel_api.Controllers
                                                           RoomNo = rooms.RoomNo,
                                                           EachNightRate = booking.EachNightRate,
                                                           EachNightRateWithoutDiscount = booking.EachNightRateWithoutDiscount,
+                                                          IsLateCheckOutZeroAmount = booking.IsLateCheckOutZeroAmount,
+                                                          IsEarlyCheckInZeroAmount = booking.IsEarlyCheckInZeroAmount,
                                                           BookedRoomRates = (from rates in _context.BookedRoomRates
                                                                              join type in _context.RoomCategoryMaster on rates.RoomTypeId equals type.Id
                                                                              where rates.IsActive == true && rates.CompanyId == companyId && rates.BookingId == booking.BookingId
@@ -3035,7 +3050,7 @@ namespace hotel_api.Controllers
                             else
                             {
                                 item.NoOfNights = noofNights;
-                                var (code1, message1, ratesResponse1) = await CalculateRoomRateAsync(companyId, item.RoomTypeId, item.CheckOutDate, item.CheckOutDate, 1, 1, item.GstType, 0, item.ReservationTime, item.CheckOutTime, item.DiscountType, item.DiscountType == Constants.Constants.DeductionByPercentage ? item.DiscountPercentage : (index >= 0 && index < equallyDivide.Count ? equallyDivide[index] : 0), item.CheckoutFormat, item.CalculateRoomRates, property, item.EachNightRateWithoutDiscount > 0 ? true : false, item.EachNightRateWithoutDiscount);
+                                var (code1, message1, ratesResponse1) = await CalculateRoomRateAsync(companyId, item.RoomTypeId, item.CheckOutDate, item.CheckOutDate, 1, 1, item.GstType, 0, item.ReservationTime, item.CheckOutTime, item.DiscountType, item.DiscountType == Constants.Constants.DeductionByPercentage ? item.DiscountPercentage : (index >= 0 && index < equallyDivide.Count ? equallyDivide[index] : 0), item.CheckoutFormat, item.CalculateRoomRates, property, item.EachNightRateWithoutDiscount > 0 ? true : false, item.EachNightRateWithoutDiscount, item.IsEarlyCheckInZeroAmount, item.IsLateCheckOutZeroAmount);
                                 if (code1 == 200)
                                 {
 
@@ -3104,24 +3119,38 @@ namespace hotel_api.Controllers
 
 
                         // calculate late checkout
-
+                        item.IsLateCheckOutZeroAmount = request.lateCheckOutDate.GetValueOrDefault(item.BookingId);
                         //check late check out
                         if (property.IsDefaultCheckOutTimeApplicable && property.IsLateCheckOutPolicyEnable && item.CheckoutFormat == Constants.Constants.NightFormat)
                         {
 
-
                             int differenceHours = DateTimeMethod.FindLateCheckOutHourDifference(property.CheckOutTime, item.CheckOutTime);
-
-                            var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.LATECHECKOUT && x.CompanyId == companyId).ToListAsync();
-                            if (extraPolicy.Count == 0)
-                            {
-                                return Ok(new { Code = 400, Message = "Late check out policies not found", data = response });
-                            }
 
                             if (differenceHours > 0)
                             {
-                                var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour > differenceHours);
-                                if (applicablePolicy == null)
+                                var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.LATECHECKOUT && x.CompanyId == companyId).ToListAsync();
+                                if (extraPolicy.Count == 0)
+                                {
+                                    if (item.IsLateCheckOutZeroAmount == true)
+                                    {
+                                        item.IsLateCheckOut = false;
+                                        item.LateCheckOutPolicyName = "";
+                                        item.LateCheckOutDeductionBy = "";
+                                        item.LateCheckOutApplicableOn = "";
+                                        item.LateCheckOutFromHour = 0;
+                                        item.LateCheckOutToHour = 0;
+                                        item.LateCheckOutCharges = 0;
+
+
+                                    }
+                                    else
+                                    {
+                                        return Ok(new { Code = 400, Message = "Late check out policies not found", data = response });
+                                    }
+
+                                }
+                                int maxHour = extraPolicy.Max(x => x.ToHour);
+                                if (differenceHours > maxHour)
                                 {
                                     item.IsLateCheckOut = false;
                                     item.LateCheckOutPolicyName = "";
@@ -3133,30 +3162,55 @@ namespace hotel_api.Controllers
                                 }
                                 else
                                 {
-                                    item.IsLateCheckOut = true;
-                                    item.LateCheckOutPolicyName = applicablePolicy.PolicyName;
-                                    item.LateCheckOutDeductionBy = applicablePolicy.DeductionBy;
-                                    item.LateCheckOutApplicableOn = applicablePolicy.ChargesApplicableOn;
-                                    item.LateCheckOutFromHour = applicablePolicy.FromHour;
-                                    item.LateCheckOutToHour = applicablePolicy.ToHour;
-                                    if (applicablePolicy.DeductionBy == Constants.Constants.DeductionByAmount)
+                                    var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour >= differenceHours);
+                                    if (applicablePolicy == null)
                                     {
-
-                                        item.LateCheckOutCharges = applicablePolicy.Amount;
-                                    }
-                                    else
-                                    {
-                                        if (applicablePolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
+                                        if (item.IsLateCheckOutZeroAmount == true)
                                         {
-                                            item.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(item.TotalBookingAmount, applicablePolicy.Amount);
+                                            item.IsLateCheckOut = false;
+                                            item.LateCheckOutPolicyName = "";
+                                            item.LateCheckOutDeductionBy = "";
+                                            item.LateCheckOutApplicableOn = "";
+                                            item.LateCheckOutFromHour = 0;
+                                            item.LateCheckOutToHour = 0;
+                                            item.LateCheckOutCharges = 0;
+
 
                                         }
                                         else
                                         {
-                                            item.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(item.BookingAmount, applicablePolicy.Amount);
+                                            return Ok(new { Code = 400, Message = "Late check out policies not found", data = response });
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        item.IsLateCheckOut = true;
+                                        item.LateCheckOutPolicyName = applicablePolicy.PolicyName;
+                                        item.LateCheckOutDeductionBy = applicablePolicy.DeductionBy;
+                                        item.LateCheckOutApplicableOn = applicablePolicy.ChargesApplicableOn;
+                                        item.LateCheckOutFromHour = applicablePolicy.FromHour;
+                                        item.LateCheckOutToHour = applicablePolicy.ToHour;
+                                        if (applicablePolicy.DeductionBy == Constants.Constants.DeductionByAmount)
+                                        {
+
+                                            item.LateCheckOutCharges = applicablePolicy.Amount;
+                                        }
+                                        else
+                                        {
+                                            if (applicablePolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
+                                            {
+                                                item.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(item.TotalBookingAmount, applicablePolicy.Amount);
+
+                                            }
+                                            else
+                                            {
+                                                item.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(item.BookingAmount, applicablePolicy.Amount);
+                                            }
                                         }
                                     }
                                 }
+
                             }
                             else
                             {
@@ -3168,6 +3222,8 @@ namespace hotel_api.Controllers
                                 item.LateCheckOutToHour = 0;
                                 item.LateCheckOutCharges = 0;
                             }
+
+                            
                         }
                     }
 
@@ -3723,6 +3779,7 @@ namespace hotel_api.Controllers
                     booking.CheckOutDiscountPercentage = item.CheckOutDiscountPercentage;
                     booking.CheckOutDiscoutAmount = item.CheckOutDiscoutAmount;
                     booking.CheckOutInvoiceFormat = property.CheckOutInvoice;
+                    booking.IsLateCheckOutZeroAmount = item.IsLateCheckOutZeroAmount;
                     _context.BookingDetail.Update(booking);
 
                     inNotificationDTO.RoomNo = await _context.RoomMaster
@@ -5457,13 +5514,13 @@ namespace hotel_api.Controllers
 
 
 
-
+      
 
 
         //CALCULATE ROOM RATE DATE WISE
         private async Task<(int Code, string Message, RoomRateResponse? Response)> CalculateRoomRateAsync(
             int companyId, int roomTypeId, DateOnly checkInDate, DateOnly checkOutDate,
-            int noOfRooms, int noOfNights, string gstType, int noOfHours, string checkInTime, string checkOutTime, string discountType, decimal discount, string checkOutFormat, string roomRatesCalculatedBy, CompanyDetails property, bool isEditRate = false, decimal eachNightRate = 0)
+            int noOfRooms, int noOfNights, string gstType, int noOfHours, string checkInTime, string checkOutTime, string discountType, decimal discount, string checkOutFormat, string roomRatesCalculatedBy, CompanyDetails property, bool isEditRate = false, decimal eachNightRate = 0, bool earlyCheckIn = false,bool lateCheckOut = false)
         {
             var roomRateResponse = new RoomRateResponse();
 
@@ -6063,47 +6120,93 @@ namespace hotel_api.Controllers
 
                 //check earlycheckin 
                 if (property.IsDefaultCheckInTimeApplicable && property.IsEarlyCheckInPolicyEnable && checkOutFormat == Constants.Constants.NightFormat)
-                {
-                    var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.EARLYCHECKIN && x.CompanyId == companyId).ToListAsync();
-                    if (extraPolicy.Count == 0)
-                    {
-                        return (400, "Early checkin policies not found", roomRateResponse);
-                    }
-
+                {                  
                     int differenceHours = DateTimeMethod.FindEarlyCheckInHourDifference(property.CheckInTime, checkInTime);
                     if (differenceHours > 0)
                     {
-                        var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour > differenceHours);
-                        if (applicablePolicy == null)
+                        var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.EARLYCHECKIN && x.CompanyId == companyId).ToListAsync();
+                        if (extraPolicy.Count == 0)
                         {
-                            return (400, "Suitable early checkin policy not found", roomRateResponse);
-                        }
-                        else
-                        {
-                            roomRateResponse.IsEarlyCheckIn = true;
-                            roomRateResponse.EarlyCheckInPolicyName = applicablePolicy.PolicyName;
-                            roomRateResponse.EarlyCheckInDeductionBy = applicablePolicy.DeductionBy;
-                            roomRateResponse.EarlyCheckInApplicableOn = applicablePolicy.ChargesApplicableOn;
-                            roomRateResponse.EarlyCheckInFromHour = applicablePolicy.FromHour;
-                            roomRateResponse.EarlyCheckInToHour = applicablePolicy.ToHour;
-                            if (applicablePolicy.DeductionBy == Constants.Constants.DeductionByAmount)
+                            if (earlyCheckIn == true)
                             {
+                                roomRateResponse.IsEarlyCheckIn = false;
+                                roomRateResponse.EarlyCheckInPolicyName = "";
+                                roomRateResponse.EarlyCheckInDeductionBy = "";
+                                roomRateResponse.EarlyCheckInApplicableOn = "";
+                                roomRateResponse.EarlyCheckInFromHour = 0;
+                                roomRateResponse.EarlyCheckInToHour = 0;
+                                roomRateResponse.EarlyCheckInCharges = 0;
 
-                                roomRateResponse.EarlyCheckInCharges = applicablePolicy.Amount;
                             }
                             else
                             {
-                                if (applicablePolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
+                                return (400, "Early checkin policies not found", roomRateResponse);
+                            }
+
+                        }
+
+                        int maxHour = extraPolicy.Max(x => x.ToHour);
+                        if (differenceHours > maxHour)
+                        {           
+                            
+                            roomRateResponse.IsEarlyCheckIn = true;
+                            roomRateResponse.EarlyCheckInPolicyName = $"More than {maxHour} hour";
+                            roomRateResponse.EarlyCheckInDeductionBy = "";
+                            roomRateResponse.EarlyCheckInApplicableOn = "";
+                            roomRateResponse.EarlyCheckInFromHour = 0;
+                            roomRateResponse.EarlyCheckInToHour = 0;
+                            roomRateResponse.EarlyCheckInCharges = bookingAmount; 
+                        }
+                        else
+                        {
+                            var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour >= differenceHours);
+                            if (applicablePolicy == null)
+                            {
+                                if (earlyCheckIn == true)
                                 {
-                                    roomRateResponse.EarlyCheckInCharges = Constants.Calculation.CalculatePercentage(totalBookingAmount, applicablePolicy.Amount);
+                                    roomRateResponse.IsEarlyCheckIn = false;
+                                    roomRateResponse.EarlyCheckInPolicyName = "";
+                                    roomRateResponse.EarlyCheckInDeductionBy = "";
+                                    roomRateResponse.EarlyCheckInApplicableOn = "";
+                                    roomRateResponse.EarlyCheckInFromHour = 0;
+                                    roomRateResponse.EarlyCheckInToHour = 0;
+                                    roomRateResponse.EarlyCheckInCharges = 0;
 
                                 }
                                 else
                                 {
-                                    roomRateResponse.EarlyCheckInCharges = Constants.Calculation.CalculatePercentage(bookingAmount, applicablePolicy.Amount);
+                                    return (400, "Suitable early checkin policy not found", roomRateResponse);
+                                }
+
+                            }
+                            else
+                            {
+                                roomRateResponse.IsEarlyCheckIn = true;
+                                roomRateResponse.EarlyCheckInPolicyName = applicablePolicy.PolicyName;
+                                roomRateResponse.EarlyCheckInDeductionBy = applicablePolicy.DeductionBy;
+                                roomRateResponse.EarlyCheckInApplicableOn = applicablePolicy.ChargesApplicableOn;
+                                roomRateResponse.EarlyCheckInFromHour = applicablePolicy.FromHour;
+                                roomRateResponse.EarlyCheckInToHour = applicablePolicy.ToHour;
+                                if (applicablePolicy.DeductionBy == Constants.Constants.DeductionByAmount)
+                                {
+
+                                    roomRateResponse.EarlyCheckInCharges = applicablePolicy.Amount;
+                                }
+                                else
+                                {
+                                    if (applicablePolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
+                                    {
+                                        roomRateResponse.EarlyCheckInCharges = Constants.Calculation.CalculatePercentage(totalBookingAmount, applicablePolicy.Amount);
+
+                                    }
+                                    else
+                                    {
+                                        roomRateResponse.EarlyCheckInCharges = Constants.Calculation.CalculatePercentage(bookingAmount, applicablePolicy.Amount);
+                                    }
                                 }
                             }
                         }
+                       
                     }
 
                 }
@@ -6113,46 +6216,96 @@ namespace hotel_api.Controllers
                 //check late check out
                 if (property.IsDefaultCheckOutTimeApplicable && property.IsLateCheckOutPolicyEnable && checkOutFormat == Constants.Constants.NightFormat)
                 {
-                    var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.LATECHECKOUT && x.CompanyId == companyId).ToListAsync();
-                    if (extraPolicy.Count == 0)
-                    {
-                        return (400, "Late check out policies not found", roomRateResponse);
-                    }
-
                     int differenceHours = DateTimeMethod.FindLateCheckOutHourDifference(property.CheckOutTime, checkOutTime);
+
+                   
+
+                    
                     if (differenceHours > 0)
                     {
-                        var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour > differenceHours);
-                        if (applicablePolicy == null)
+                        var extraPolicy = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.Status == Constants.Constants.LATECHECKOUT && x.CompanyId == companyId).ToListAsync();
+                        if (extraPolicy.Count == 0)
                         {
-                            return (400, "Suitable late checkout policy not found", roomRateResponse);
-                        }
-                        else
-                        {
-                            roomRateResponse.IsLateCheckOut = true;
-                            roomRateResponse.LateCheckOutPolicyName = applicablePolicy.PolicyName;
-                            roomRateResponse.LateCheckOutDeductionBy = applicablePolicy.DeductionBy;
-                            roomRateResponse.LateCheckOutApplicableOn = applicablePolicy.ChargesApplicableOn;
-                            roomRateResponse.LateCheckOutFromHour = applicablePolicy.FromHour;
-                            roomRateResponse.LateCheckOutToHour = applicablePolicy.ToHour;
-                            if (applicablePolicy.DeductionBy == Constants.Constants.DeductionByAmount)
+                            if(lateCheckOut == true)
                             {
+                                roomRateResponse.IsLateCheckOut = false;
+                                roomRateResponse.LateCheckOutPolicyName = "";
+                                roomRateResponse.LateCheckOutDeductionBy = "";
+                                roomRateResponse.LateCheckOutApplicableOn = "";
+                                roomRateResponse.LateCheckOutFromHour = 0;
+                                roomRateResponse.LateCheckOutToHour = 0;
+                                roomRateResponse.LateCheckOutCharges =0;
 
-                                roomRateResponse.LateCheckOutCharges = applicablePolicy.Amount;
+                                
                             }
                             else
                             {
-                                if (applicablePolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
+                                return (400, "Late check out policies not found", roomRateResponse);
+                            }
+                                
+                        }
+                        int maxHour = extraPolicy.Max(x => x.ToHour);
+                        if(differenceHours > maxHour)
+                        {
+                            roomRateResponse.IsLateCheckOut = true;
+                            roomRateResponse.LateCheckOutPolicyName = $"More than {maxHour} hour";
+                            roomRateResponse.LateCheckOutDeductionBy = "";
+                            roomRateResponse.LateCheckOutApplicableOn = "";
+                            roomRateResponse.LateCheckOutFromHour = 0;
+                            roomRateResponse.LateCheckOutToHour = 0;
+                            roomRateResponse.LateCheckOutCharges =bookingAmount;
+                        }
+                        else
+                        {
+                            var applicablePolicy = extraPolicy.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour >= differenceHours);
+                            if (applicablePolicy == null)
+                            {
+                                if (lateCheckOut == true)
                                 {
-                                    roomRateResponse.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(totalBookingAmount, applicablePolicy.Amount);
+                                    roomRateResponse.IsLateCheckOut = false;
+                                    roomRateResponse.LateCheckOutPolicyName = "";
+                                    roomRateResponse.LateCheckOutDeductionBy = "";
+                                    roomRateResponse.LateCheckOutApplicableOn = "";
+                                    roomRateResponse.LateCheckOutFromHour = 0;
+                                    roomRateResponse.LateCheckOutToHour = 0;
+                                    roomRateResponse.LateCheckOutCharges = 0;
+
 
                                 }
                                 else
                                 {
-                                    roomRateResponse.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(bookingAmount, applicablePolicy.Amount);
+                                    return (400, "Suitable late checkout policy not found", roomRateResponse);
+                                }
+
+                            }
+                            else
+                            {
+                                roomRateResponse.IsLateCheckOut = true;
+                                roomRateResponse.LateCheckOutPolicyName = applicablePolicy.PolicyName;
+                                roomRateResponse.LateCheckOutDeductionBy = applicablePolicy.DeductionBy;
+                                roomRateResponse.LateCheckOutApplicableOn = applicablePolicy.ChargesApplicableOn;
+                                roomRateResponse.LateCheckOutFromHour = applicablePolicy.FromHour;
+                                roomRateResponse.LateCheckOutToHour = applicablePolicy.ToHour;
+                                if (applicablePolicy.DeductionBy == Constants.Constants.DeductionByAmount)
+                                {
+
+                                    roomRateResponse.LateCheckOutCharges = applicablePolicy.Amount;
+                                }
+                                else
+                                {
+                                    if (applicablePolicy.ChargesApplicableOn == Constants.Constants.ChargesOnTotalAmount)
+                                    {
+                                        roomRateResponse.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(totalBookingAmount, applicablePolicy.Amount);
+
+                                    }
+                                    else
+                                    {
+                                        roomRateResponse.LateCheckOutCharges = Constants.Calculation.CalculatePercentage(bookingAmount, applicablePolicy.Amount);
+                                    }
                                 }
                             }
                         }
+                            
                     }
 
                 }
@@ -6858,7 +7011,7 @@ namespace hotel_api.Controllers
                     int minutesDiff = Constants.DateTimeMethod.GetDifferenceInMinutes(bookingDetails.CheckOutDate, bookingDetails.CheckOutTime, endDate, endTime);
                     if (minutesDiff > 0)
                     {
-                        if (bookingDetails.Status == Constants.Constants.CheckIn)
+                        if (bookingDetails.Status == Constants.Constants.CheckIn && roomEditDTO.ValueChanged == "checkOutDate")
                         {
                             return Ok(new { Code = 400, Message = "Use ROOM EXTEND to extend Check Out." });
                         }
@@ -6939,7 +7092,8 @@ namespace hotel_api.Controllers
 
 
                     //calcuate rates
-                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property, roomEditDTO.isEditRate, roomEditDTO.EachNightRate);
+                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property, roomEditDTO.isEditRate, roomEditDTO.EachNightRate, roomEditDTO.IsEarlyCheckInZeroAmount, roomEditDTO.IsLateCheckOutZeroAmount);
+
                     return Ok(new { Code = code, Message = message, AvailableRooms = rows, AvailableCount = AvailableCount, Data = response, RoomDates = roomEditDTO });
                 }
 
@@ -7041,7 +7195,7 @@ namespace hotel_api.Controllers
                 //if category and gst selected then calculate rates
                 if (roomEditDTO.RoomTypeId > 0 && roomEditDTO.GstType != "")
                 {
-                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property, roomEditDTO.isEditRate, roomEditDTO.EachNightRate);
+                    var (code, message, response) = await CalculateRoomRateAsync(companyId, roomEditDTO.RoomTypeId, roomEditDTO.ReservationDate, roomEditDTO.CheckOutDate, 1, roomEditDTO.NoOfNights, roomEditDTO.GstType, roomEditDTO.NoOfHours, roomEditDTO.ReservationTime, roomEditDTO.CheckOutTime, discountType, discount, checkOutFormat, roomRatesCalcuatedBy, property, roomEditDTO.isEditRate, roomEditDTO.EachNightRate, roomEditDTO.IsEarlyCheckInZeroAmount, roomEditDTO.IsLateCheckOutZeroAmount);
 
                     return Ok(new { Code = code, Message = message, AvailableRooms = rows, AvailableCount = AvailableCount, RoomRates = response, RoomDates = roomEditDTO });
 
@@ -7255,25 +7409,115 @@ namespace hotel_api.Controllers
             }
         }
 
-        //[HttpGet("GetSuitableExtraPolicy")]
-        //public async Task<IActionResult> GetSuitableExtraPolicy()
-        //{
-        //    try
-        //    {
-        //        var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId && x.IsActive == true);
+        [HttpGet("GetSuitableExtraPolicy")]
+        public async Task<IActionResult> GetSuitableExtraPolicy(string time, string status)
+        {
+            try
+            {
+                var property = await _context.CompanyDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.PropertyId == companyId && x.IsActive == true);
 
-        //        if (property == null)
-        //        {
-        //            return Ok(new { Code = 400, Message = "Property not found" });
-        //        }
+                if (property == null)
+                {
+                    return Ok(new { Code = 400, Message = "Property not found" });
+                }
 
 
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
-        //    }
-        //}
+
+                if (status == Constants.Constants.EARLYCHECKIN && property.IsDefaultCheckInTimeApplicable && property.IsEarlyCheckInPolicyEnable)
+                {
+                    List<ExtraPolicies> extraPolicies = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Status == status).ToListAsync();
+
+                    int maxHour = extraPolicies.Max(x => x.ToHour);
+
+
+                    //find time difference
+                    int differenceHours = DateTimeMethod.FindEarlyCheckInHourDifference(property.CheckInTime, time);
+
+                    if (differenceHours > 0)
+                    {
+                        if (extraPolicies.Count == 0)
+                        {
+                            return Ok(new { Code = 404, Message = "No Early Check-In policy found for the selected time. Are you sure you want to proceed with zero charges?" });
+                        }
+                        else if (differenceHours > maxHour)
+                        {
+                            return Ok(new { Code = 200, Message = "Policy not applicable" });
+                        }
+
+                        else
+                        {
+                            //find policy
+                            var applicablePolicy = extraPolicies.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour >= differenceHours);
+
+                            if (applicablePolicy == null)
+                            {
+                                return Ok(new { Code = 404, Message = "No Early Check-In policy found for the selected time. Are you sure you want to proceed with zero charges?" });
+                            }
+                            else
+                            {
+                                return Ok(new { Code = 200, Message = "Policy found successfully" });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return Ok(new { Code = 200, Message = "Policy not applicable" });
+                    }
+                }
+                else if(status == Constants.Constants.LATECHECKOUT && property.IsDefaultCheckOutTimeApplicable && property.IsLateCheckOutPolicyEnable)
+                {
+                    List<ExtraPolicies> extraPolicies = await _context.ExtraPolicies.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Status == status).ToListAsync();
+
+                    int maxHour = extraPolicies.Max(x => x.ToHour);
+
+
+                    //find time difference
+                    int differenceHours = DateTimeMethod.FindLateCheckOutHourDifference(property.CheckOutTime, time);
+
+                    if (differenceHours > 0)
+                    {
+                        if (extraPolicies.Count == 0)
+                        {
+                            return Ok(new { Code = 404, Message = "No Late Check-Out policy found for the selected time. Are you sure you want to proceed with zero charges?" });
+                        }
+                        else if (differenceHours > maxHour)
+                        {
+                            return Ok(new { Code = 200, Message = "Policy not applicable" });
+                        }
+
+                        else
+                        {
+                            //find policy
+                            var applicablePolicy = extraPolicies.FirstOrDefault(x => x.FromHour <= differenceHours && x.ToHour >= differenceHours);
+
+                            if (applicablePolicy == null)
+                            {
+                                return Ok(new { Code = 404, Message = "No Late Check-Out policy found for the selected time. Are you sure you want to proceed with zero charges?" });
+                            }
+                            else
+                            {
+                                return Ok(new { Code = 200, Message = "Policy found successfully" });
+                            }
+                        }
+                    }
+                    else
+                    {
+                        return Ok(new { Code = 200, Message = "Policy not applicable" });
+                    }
+                }
+                else
+                {
+                    return Ok(new { Code = 200, Message = "Policy not applicable" });
+                }
+               
+
+
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+        }
 
         private MemoryStream GenerateInvoicePdf(CheckOutResponse invoiceData, string outputPath)
         {
