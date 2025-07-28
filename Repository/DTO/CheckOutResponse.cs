@@ -32,4 +32,21 @@ namespace Repository.DTO
         public string PageName = "CheckOutPage";
 
     }
+
+    public class InvoiceData
+    {
+        public ReservationDetails? ReservationDetails { get; set; }
+        public List<BookingDetail> BookingDetails { get; set; } = new List<BookingDetail>();
+        public GuestDetails? GuestDetails { get; set; }
+        public string InvoiceNo { get; set; } = string.Empty;
+        public DateOnly InvoiceDate { get; set; } = DateOnly.FromDateTime(DateTime.Now)
+;
+        public string InvoiceName { get; set; } = string.Empty;
+        public PaymentCheckOutSummary PaymentSummary { get; set; } = new PaymentCheckOutSummary();
+        public CompanyDetails PropertyDetails = new CompanyDetails();
+
+        public string PageName = "CheckOutPage";
+        public DateTime CancelDate { get; set; } = DateTime.Now;
+        public CancelSummary CancelSummary { get; set; } = new CancelSummary();
+    }
 }

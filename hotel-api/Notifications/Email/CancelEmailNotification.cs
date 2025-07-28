@@ -1,56 +1,60 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Repository.Models;
+﻿using Repository.Models;
 using RepositoryModels.Repository;
-using System.ComponentModel.Design;
 
 namespace hotel_api.Notifications.Email
 {
-    public class CheckInNotificationDTO
+
+    public class CancelBookingNotificationDTO
     {
         public string RoomNo { get; set; } = string.Empty;
         public int Pax { get; set; }
-        public string CheckInDateTime { get; set; } = string.Empty;
-        public string CheckOutDateTime { get; set; } = string.Empty;
+
+        public string CancelDate { get; set; } = string.Empty;
         public string GuestName { get; set; } = string.Empty;
         public string GuestPhoneNo { get; set; } = string.Empty;
         public string GuestEmail { get; set; } = string.Empty;
         public string ReservationNo { get; set; } = string.Empty;
 
         public string RoomType { get; set; } = string.Empty;
+
+
     }
 
-    public class CheckInEmailNotification
+    public class CancelEmailNotification
     {
         private readonly DbContextSql _context;
         private int CompanyId { get; set; }
-        public CompanyDetails CompanyDetails = new CompanyDetails();
-        public List<CheckInNotificationDTO> inNotificationDTOs = new List<CheckInNotificationDTO>();
-        public CheckInEmailNotification(DbContextSql context, List<CheckInNotificationDTO> inNotificationDTOs, int companyId, CompanyDetails companyDetails)
+        private CompanyDetails CompanyDetails = new CompanyDetails();
+        private List<CancelBookingNotificationDTO> inNotificationDTOs = new List<CancelBookingNotificationDTO>();
+
+        private byte[]? attachment;
+        public CancelEmailNotification(DbContextSql context, List<CancelBookingNotificationDTO> inNotificationDTOs, int companyId, CompanyDetails companyDetails, byte[] attachment)
         {
             _context = context;
             this.inNotificationDTOs = inNotificationDTOs;
             CompanyId = companyId;
             CompanyDetails = companyDetails;
+            this.attachment = attachment;
         }
 
         public async Task SendEmail()
         {
-            foreach(var item in inNotificationDTOs)
+            foreach (var item in inNotificationDTOs)
             {
-                string subject = $"Check In Successful - {item.ReservationNo}";
+                string subject = $"Cancel Successful - {item.ReservationNo}";
                 string htmlBody = @$"
                 <!DOCTYPE html>
 <html lang=""en"">
 <head>
     <meta charset=""UTF-8"">
-    <title>Check In Confirmation</title>
+    <title>Cancel Confirmation</title>
 </head>
 <body style=""font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;"">
 
     <table width=""100%"" style=""max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
         <tr>
             <td style=""padding: 20px; text-align: center; background-color: #007bff; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;"">
-                <h2>Check In Confirmed</h2>
+                <h2>Cancel Confirmed</h2>
             </td>
         </tr>
 
@@ -58,7 +62,7 @@ namespace hotel_api.Notifications.Email
             <td style=""padding: 20px; color: #333333;"">
                 <p>Dear <strong>{item.GuestName}</strong>,</p>
 
-                <p>We are pleased to inform you that your check-in has been successfully confirmed!</p>
+                <p>We are pleased to inform you that your room cancelled successfully!</p>
 
                 <table width=""100%"" style=""margin-top: 20px;"">
                     <tr>
@@ -70,25 +74,13 @@ namespace hotel_api.Notifications.Email
                         <td style=""padding: 8px; color: #555555;"">{item.RoomNo}</td>
                     </tr>
 
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Category:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomType}</td>
-                    </tr>
 
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check In Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CheckInDateTime}</td>
-                    </tr>
-                   
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Check Out Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CheckOutDateTime}</td>
-                    </tr>
+                   <tr>
+                        <td style=""padding: 8px; color: #555555;""><strong>Cancel Date:</strong></td>
+                        <td style=""padding: 8px; color: #555555;"">{item.CancelDate}</td>
+                    </tr>     
 
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Pax:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.Pax}</td>
-                    </tr>
+
                 </table>
 
                 <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  
@@ -108,16 +100,12 @@ namespace hotel_api.Notifications.Email
 
 </body>
 </html>
-";
 
-                await Notification.SendMail(_context, subject, htmlBody, CompanyId, item.GuestEmail);
+                ";
+
+                await Notifications.Notification.SendMail(_context, subject, htmlBody, CompanyId, item.GuestEmail, attachment);
             }
-          
-        }
 
         }
-
-
-     
-
     }
+}

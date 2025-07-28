@@ -21,6 +21,7 @@ using Repository.RequestDTO;
 using RepositoryModels.Repository;
 using System.Data;
 using System.Globalization;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace hotel_api.Controllers
 {
@@ -1746,15 +1747,29 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 202, Message = "Property not found" });
                 }
 
+                var roomTypes = await _context.RoomCategoryMaster.Where(x => x.IsActive == true && x.CompanyId == companyId).ToListAsync();
+
+                var roomNos = await _context.RoomMaster.Where(x => x.IsActive == true && x.CompanyId == companyId).ToListAsync();
+
                 //room shift
                 if (request.Type == "Shift")
                 {
+                    
+                    
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == request.BookingId);
                     if (booking == null)
                     {
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "Booking not found" });
                     }
+
+                    var guestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.GuestId == booking.GuestId);
+
+                    string previousRoom = $"{roomNos.Where(x => x.RoomId == booking.RoomId).Select(x => x.RoomNo).FirstOrDefault()} ({roomTypes.Where(x => x.Id == booking.RoomTypeId).Select(x => x.Type).FirstOrDefault()})";
+
+                    string newRoom = $"{roomNos.Where(x => x.RoomId == request.ShiftRoomId).Select(x => x.RoomNo).FirstOrDefault()} ({roomTypes.Where(x => x.Id ==request.ShiftRoomTypeId).Select(x => x.Type).FirstOrDefault()})";
+
+                    RoomShiftEmailNotification emailNotification = new RoomShiftEmailNotification(_context, property, booking.ReservationNo, guestDetails,previousRoom, newRoom, request.ShiftDate.ToString("dd-MM-yyyy"));
 
                     var newBooking = new BookingDetail
                     {
@@ -2133,6 +2148,12 @@ namespace hotel_api.Controllers
                     _context.ReservationDetails.Update(reservationDetails);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
+
+                    if(property.IsEmailNotification && property.RoomShiftNotification)
+                    {
+                        await emailNotification.SendEmail();
+                    }
+
                     return Ok(new
                     {
                         Code = 200,
@@ -2145,12 +2166,21 @@ namespace hotel_api.Controllers
 
                 else
                 {
+                    
+
                     var booking = await _context.BookingDetail.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == request.BookingId);
                     if (booking == null)
                     {
                         await transaction.RollbackAsync();
                         return Ok(new { Code = 400, Message = "Booking not found" });
                     }
+
+                    var guestDetails = await _context.GuestDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.CompanyId == companyId && x.GuestId == booking.GuestId);
+
+                    string roomNo = $"{roomNos.Where(x => x.RoomId == booking.RoomId).Select(x => x.RoomNo).FirstOrDefault()} ({roomTypes.Where(x => x.Id == booking.RoomTypeId).Select(x => x.Type).FirstOrDefault()})";
+
+
+                    RoomExtendEmailNotification emailNotification = new RoomExtendEmailNotification(_context, property, booking.ReservationNo, guestDetails, roomNo, booking.CheckoutFormat == Constants.Constants.SameDayFormat ? booking.NoOfHours.ToString() : booking.CheckOutDate.ToString("dd-MM-yyyy"), booking.CheckoutFormat == Constants.Constants.SameDayFormat ? request.ExtendHour.ToString() : request.ExtendedDate.ToString("dd-MM-yyyy"), booking.CheckoutFormat);
 
                     //check new room available or not
                     DateOnly tempDate = DateOnly.FromDateTime(DateTime.Now);
@@ -2304,7 +2334,18 @@ namespace hotel_api.Controllers
                     reservationDetails.UpdatedDate = currentDate;
                     _context.ReservationDetails.Update(reservationDetails);
                     await _context.SaveChangesAsync();
+
+                    if (property.IsEmailNotification && property.RoomShiftNotification)
+                    {
+                        await emailNotification.SendEmail();
+                    }
+
+
+
                     await transaction.CommitAsync();
+
+                    
+
                     return Ok(new
                     {
                         Code = 200,
@@ -3881,8 +3922,20 @@ namespace hotel_api.Controllers
 
                 if (property.IsEmailNotification)
                 {
+                    InvoiceData data = new InvoiceData
+                    {
+                        ReservationDetails = request.ReservationDetails,
+                        BookingDetails = request.BookingDetails,
+                        GuestDetails = request.GuestDetails,
+                        InvoiceNo = request.InvoiceNo,
+                        InvoiceDate = request.InvoiceDate,
+                        InvoiceName = request.InvoiceName,
+                        PaymentSummary = request.PaymentSummary,
+                        PropertyDetails = request.PropertyDetails,
+                        PageName = "CheckOutPage"
+                    };
 
-                    var pdfBytes = GenerateInvoicePdf(request, "").ToArray();
+                    var pdfBytes = GenerateInvoicePdf(data, "").ToArray();
 
 
                     CheckOutEmailNotification outEmailNotification = new CheckOutEmailNotification(_context, notificationDTOs, companyId, property, pdfBytes);
@@ -4916,82 +4969,32 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 400, Message = "Error while updating document" });
                 }
 
-                foreach (var item in notificationDTOs)
+
+                if(property.IsEmailNotification && property.CancelBookingNotification)
                 {
-                    //send email
-                    string subject = $"Cancellation Successful - {item.ReservationNo}";
-                    string htmlBody = @$"
-                <!DOCTYPE html>
-<html lang=""en"">
-<head>
-    <meta charset=""UTF-8"">
-    <title>Cancellation Confirmation</title>
-</head>
-<body style=""font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;"">
 
-    <table width=""100%"" style=""max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"">
-        <tr>
-            <td style=""padding: 20px; text-align: center; background-color: #007bff; color: white; border-top-left-radius: 8px; border-top-right-radius: 8px;"">
-                <h2>Booking Cancelled</h2>
-            </td>
-        </tr>
+                    InvoiceData data = new InvoiceData
+                    {
+                        ReservationDetails = request.ReservationDetails,
+                        BookingDetails = request.bookingDetails,
+                        GuestDetails = request.GuestDetails,
+                        InvoiceNo = request.InvoiceNo,
+                        InvoiceDate = request.InvoiceDate,
+                        InvoiceName = request.InvoiceName,
+                        CancelSummary = request.CancelSummary,
+                        PropertyDetails = property,
+                        CancelDate = request.CancelDate,
+                        PageName = "CancelPage"
+                    };
 
-        <tr>
-            <td style=""padding: 20px; color: #333333;"">
-                <p>Dear <strong>{item.GuestName}</strong>,</p>
+                    var pdfBytes = GenerateInvoicePdf(data, "").ToArray();
 
-                <p>We are pleased to inform you that your check-out has been successfully confirmed!</p>
+                    CancelEmailNotification emailNotification = new CancelEmailNotification(_context, notificationDTOs, companyId, property, pdfBytes);
+                    await emailNotification.SendEmail();
 
-                <table width=""100%"" style=""margin-top: 20px;"">
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Reservation Number:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.ReservationNo}</td>
-                    </tr>
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Type:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomNo}</td>
-                    </tr>
-
-  <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Room Category:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.RoomType}</td>
-                    </tr>
-
-  
-                   
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Cancel Date:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.CancelDate}</td>
-                    </tr>
-
-<tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Pax:</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{item.Pax}</td>
-                    </tr>
-                </table>
-
-                <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  
-                <br>We look forward to welcoming you and ensuring you have a wonderful stay!</p>
-
-                <p style=""margin-top: 30px;"">Thank you for choosing <strong>{property.CompanyName}</strong>!</p>
-            </td>
-        </tr>
-
-        <tr>
-            <td style=""padding: 20px; text-align: center; font-size: 12px; color: #888888; background-color: #f1f1f1; border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;"">
-                {property.CompanyName} | {property.ContactNo1} | {property.CompanyAddress} <br/>
-                
-            </td>
-        </tr>
-    </table>
-
-</body>
-</html>
-";
-
-                    await Notifications.Notification.SendMail(_context, subject, htmlBody, companyId, item.GuestEmail);
 
                 }
+                
 
 
                 await _context.SaveChangesAsync();
@@ -5358,6 +5361,7 @@ namespace hotel_api.Controllers
                                                 RoomTypeId = booking.RoomTypeId,
                                                 NoOfNights = booking.NoOfNights,
                                                 NoOfHours = booking.NoOfHours,
+                                                CancelDate = booking.CancelDate,
                                                 CancelAmount = booking.CancelAmount,
                                                 CheckOutInvoiceFormat = booking.CheckOutInvoiceFormat,
                                                 RoomCount = booking.RoomCount,
@@ -5431,7 +5435,8 @@ namespace hotel_api.Controllers
                                                 InvoiceNo = booking.InvoiceNo,
                                                 InvoiceDate = booking.InvoiceDate,
                                                 RoomCancelHistory = _context.RoomCancelHistory.Where(x => x.IsActive == true && x.CompanyId == companyId && x.BookingId == booking.BookingId).ToList(),
-                                                GuestDetails = guest
+                                                GuestDetails = guest,
+                                                CancelDate = booking.CancelDate
                                             }).ToListAsync();
 
 
@@ -7547,7 +7552,7 @@ namespace hotel_api.Controllers
             }
         }
 
-        private MemoryStream GenerateInvoicePdf(CheckOutResponse invoiceData, string outputPath)
+        private MemoryStream GenerateInvoicePdf(InvoiceData invoiceData, string outputPath)
         {
 
             using (var ms = new MemoryStream())
@@ -7583,7 +7588,7 @@ namespace hotel_api.Controllers
         }
 
 
-        private void RoomWiseInvoice(CheckOutResponse invoiceData, Document document, PdfFont font)
+        private void RoomWiseInvoice(InvoiceData invoiceData, Document document, PdfFont font)
         {
             foreach (var room in invoiceData.BookingDetails)
             {
@@ -7630,7 +7635,7 @@ namespace hotel_api.Controllers
                     guestTable.AddCell(new Cell().Add(new Paragraph(room.CheckOutDateTime.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                 }
 
-                if (invoiceData.PageName == "CANCELPAGE")
+                if (invoiceData.PageName == "CancelPage")
                 {
                     guestTable.AddCell(new Cell().Add(new Paragraph("Room Category:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                     guestTable.AddCell(new Cell().Add(new Paragraph(room.RoomTypeName).SetFontSize(10)).SetBorder(Border.NO_BORDER));
@@ -7661,6 +7666,12 @@ namespace hotel_api.Controllers
                     invoiceTable.AddCell(new Cell().Add(new Paragraph(room.NoOfNights.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
                 }
 
+                if (invoiceData.PageName == "CancelPage" )
+                {
+                    invoiceTable.AddCell(new Cell().Add(new Paragraph("Cancel Date :").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                    invoiceTable.AddCell(new Cell().Add(new Paragraph(room.CancelDate.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                }
+
                 // === Wrapper Table with 2 columns, full width ===
                 iText.Layout.Element.Table wrapper = new iText.Layout.Element.Table(2);
                 wrapper.SetWidth(UnitValue.CreatePercentValue(100)); // Span entire page width
@@ -7681,13 +7692,40 @@ namespace hotel_api.Controllers
                 document.Add(wrapper);
                 document.Add(new Paragraph("\n"));
 
+                //cancel summary
+                if(invoiceData.PageName == "CancelPage")
+                {
+                    var cancelTable = new iText.Layout.Element.Table(4)
+                .SetWidth(UnitValue.CreatePercentValue(100));
 
 
 
 
+                    string[] cancelHeaders = { "Policy Code ", "Description", "To Date", "Cancel Amount" };
 
+                    foreach (var header in cancelHeaders)
+                    {
+                        // All other headers span 2 rows
+                        cancelTable.AddHeaderCell(new Cell(2, 1)
+                                .Add(new Paragraph(header).SetFont(font).SetFontSize(10)));
+                        
+                    }
 
+                    
+                    foreach (var cancelHistory in room.RoomCancelHistory)
+                    {
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(cancelHistory.PolicyCode).SetFontSize(10)));
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(cancelHistory.PolicyDescription).SetFontSize(10)));
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(cancelHistory.CancelToDate.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)));
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(cancelHistory
+                            .CancelAmount.ToString("F2")).SetFontSize(10)));
 
+                       
+                    }
+
+                    document.Add(cancelTable);
+                    document.Add(new Paragraph("\n"));
+                }
 
                 // Room Charges Table
                 if (invoiceData.PageName == "CheckOutPage")
@@ -7890,11 +7928,48 @@ namespace hotel_api.Controllers
                     document.Add(summaryTable);
                 }
 
+                // cancel summary
+                if (invoiceData.PageName == "CancelPage")
+                {
+                    var summaryTable = new iText.Layout.Element.Table(2).SetWidth(300).SetHorizontalAlignment(HorizontalAlignment.RIGHT);
+
+                    summaryTable.AddCell(CreateLabelCell("Total Paid :"));
+                    summaryTable.AddCell(CreateValueCell((room.AgentAdvanceAmount + room.AdvanceAmount + room.ReceivedAmount + room.RefundAmount).ToString("F2")));
+
+                    summaryTable.AddCell(CreateLabelCell("Total Cancel Amount :"));
+                    summaryTable.AddCell(CreateValueCell((room.CancelAmount).ToString("F2")));
+
+                    
+
+                    summaryTable.AddCell(CreateLabelCell("Advance :"));
+                    summaryTable.AddCell(CreateValueCell((room.AgentAdvanceAmount + room.AdvanceAmount).ToString("F2")));
+
+                    summaryTable.AddCell(CreateLabelCell("Received :"));
+                    summaryTable.AddCell(CreateValueCell((room.ReceivedAmount).ToString("F2")));
+
+                    summaryTable.AddCell(CreateLabelCell("Balance Amount:"));
+                    summaryTable.AddCell(CreateValueCell(room.BalanceAmount.ToString("F2")));
+
+                    if (room.RefundAmount > 0)
+                    {
+                        summaryTable.AddCell(CreateLabelCell("Refund Amount:"));
+                        summaryTable.AddCell(CreateValueCell(room.RefundAmount.ToString("F2")));
+                    }
+
+                    if (room.ResidualAmount > 0)
+                    {
+                        summaryTable.AddCell(CreateLabelCell("Residual Amount:"));
+                        summaryTable.AddCell(CreateValueCell(room.ResidualAmount.ToString("F2")));
+                    }
+
+                    document.Add(summaryTable);
+                }
+
                 document.Add(new AreaBreak(AreaBreakType.NEXT_PAGE)); // Next room on new page
             }
         }
 
-        private void ReservationWiseInvoice(CheckOutResponse invoiceData, Document document, PdfFont font)
+        private void ReservationWiseInvoice(InvoiceData invoiceData, Document document, PdfFont font)
         {
 
             // Company Header
@@ -7939,9 +8014,13 @@ namespace hotel_api.Controllers
             invoiceTable.AddCell(new Cell().Add(new Paragraph("Invoice Date:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
             invoiceTable.AddCell(new Cell().Add(new Paragraph(invoiceData.InvoiceDate.ToString("dd/MM/yyyy")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
 
-            //invoiceTable.AddCell(new Cell().Add(new Paragraph("Pax:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
-            //invoiceTable.AddCell(new Cell().Add(new Paragraph(room.Pax.ToString()).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+            if(invoiceData.PageName == "CancelPage")
+            {
+                invoiceTable.AddCell(new Cell().Add(new Paragraph("Cancel Date:").SetFont(font).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+                invoiceTable.AddCell(new Cell().Add(new Paragraph(invoiceData.CancelDate.ToString("dd/MM/yyyy hh:mm tt")).SetFontSize(10)).SetBorder(Border.NO_BORDER));
+            }
 
+           
 
             // === Wrapper Table with 2 columns, full width ===
             iText.Layout.Element.Table wrapper = new iText.Layout.Element.Table(2);
@@ -7963,12 +8042,42 @@ namespace hotel_api.Controllers
             document.Add(wrapper);
             document.Add(new Paragraph("\n"));
 
-            foreach (var room in invoiceData.BookingDetails)
+            //cancel charges
+            if(invoiceData.PageName == "CancelPage")
             {
+                foreach(var room in invoiceData.BookingDetails)
+                {
+                    document.Add(new Paragraph($"Room No - {room.RoomNo}").SetFont(font).SetFontSize(12));
+
+                    var cancelTable = new iText.Layout.Element.Table(4)
+                                           .SetWidth(UnitValue.CreatePercentValue(100));
+
+                    cancelTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Policy Code").SetFont(font).SetFontSize(10)));
+                    cancelTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Description").SetFont(font).SetFontSize(10)));
+                    cancelTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("To Date").SetFont(font).SetFontSize(10)));
+                    cancelTable.AddHeaderCell(new Cell(2, 1).Add(new Paragraph("Cancel Amount").SetFont(font).SetFontSize(10)));
+
+                    foreach(var rate in room.RoomCancelHistory)
+                    {
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(rate.PolicyCode).SetFontSize(10)));
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(rate.PolicyDescription).SetFontSize(10)));
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(rate.CancelToDate.ToString("dd-MM-yyyy hh:mm tt")).SetFontSize(10)));
+                        cancelTable.AddCell(new Cell().Add(new Paragraph(rate.CancelAmount.ToString()).SetFontSize(10)));
+                    }
+
+                    document.Add(cancelTable);
+                    document.Add(new Paragraph("\n"));
+                }
+            }
+
+            //room charges
+            if (invoiceData.PageName == "CheckOutPage")
+            {
+                foreach (var room in invoiceData.BookingDetails)
+                {
                 document.Add(new Paragraph("Room Charges (Date-wise)").SetFont(font).SetFontSize(12));
                 // Room Charges Table
-                if (invoiceData.PageName == "CheckOutPage")
-                {
+               
                     //heading for each table
                     var roomDetails = new iText.Layout.Element.Table(new float[] { 60, 100, 60, 100 }) // 4 columns: Label, Value, Label, Value
                         .SetWidth(UnitValue.CreatePercentValue(100));
@@ -8062,6 +8171,8 @@ namespace hotel_api.Controllers
                 }
 
             }
+            
+            
             // SERVICES TABLE
             if (invoiceData.PageName == "CheckOutPage")
             {
@@ -8199,6 +8310,47 @@ namespace hotel_api.Controllers
                 document.Add(summaryTable);
             }
 
+
+            //cancel summary
+            if (invoiceData.PageName == "CancelPage")
+            {
+                var summaryTable = new iText.Layout.Element.Table(2).SetWidth(300).SetHorizontalAlignment(HorizontalAlignment.RIGHT);
+
+                summaryTable.AddCell(CreateLabelCell("Total Paid:"));
+                summaryTable.AddCell(CreateValueCell(invoiceData.CancelSummary.TotalPaid.ToString("F2")));
+
+                
+
+                summaryTable.AddCell(CreateLabelCell("Total Cancel Amount:"));
+                summaryTable.AddCell(CreateValueCell(invoiceData.CancelSummary.CancelAmount.ToString("F2")));
+
+               
+
+                
+                summaryTable.AddCell(CreateLabelCell("Advance:"));
+                summaryTable.AddCell(CreateValueCell((invoiceData.CancelSummary.AgentAmount + invoiceData.CancelSummary.AdvanceAmount).ToString("F2")));
+
+                summaryTable.AddCell(CreateLabelCell("Received:"));
+                summaryTable.AddCell(CreateValueCell(invoiceData.CancelSummary.ReceivedAmount.ToString("F2")));
+
+
+                summaryTable.AddCell(CreateLabelCell("Balance Amount:"));
+                summaryTable.AddCell(CreateValueCell(invoiceData.CancelSummary.BalanceAmount.ToString("F2")));
+
+                if (invoiceData.CancelSummary.RefundAmount > 0)
+                {
+                    summaryTable.AddCell(CreateLabelCell("Refund Amount:"));
+                    summaryTable.AddCell(CreateValueCell(invoiceData.CancelSummary.RefundAmount.ToString("F2")));
+                }
+
+                if (invoiceData.CancelSummary.ResidualAmount > 0)
+                {
+                    summaryTable.AddCell(CreateLabelCell("Residual Amount:"));
+                    summaryTable.AddCell(CreateValueCell(invoiceData.CancelSummary.ResidualAmount.ToString("F2")));
+                }
+
+                document.Add(summaryTable);
+            }
             document.Add(new AreaBreak(AreaBreakType.NEXT_PAGE)); // Next room on new page
         }
 
