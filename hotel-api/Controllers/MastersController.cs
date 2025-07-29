@@ -555,13 +555,11 @@ namespace hotel_api.Controllers
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
                 {
-                    var error = result.Errors.Select(x => new
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
                     {
-                        Error = x.ErrorMessage,
-                        PropertyName = x.PropertyName
-                    }).ToList();
-
-                    return Ok(new { Code = 400, Message = error });
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
                 }
 
                 SetMastersDefault(cm, companyId, userId);
