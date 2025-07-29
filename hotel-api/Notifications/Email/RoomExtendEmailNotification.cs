@@ -64,19 +64,16 @@ namespace hotel_api.Notifications.Email
                     </tr>
  
                     <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>{(CheckoutFormat == Constants.Constants.SameDayFormat ? "Previous Check-Out Date" : $@"No of Hours")}</strong></td>
+                        <td style=""padding: 8px; color: #555555;""><strong>{(CheckoutFormat == Constants.Constants.SameDayFormat ? "No of Hours" : $@"Previous Check-Out Date")}</strong></td>
                         <td style=""padding: 8px; color: #555555;"">{PreviousCheckOutDate}</td>
                     </tr>                  
 
                     <tr>
                         <td style=""padding: 8px; color: #555555;""><strong>{(CheckoutFormat == Constants.Constants.SameDayFormat ? "Extended Hours" : $@"Extended Date")}</strong></td>
-                        <td style=""padding: 8px; color: #555555;"">{PreviousCheckOutDate}</td>
-                    </tr>
-
-                    <tr>
-                        <td style=""padding: 8px; color: #555555;""><strong>Extend Date:</strong></td>
                         <td style=""padding: 8px; color: #555555;"">{ExtendDate}</td>
                     </tr>
+
+                    
                 </table>
 
                 <p style=""margin-top: 20px;"">If you have any questions or special requests, feel free to contact us.  

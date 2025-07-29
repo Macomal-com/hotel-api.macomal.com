@@ -1,7 +1,9 @@
 using hotel_api.Configurations;
+using hotel_api.Notifications.ReminderEmail;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.OpenApi.Models;
+using Quartz;
 using RepositoryModels.Repositories;
 using RepositoryModels.Repository;
 
@@ -36,6 +38,21 @@ builder.Services.AddCors(options =>
                    .AllowAnyHeader();
         });
 });
+
+//builder.Services.AddQuartz(q =>
+//{
+//    var jobKey = new JobKey("ReminderEmailJob");
+
+//    q.AddJob<ReminderEmailJob>(opts => opts.WithIdentity(jobKey));
+
+//    q.AddTrigger(opts => opts
+//        .ForJob(jobKey)
+//        .WithIdentity("ReminderEmailJob-trigger")
+//        .WithCronSchedule("0 * * * * ?")); // every minute
+//});
+
+
+
 var configuration = builder.Configuration;
 builder.Services.AddSingleton<IConfiguration>(configuration);
 builder.Services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -51,6 +68,9 @@ builder.Services.AddDbContext<DbContextSql>((serviceProvider, dbContextBuilder) 
 builder.Services.AddDirectoryBrowser();
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddAutoMapper(typeof(AutomapperConfig));
+
+//builder.Services.AddQuartzHostedService();
+
 var app = builder.Build();
 
 
