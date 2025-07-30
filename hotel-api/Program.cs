@@ -39,17 +39,7 @@ builder.Services.AddCors(options =>
         });
 });
 
-//builder.Services.AddQuartz(q =>
-//{
-//    var jobKey = new JobKey("ReminderEmailJob");
 
-//    q.AddJob<ReminderEmailJob>(opts => opts.WithIdentity(jobKey));
-
-//    q.AddTrigger(opts => opts
-//        .ForJob(jobKey)
-//        .WithIdentity("ReminderEmailJob-trigger")
-//        .WithCronSchedule("0 * * * * ?")); // every minute
-//});
 
 
 
@@ -60,7 +50,7 @@ builder.Services.AddDbContext<DbContextSql>((serviceProvider, dbContextBuilder) 
 {
     var connectionStringPlaceHolder = configuration.GetConnectionString("SqlConnection");
     var httpContextAccessor = serviceProvider.GetRequiredService<IHttpContextAccessor>();
-    var dbName = httpContextAccessor.HttpContext?.Request.Headers["Database"].FirstOrDefault();
+    var dbName = httpContextAccessor.HttpContext?.Request.Headers["Database"].FirstOrDefault() ?? "HotelbookingMain";
     var connectionString = connectionStringPlaceHolder?.Replace("{dbName}", dbName);
     dbContextBuilder.UseSqlServer(connectionString);
 });
@@ -69,7 +59,20 @@ builder.Services.AddDirectoryBrowser();
 builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddAutoMapper(typeof(AutomapperConfig));
 
-//builder.Services.AddQuartzHostedService();
+builder.Services.AddQuartz(q =>
+{
+    var jobKey = new JobKey("ReminderEmailJob");
+
+    q.AddJob<ReminderEmailJob>(opts => opts.WithIdentity(jobKey));
+
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity("ReminderEmailJob-trigger")
+        .WithCronSchedule("0 0 0 * * ?")); // every minute
+
+});
+
+builder.Services.AddQuartzHostedService();
 
 var app = builder.Build();
 

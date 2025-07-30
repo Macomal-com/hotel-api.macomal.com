@@ -22,7 +22,7 @@ namespace Repository.Models
         public string DocumentPath { get; set; } = String.Empty;
         public bool BillPaid { get; set; }
         public bool IsActive { get; set; }
-        public string ReminderTime { get; set; } = String.Empty;
+        public string ReminderTime { get; set; } = "12:00";
 
         public DateTime CreatedDate { get; set; }
         public DateTime UpdatedDate { get; set; }
