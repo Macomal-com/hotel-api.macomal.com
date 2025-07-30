@@ -218,7 +218,7 @@ namespace hotel_api.Controllers
                         x.CheckOutNotification,
                         x.RoomShiftNotification,
                         x.CancelBookingNotification,
-                        
+                        PropertyImage = _context.PropertyImages.Where(p=>p.PropertyId == x.PropertyId).Select(p=>p.FilePath).FirstOrDefault() ?? ""
                     }).ToListAsync();
                     if (isUserExists.Roles == Constants.Constants.SuperAdmin)
                     {
@@ -278,7 +278,8 @@ namespace hotel_api.Controllers
                                                       x.CheckinNotification,
                                                       x.CheckOutNotification,
                                                       x.RoomShiftNotification,
-                                                      x.CancelBookingNotification
+                                                      x.CancelBookingNotification,
+                                                      PropertyImage = _context.PropertyImages.Where(p => p.PropertyId == x.PropertyId).Select(p => p.FilePath).FirstOrDefault() ?? ""
                                                   }).ToList();
 
                             return Ok(new { Code = 200, Message = "Property found successfully", data = authProperties, isAnyProperty = true });
