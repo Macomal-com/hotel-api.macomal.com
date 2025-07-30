@@ -57,11 +57,20 @@ namespace Repository.Models
                 .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Group Name is required")
                 .NotEmpty().WithMessage("Group Name is required");
+
+            RuleFor(x => x.GST)
+                .Cascade(CascadeMode.Stop)
+                .GreaterThanOrEqualTo(0).WithMessage("Gst can't be negative");
+
+            RuleFor(x => x.GST)
+                .Cascade(CascadeMode.Stop)
+                .LessThanOrEqualTo(100).WithMessage("Gst can't be more than 100");
             RuleFor(x => x)
                 .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueGroupCode)
                 .When(x => x.Id == 0)
                 .WithMessage("Group Code already exists");
+
             RuleFor(x => x)
                 .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueUpdateGroupCode)

@@ -159,7 +159,7 @@ namespace hotel_api.Controllers
                 _context.RoomRateMaster.Add(roomRate);
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return Ok(new { Code = 200, Message = "Room Category created successfully" });
+                return Ok(new { Code = 200, Message = "Room Type created successfully" });
             }
             catch (Exception ex)
             {
@@ -230,7 +230,7 @@ namespace hotel_api.Controllers
                     await _context.RoomCategoryMaster.AddAsync(newRoomCat);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    return Ok(new { Code = 200, Message = "Room Category deleted successfully" });
+                    return Ok(new { Code = 200, Message = "Room Type updated successfully" });
                 }
                 
                 else
@@ -263,7 +263,7 @@ namespace hotel_api.Controllers
                     _context.RoomCategoryMaster.Update(roomCat);
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
-                    return Ok(new { Code = 200, Message = "Room Category updated successfully" });
+                    return Ok(new { Code = 200, Message = "Room Type updated successfully" });
                 }
             }
             catch (Exception)
@@ -316,7 +316,7 @@ namespace hotel_api.Controllers
 
                 await transaction.CommitAsync();
 
-                return Ok(new { Code = 200, message = "Category deleted successfully", data = new object() });
+                return Ok(new { Code = 200, message = "Room Type deleted successfully", data = new object() });
             }
             catch (Exception ex)
             {

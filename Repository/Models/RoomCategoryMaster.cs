@@ -85,11 +85,11 @@ namespace Repository.Models
                 .Cascade(CascadeMode.Stop)
                 .MustAsync(isUniqueCategory)
                 .When(x => x.Id == 0)
-                .WithMessage("Category already exists with same name");
+                .WithMessage("Room Type already exists with same name");
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                .MustAsync(isUniqueUpdateCategory)
                .When(x => x.Id > 0)
-               .WithMessage("Category already exists with same name");
+               .WithMessage("Room Type already exists with same name");
 
         }
 
@@ -118,7 +118,7 @@ namespace Repository.Models
             _context = context;
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(DoRoomCategoryExists)
-                .WithMessage("You can't delete this Category, Room already exists!");
+                .WithMessage("You can't delete this Room Type, Room already exists!");
         }
         private async Task<bool> DoRoomCategoryExists(RoomCategoryMaster categotyMaster, CancellationToken cancellationToken)
         {

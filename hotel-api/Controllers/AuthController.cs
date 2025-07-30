@@ -53,8 +53,12 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]).ToString() != null ? Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]) : 0 ;
 
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]).ToString()!=null ? Convert.ToInt32(HttpContext.Request.Headers["UserId"]) : 0;
-                
 
+                bool hasTrailingSpaces = (model.Username != null && model.Username != model.Username.TrimEnd()) || (model.Password != null && model.Password != model.Password.TrimEnd());
+                if(hasTrailingSpaces)
+                {
+                    return Ok(new { Code = 404, Message = "Invalid username or password" });
+                }
                 var validator = new LoginModalValidator();
                 var result = validator.Validate(model);
                 if (!result.IsValid)

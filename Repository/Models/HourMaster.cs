@@ -38,6 +38,11 @@ namespace Repository.Models
                 .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("Hour is required")
                 .NotEmpty().WithMessage("Hour is required");
+
+            RuleFor(x => x.Hour)
+               .Cascade(CascadeMode.Stop)
+               .InclusiveBetween(1, 24).WithMessage("Hours must be between 1 and 24.");
+
             RuleFor(x => x)
                 .Cascade(CascadeMode.Stop)
                 .MustAsync(IsUniqueHour)
