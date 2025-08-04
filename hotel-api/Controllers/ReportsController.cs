@@ -1,27 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Identity.Client;
-using Repository.Models;
-using RepositoryModels.Repository;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Office.Word;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
-using System.Data;
-using AutoMapper;
-using Microsoft.AspNetCore.Mvc.Filters;
+using Microsoft.EntityFrameworkCore;
 using Repository.ReportModels;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
-using System.Xml.Linq;
-using static Azure.Core.HttpHeader;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Xml.Serialization;
-using iText.Kernel.XMP.Impl;
+using RepositoryModels.Repository;
+using System.Data;
 using System.Reflection;
-using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Wordprocessing;
-using System.Threading.Tasks;
-using DocumentFormat.OpenXml.Spreadsheet;
+using System.Text;
+using System.Xml.Serialization;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -33,10 +20,10 @@ namespace hotel_api.Controllers
         private int userId;
 
         private List<string> PendingReservationHideColumns = new List<string> { "Reservation Id" };
-        public ReportsController(DbContextSql contextSql,  IHttpContextAccessor httpContextAccessor)
+        public ReportsController(DbContextSql contextSql, IHttpContextAccessor httpContextAccessor)
         {
             _context = contextSql;
-           
+
             var headers = httpContextAccessor.HttpContext?.Request?.Headers;
             if (headers != null)
             {
@@ -47,7 +34,7 @@ namespace hotel_api.Controllers
                 }
 
 
-                
+
 
                 if (headers.TryGetValue("UserId", out var userIdHeader) &&
                 int.TryParse(userIdHeader, out int id))
@@ -194,7 +181,7 @@ namespace hotel_api.Controllers
         [HttpGet("GetSearchPanel")]
         public async Task<IActionResult> GetSearchPanel(DateTime fromDate, DateTime toDate)
         {
-            
+
             DataSet? dataSet = null;
             try
             {
@@ -292,12 +279,12 @@ namespace hotel_api.Controllers
                                 }
                             }
 
-                               
+
                         }
                     }
                 }
 
-                return Ok(new { Code = 200, Message = "Data Fetched Successfully", data = dataTable, columns = columnNames,  filteredData = filteredDataTable, dynamicActionJs = dynamicActionJs, hasMore = totalNoOfRows > request.EndPageNumber ? true : false, totalTable = totalTable });
+                return Ok(new { Code = 200, Message = "Data Fetched Successfully", data = dataTable, columns = columnNames, filteredData = filteredDataTable, dynamicActionJs = dynamicActionJs, hasMore = totalNoOfRows > request.EndPageNumber ? true : false, totalTable = totalTable });
 
             }
             catch (Exception ex)
@@ -306,6 +293,216 @@ namespace hotel_api.Controllers
             }
         }
 
+
+        private string ColumnAlignment(string datatype)
+        {
+            string alignment = "left";
+            switch (datatype)
+            {
+                case "System.String":
+                    // Handle string
+                    break;
+
+                case "System.Int32":
+                    alignment = "right";
+                    break;
+
+                case "System.Int64":
+                    alignment = "right";
+                    break;
+
+                case "System.Int16":
+                    alignment = "right";
+                    break;
+
+                case "System.Byte":
+                    // Handle byte
+                    break;
+
+                case "System.Boolean":
+                    // Handle bool
+                    break;
+
+                case "System.DateTime":
+                    // Handle DateTime
+                    break;
+
+                case "System.Decimal":
+                    alignment = "right";
+                    break;
+
+                case "System.Double":
+                    alignment = "right";
+                    break;
+
+                case "System.Single":
+                    alignment = "right";
+                    break;
+
+                case "System.Guid":
+                    // Handle Guid
+                    break;
+
+                case "System.Char":
+                    // Handle char
+                    break;
+
+                case "System.Byte[]":
+                    // Handle byte array (e.g., file/image)
+                    break;
+
+                default:
+                    // Handle unknown type
+                    break;
+            }
+
+            return alignment;
+
+        }
+
+        [HttpPost("TestReport")]
+        public async Task<IActionResult> TestReport([FromBody] ReportRequestBody request)
+        {
+            ReportResponse response = new ReportResponse
+                ();
+            try
+            {
+                DataSet dataSet = null;
+                DataTable? dataTable = null;
+                List<HeaderAndFooter> columnNames = new List<HeaderAndFooter>();
+                DataTable? filteredDataTable = null;
+                int totalRows = 0;
+                // Dictionary<string, string> dynamicActionJs = new Dictionary<string, string>();
+                DataTable? totalTable = null;
+                //int totalNoOfRows = 0;
+                //if (request.IsFirstRequest)
+                //{
+                //    dynamicActionJs = (await _context.DynamicActionJs
+                //    .Where(x => x.ReportName == request.ReportName)
+                //    .ToListAsync())
+                //    .ToDictionary(x => x.ActionName, x => x.ActionJs);
+                //}
+                string searchFilters = "";
+                if (request.SearchFilters.Count > 0)
+                {
+                    searchFilters = GetSearchFilter(request.SearchFilters);
+                }
+                
+
+
+
+                using (var connection = new SqlConnection("uid=sa1;pwd=vdn^NdY2#r3bnszX; Data Source=15.207.177.248;Initial Catalog=inventory_management1;Integrated Security=false;Connect Timeout=1800;TrustServerCertificate=False;Encrypt=False;"))
+                {
+                    using (var command = new SqlCommand("stock_report_test", connection))
+                    {
+                        command.CommandTimeout = 120;
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@startPageNumber", request.StartPageNumber);
+                        command.Parameters.AddWithValue("@endPageNumber", request.EndPageNumber);
+                  
+                        command.Parameters.AddWithValue("@pagename", "STOCKREPORT");
+                        command.Parameters.AddWithValue("@companyId", request.CompanyId);
+                        command.Parameters.AddWithValue("@searchFilters", searchFilters);
+                        command.Parameters.AddWithValue("@startDate", request.StartDate);
+                        command.Parameters.AddWithValue("@endDate", request.EndDate);
+                        command.Parameters.AddWithValue("@partyid", "1");
+
+                        // Add return value parameter
+                        SqlParameter totalRowsParam = new SqlParameter("@TotalRows", SqlDbType.Int)
+                        {
+                            Direction = ParameterDirection.Output
+                        };
+                        command.Parameters.Add(totalRowsParam);
+
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            dataSet = new DataSet();
+                            adapter.Fill(dataSet);
+                        }
+
+                        totalRows = (int)totalRowsParam.Value;
+                        await connection.CloseAsync();
+                        dataTable = dataSet.Tables[0];
+                        totalTable = dataSet.Tables.Count > 1 ? dataSet.Tables[1] : new DataTable();
+                        filteredDataTable = dataSet.Tables[0].Copy();
+                        if (filteredDataTable.Columns.Contains("Id"))
+                        {
+                            filteredDataTable.Columns.Remove("Id");
+                        }
+
+                        if (filteredDataTable != null)
+                        {
+                            if (request.IsFirstRequest)
+                            {
+                                if (totalTable.Columns.Count > 0)
+                                {
+                                    DataRow firstRow = totalTable.Rows[0];
+                                    foreach (DataColumn column in totalTable.Columns)
+                                    {
+                                        HeaderAndFooter columnsData = new HeaderAndFooter();
+                                        columnsData.AccessorKey = char.ToLower(column.ColumnName[0]) + column.ColumnName.Substring(1); ; columnsData.Header = column.ColumnName;
+                                        columnsData.ColumnType = column.DataType.ToString();
+                                        columnsData.muiTableHeadCellProps.Align = ColumnAlignment(column.DataType.ToString());
+                                        columnsData.muiTableBodyCellProps.Align = ColumnAlignment(column.DataType.ToString());
+                                        columnsData.Footer = firstRow[column.ColumnName]?.ToString() ?? ""; // Safely handle nulls
+                                        columnNames.Add(columnsData);
+                                    }
+                                }
+                                else
+                                {
+                                    foreach (DataColumn column in filteredDataTable.Columns)
+                                    {
+                                        HeaderAndFooter columnsData = new HeaderAndFooter();
+                                        columnsData.AccessorKey = char.ToLower(column.ColumnName[0]) + column.ColumnName.Substring(1);
+                                        columnsData.Header = column.ColumnName;
+                                        columnsData.ColumnType = column.DataType.ToString();
+                                        columnNames.Add(columnsData);
+                                    }
+                                }
+
+                            }
+
+
+                        }
+                    }
+                }
+
+                response.ReportData = dataTable;
+                response.Columns = columnNames;
+                response.FilteredData = filteredDataTable;
+                response.TotalTable = totalTable;
+                response.HasMore = totalRows > request.EndPageNumber ? true : false;
+                response.TotalRows = totalRows;
+
+
+                return Ok(new { Code = 200, Message = "Data Fetched Successfully", data = response });
+
+            }
+            catch (Exception ex)
+            {
+                return Ok(new { Code = 500, Message = ex.Message });
+            }
+        }
+
+
+        private string GetSearchFilter(List<SearchFilters> searchFilters)
+        {
+            StringBuilder filter = new StringBuilder("where ");
+            for (int i = 0; i < searchFilters.Count; i++)
+            {
+                if (i == 0)
+                {
+                    filter = filter.Append($"[{searchFilters[i].Id}] like '%{searchFilters[i].Value}%'");
+                }
+                else
+                {
+                    filter = filter.Append($" and [{searchFilters[i].Id}] like '%{searchFilters[i].Value}%'");
+                }
+            }
+            return filter.ToString();
+        }
 
         [HttpPost("GetRoomAvailabilityExcel")]
         public async Task<IActionResult> GetRoomAvailabilityExcel([FromBody] RoomAvailabilityExcel request)
@@ -316,18 +513,18 @@ namespace hotel_api.Controllers
 
                 var isUserExists = await _context.UserDetails.FirstOrDefaultAsync(x => x.IsActive == true && x.UserId == userId);
 
-                if(isUserExists == null)
+                if (isUserExists == null)
                 {
                     return Ok(new { Code = 400, Message = "User not found" });
                 }
 
                 foreach (KeyValuePair<int, bool> kvp in request.ClusterIds)
                 {
-                    if(isUserExists.Roles == Constants.Constants.SuperAdmin || kvp.Value == true)
+                    if (isUserExists.Roles == Constants.Constants.SuperAdmin || kvp.Value == true)
                     {
                         var properties = await _context.CompanyDetails.Where(x => x.IsActive == true && x.ClusterId == kvp.Key).ToListAsync();
 
-                        foreach(var item in properties)
+                        foreach (var item in properties)
                         {
                             CompanyId.Add(item.PropertyId);
                         }
@@ -342,14 +539,14 @@ namespace hotel_api.Controllers
                                                     p.PropertyId
                                                 }).ToListAsync();
 
-                        foreach(var item in properties)
+                        foreach (var item in properties)
                         {
                             CompanyId.Add(item.PropertyId);
                         }
                     }
                 }
-               
-                
+
+
                 var writer = new StringWriter();
                 var serializer = new XmlSerializer(typeof(List<int>));
                 serializer.Serialize(writer, CompanyId);
@@ -375,24 +572,24 @@ namespace hotel_api.Controllers
                     }
                     MemoryStream? stream = await ExcelExport(dataSet, request.StartDate, request.EndDate, CompanyId);
                     if (stream == null)
-                    { 
+                    {
                         return Ok("Error while creating excel");
                     }
                     else
                     {
                         return File(stream.ToArray(), "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Room Availability.xlsx");
                     }
-                    
+
 
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
-    
-        
+
+
         private async Task<MemoryStream?> ExcelExport(DataSet dataSet, string startDate, string endDate, List<int> companyIds)
         {
             MemoryStream stream = null;
@@ -407,7 +604,9 @@ namespace hotel_api.Controllers
                                         select new
                                         {
                                             p.PropertyId,
-                                            c.ClusterId, c.ClusterName, p.CompanyName
+                                            c.ClusterId,
+                                            c.ClusterName,
+                                            p.CompanyName
                                         }).ToListAsync();
 
                 //get service status
@@ -421,7 +620,7 @@ namespace hotel_api.Controllers
                 XLWorkbook wb = new XLWorkbook();
                 IXLWorksheet worksheet = wb.Worksheets.Add("Room Avaialability"); ;
                 int currentRow = 1;
-               
+
 
 
                 //Heading
@@ -438,20 +637,20 @@ namespace hotel_api.Controllers
                 int count = 0;
 
                 //insert table 
-                for(int t = 0; t < dataSet.Tables.Count; t++)
+                for (int t = 0; t < dataSet.Tables.Count; t++)
                 {
                     DataTable table = dataSet.Tables[t];
                     count = table.Columns.Count;
-                    if(table.Rows.Count == 0)
+                    if (table.Rows.Count == 0)
                     {
                         continue;
                     }
-                    string? propertyName = properties.Where(x=>x.PropertyId == companyIds[t]).Select(x=>x.CompanyName).FirstOrDefault();
+                    string? propertyName = properties.Where(x => x.PropertyId == companyIds[t]).Select(x => x.CompanyName).FirstOrDefault();
                     string? currentClusterName = properties.Where(x => x.PropertyId == companyIds[t]).Select(x => x.ClusterName).FirstOrDefault();
 
-                    if(currentClusterName!=null && currentClusterName != clusterName)
+                    if (currentClusterName != null && currentClusterName != clusterName)
                     {
-                       
+
 
                         clusterName = currentClusterName;
                         //Cluster name
@@ -474,7 +673,7 @@ namespace hotel_api.Controllers
                     worksheet.Row(currentRow).Style.Font.Bold = true;
                     worksheet.Row(currentRow).Style.Font.FontColor = XLColor.AppleGreen;
                     worksheet.Row(currentRow).Height = worksheet.Row(currentRow).Height + 5;
-                    worksheet.Range(currentRow, 1, currentRow, count).Merge().SetValue(propertyName);                  
+                    worksheet.Range(currentRow, 1, currentRow, count).Merge().SetValue(propertyName);
                     currentRow++;
 
 
@@ -494,10 +693,10 @@ namespace hotel_api.Controllers
 
                     currentRow++;
 
-                    
+
 
                     var excelTable = worksheet.Cell(currentRow, 1).InsertData(table);
-                  
+
                     // Loop through all cells in the inserted range
                     foreach (var cell in excelTable.Cells())
                     {
@@ -568,15 +767,15 @@ namespace hotel_api.Controllers
                                 cell.Style.Fill.BackgroundColor = color != null ? XLColor.FromHtml(color) : XLColor.Black;
                             }
                         }
-                        
-                        
+
+
                     }
 
                     currentRow += table.Rows.Count;
                 }
 
                 //merge row 1
-                worksheet.Row(1).Style.Font.Bold = true;             
+                worksheet.Row(1).Style.Font.Bold = true;
                 worksheet.Range(1, 1, 1, count).Merge().SetValue(headerText);
 
                 //add border to each cell
@@ -593,12 +792,12 @@ namespace hotel_api.Controllers
                 wb.SaveAs(stream);
                 return stream;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return stream;
             }
 
-            
+
         }
     }
 }

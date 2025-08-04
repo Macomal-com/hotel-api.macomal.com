@@ -31,4 +31,30 @@ namespace Repository.ReportModels
         public string ColumnName { get; set; } = string.Empty;
         public string ColumnType { get; set; } = string.Empty;
     }
+
+    public class ReportRequestBody
+    {
+        public int CompanyId { get; set; }
+        public int StartPageNumber { get; set; }
+        public int EndPageNumber { get; set; }
+
+        public string ReportName { get; set; } = string.Empty;
+        public string SpName { get; set; } = string.Empty;
+
+        public string StartDate { get; set; } = string.Empty;
+        public string EndDate { get; set; } = string.Empty;
+
+        public bool IsFirstRequest { get; set; } = false;
+
+        public List<SearchFilters> SearchFilters = new List<SearchFilters>();
+    }
+
+    public class SearchFilters
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Value { get; set; } = string.Empty;
+
+        
+         
+    }
 }
