@@ -34,12 +34,13 @@ namespace Repository.ReportModels
 
     public class ReportRequestBody
     {
-        public int CompanyId { get; set; }
+        public string ReportName { get; set; } = string.Empty;
+
+        
         public int StartPageNumber { get; set; }
         public int EndPageNumber { get; set; }
 
-        public string ReportName { get; set; } = string.Empty;
-        public string SpName { get; set; } = string.Empty;
+        
 
         public string StartDate { get; set; } = string.Empty;
         public string EndDate { get; set; } = string.Empty;
@@ -47,6 +48,9 @@ namespace Repository.ReportModels
         public bool IsFirstRequest { get; set; } = false;
 
         public List<SearchFilters> SearchFilters = new List<SearchFilters>();
+
+        public string IsExcel { get; set; } = "";
+        public string ReportHeading { get; set; } = string.Empty;
     }
 
     public class SearchFilters
