@@ -436,10 +436,10 @@ namespace hotel_api.Controllers
                         {
                             if (request.IsFirstRequest)
                             {
-                                if (totalTable.Columns.Count > 0)
-                                {
-                                    DataRow firstRow = totalTable.Rows[0];
-                                    foreach (DataColumn column in totalTable.Columns)
+                                DataColumnCollection columns = totalTable.Columns.Count > 0 ? totalTable.Columns : dataTable.Columns;
+                                
+                                    DataRow firstRow = totalTable.Rows.Count > 0 ? totalTable.Rows[0] : null;
+                                    foreach (DataColumn column in columns)
                                     {
                                         HeaderAndFooter columnsData = new HeaderAndFooter();
                                         string input = column.ColumnName;
@@ -452,7 +452,7 @@ namespace hotel_api.Controllers
                                         columnsData.ColumnType = column.DataType.ToString();
                                         columnsData.muiTableHeadCellProps.Align = ColumnAlignment(column.DataType.ToString());
                                         columnsData.muiTableBodyCellProps.Align = ColumnAlignment(column.DataType.ToString());
-                                        columnsData.Footer = firstRow[column.ColumnName]?.ToString() ?? ""; // Safely handle nulls
+                                        columnsData.Footer = firstRow == null ? "" : firstRow[column.ColumnName]?.ToString() ?? ""; // Safely handle nulls
                                         columnNames.Add(columnsData);
                                     }
                                 }
@@ -468,7 +468,7 @@ namespace hotel_api.Controllers
                                     }
                                 }
 
-                            }
+                            
 
 
                         }
@@ -901,15 +901,17 @@ namespace hotel_api.Controllers
                 int count = 0;
 
                 //insert columns
+                
                 DataTable data = dataSet.Tables[0];
                 DataTable totalTable = dataSet.Tables.Count > 1 ? dataSet.Tables[1] : new DataTable();
+                DataColumnCollection columns = totalTable.Columns.Count > 0 ? totalTable.Columns : data.Columns;
                 if (data.Columns.Count > 0)
                 {
                     count = data.Columns.Count;
                     //Columns
-                    for (int i = 0; i < data.Columns.Count; i++)
+                    for (int i = 0; i < columns.Count; i++)
                     {
-                        worksheet.Cell(currentRow, i + 1).Value = data.Columns[i].ColumnName;
+                        worksheet.Cell(currentRow, i + 1).Value = columns[i].ColumnName;
                         worksheet.Cell(currentRow, i + 1).Style.Font.Bold = true;
                         worksheet.Cell(currentRow, i + 1).Style.Font.FontSize = 10;
 
