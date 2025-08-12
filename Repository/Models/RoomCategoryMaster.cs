@@ -31,6 +31,7 @@ namespace Repository.Models
         public int ExtraBed { get; set; }
 
         public string ColorCode { get; set; } = string.Empty;
+        public int RefRoomTypeId { get; set; }
         [NotMapped]
         public bool ChangeDetails { get; set; }
 
@@ -119,10 +120,20 @@ namespace Repository.Models
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(DoRoomCategoryExists)
                 .WithMessage("You can't delete this Room Type, Room already exists!");
+
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
+               .MustAsync(DoBookingExists)
+               .WithMessage("You can't delete this Room Type, Booking already exists!");
         }
         private async Task<bool> DoRoomCategoryExists(RoomCategoryMaster categotyMaster, CancellationToken cancellationToken)
         {
             return !await _context.RoomMaster.Where(x => x.IsActive == true && x.CompanyId == categotyMaster.CompanyId && x.RoomTypeId == categotyMaster.Id).AnyAsync();
+
+        }
+
+        private async Task<bool> DoBookingExists(RoomCategoryMaster categotyMaster, CancellationToken cancellationToken)
+        {
+            return !await _context.BookingDetail.Where(x => x.IsActive == true && x.CompanyId == categotyMaster.CompanyId && x.RoomTypeId == categotyMaster.Id).AnyAsync();
 
         }
     }

@@ -106,7 +106,7 @@ namespace Repository.Models
         }
         private async Task<bool> DoLandlordExists(LandlordDetails landlord, CancellationToken cancellationToken)
         {
-            return !await _context.CompanyDetails.Where(x => x.IsActive == true && x.CompanyId == landlord.CompanyId && x.OwnerId == landlord.LandlordId).AnyAsync();
+            return !await _context.CompanyDetails.Where(x => x.IsActive == true && x.OwnerId == landlord.LandlordId).AnyAsync();
 
         }
     }

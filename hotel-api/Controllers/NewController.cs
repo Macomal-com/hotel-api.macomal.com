@@ -214,7 +214,8 @@ namespace hotel_api.Controllers
                         CompanyId = roomCat.CompanyId,
                         DefaultPax = model.DefaultPax,
                         ExtraBed = model.ExtraBed,
-                        ColorCode = ColourCodeService.GetUniqueColor(_context, roomCat.CompanyId)
+                        ColorCode = ColourCodeService.GetUniqueColor(_context, roomCat.CompanyId),
+                        RefRoomTypeId = roomCat.Id
                     };
                     var result = await validator.ValidateAsync(newRoomCat);
 
@@ -228,6 +229,30 @@ namespace hotel_api.Controllers
                         }
                     }
                     await _context.RoomCategoryMaster.AddAsync(newRoomCat);
+                    await _context.SaveChangesAsync();
+
+                    //update room master
+                    var rooms = await _context.RoomMaster.Where(x => x.IsActive == true && x.RoomTypeId == roomCat.Id && x.CompanyId == companyId).ToListAsync();
+
+                    foreach(var room in rooms)
+                    {
+                        room.RoomTypeId = newRoomCat.Id;
+                        _context.RoomMaster.Update(room);
+                    }
+
+                    var roomRates = await _context.RoomRateMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomCat.Id).ToListAsync();
+                    foreach (var rate in roomRates)
+                    {
+                        rate.RoomTypeId = newRoomCat.Id;
+                        _context.RoomRateMaster.Update(rate);
+                    }
+
+                    var roomRatesDateWise = await _context.RoomRateDateWise.Where(x => x.IsActive == true && x.CompanyId == companyId && x.RoomTypeId == roomCat.Id).ToListAsync();
+                    foreach (var rate in roomRatesDateWise)
+                    {
+                        rate.RoomTypeId = newRoomCat.Id;
+                        _context.RoomRateDateWise.Update(rate);
+                    }
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
                     return Ok(new { Code = 200, Message = "Room Type updated successfully" });
