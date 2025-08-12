@@ -561,7 +561,7 @@ namespace hotel_api.Controllers
                     await transaction.RollbackAsync();
                     return Ok(new { Code = 404, message = "Room does not exist.", data = new object() });
                 }
-                var validator = new RoomMasterValidator(_context);
+                var validator = new RoomMasterDeleteValidator(_context);
                 var result = await validator.ValidateAsync(existingProduct);
                 if (!result.IsValid)
                 {

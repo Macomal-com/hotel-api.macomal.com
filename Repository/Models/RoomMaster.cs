@@ -170,7 +170,6 @@ namespace Repository.Models
 
             RuleFor(x => x).Cascade(CascadeMode.Stop)
                 .MustAsync(IsRoomHasBooking)
-                .When(x => x.RoomId == 0)
                 .WithMessage("You can't delete this Group, booking already exists!");
            
 
