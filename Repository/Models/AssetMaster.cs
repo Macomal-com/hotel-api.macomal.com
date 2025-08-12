@@ -70,4 +70,27 @@ namespace Repository.Models
 
 
     }
+
+    public class AssetDeleteValidator : AbstractValidator<AssetMaster>
+    {
+        private readonly DbContextSql _context;
+        public AssetDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+       
+
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
+               .MustAsync(IsMappingExists)
+               .WithMessage("You can't delete this Asset, Room Mapping already exists!");
+        }
+
+       
+        private async Task<bool> IsMappingExists(AssetMaster cm, CancellationToken cancellationToken)
+        {
+            return !await _context.RoomAssetMapping.AnyAsync(x => x.IsActive == true && x.CompanyId == cm.CompanyId && x.AssetId == cm.AssetId, cancellationToken);
+        }
+
+
+    }
+
 }

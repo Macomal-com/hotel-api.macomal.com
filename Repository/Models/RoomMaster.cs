@@ -159,4 +159,31 @@ namespace Repository.Models
         }
 
     }
+
+    public class RoomMasterDeleteValidator : AbstractValidator<RoomMaster>
+    {
+        private readonly DbContextSql _context;
+        public RoomMasterDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+
+
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
+                .MustAsync(IsRoomHasBooking)
+                .When(x => x.RoomId == 0)
+                .WithMessage("You can't delete this Group, booking already exists!");
+           
+
+        }
+
+        private async Task<bool> IsRoomHasBooking(RoomMaster master, CancellationToken cancellationToken)
+        {
+           
+                return !await _context.BookingDetail.AnyAsync(x => x.CompanyId == master.CompanyId && x.RoomId == master.RoomId && x.IsActive == true, cancellationToken);
+            
+        }
+       
+
+    }
+
 }

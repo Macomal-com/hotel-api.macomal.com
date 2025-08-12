@@ -114,7 +114,7 @@ namespace Repository.Models
         }
         private async Task<bool> DoSubGroupInServiceExists(GroupMaster groupMaster, CancellationToken cancellationToken)
         {
-            return !await _context.ServicableMaster.Where(x => x.IsActive == true && x.CompanyId == groupMaster.CompanyId && x.ServiceId == groupMaster.Id).AnyAsync();
+            return !await _context.ServicableMaster.Where(x => x.IsActive == true && x.CompanyId == groupMaster.CompanyId && x.GroupId == groupMaster.Id).AnyAsync();
         }
     }
 }

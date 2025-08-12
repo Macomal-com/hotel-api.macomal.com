@@ -4007,7 +4007,7 @@ namespace hotel_api.Controllers
             patchDocument.ApplyTo(asset, ModelState);
             if (asset.IsActive == false)
             {
-                var validator = new AssetValidator(_context);
+                var validator = new AssetDeleteValidator(_context);
 
                 var result = await validator.ValidateAsync(asset);
                 if (!result.IsValid)
