@@ -131,6 +131,17 @@ namespace hotel_api.Controllers
             patchDocument.ApplyTo(cluster, ModelState);
             if(cluster.IsActive == false)
             {
+                var deleteValidator = new ClusterDeleteValidator(_context);
+                var deleteResult = await deleteValidator.ValidateAsync(cluster);
+                if (!deleteResult.IsValid)
+                {
+                    var firstError = deleteResult.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+
                 await _context.SaveChangesAsync();
                 return Ok(new { Code = 200, Message = "Cluster deleted successfully" });
             }

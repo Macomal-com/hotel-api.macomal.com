@@ -81,4 +81,29 @@ namespace Repository.Models
         }
     }
 
+    public class ClusterDeleteValidator : AbstractValidator<ClusterMaster>
+    {
+        private readonly DbContextSql _context;
+        public ClusterDeleteValidator(DbContextSql context)
+        {
+            _context = context;
+
+            RuleFor(x => x).Cascade(CascadeMode.Stop)
+                .MustAsync(NoCompanyUsingCluster)
+                .WithMessage("Cluster cannot be deleted because it is used by one or more properties.");
+        }
+
+        private async Task<bool> NoCompanyUsingCluster(ClusterMaster clusterMaster, CancellationToken cancellationToken)
+        {
+            // Return TRUE if NO company uses the ClusterId (allow delete)
+            var isUsed = await _context.CompanyDetails
+                .AnyAsync(x => x.IsActive && x.ClusterId == clusterMaster.ClusterId, cancellationToken);
+
+            return !isUsed; 
+        }
+
+
+
+    }
+
 }
