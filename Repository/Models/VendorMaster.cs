@@ -69,13 +69,13 @@ namespace Repository.Models
         }
         private async Task<bool> IsPhoneNumberExists(VendorMaster vm, CancellationToken cancellationToken)
         {
-            return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.IsActive == true, cancellationToken);
+            return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.IsActive == true && x.CompanyId == vm.CompanyId, cancellationToken);
         }
 
         private async Task<bool> IsPhoneNumberUpdateExists(VendorMaster vm, CancellationToken cancellationToken)
         {
-            var data = await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true, cancellationToken);
-            return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true, cancellationToken);
+            //var data = await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true && x.CompanyId == vm.CompanyId, cancellationToken);
+            return !await _context.VendorMaster.AnyAsync(x => x.VendorPhone == vm.VendorPhone && x.VendorId != vm.VendorId && x.IsActive == true && x.CompanyId == vm.CompanyId, cancellationToken);
         }
     }
     public class VendorDeleteValidator : AbstractValidator<VendorMaster>

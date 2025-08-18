@@ -3359,7 +3359,26 @@ namespace hotel_api.Controllers
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
 
-                var data = await _context.CancelPolicyMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId).ToListAsync();
+                var data = await _context.CancelPolicyMaster.Where(bm => bm.IsActive && bm.CompanyId == companyId)
+                    .Select(x=> new CancelPolicyMaster
+                    {
+                        Id = x.Id,
+                        PolicyCode = x.PolicyCode,
+                        DeductionBy = x.DeductionBy,
+                        ChargesApplicableOn = x.ChargesApplicableOn,
+                        DeductionAmount = x.DeductionAmount,
+                        CancellationTime = x.CancellationTime,
+                        FromTime = x.CancellationTime == "Day" ? x.FromTime / 24 : x.FromTime,
+                        ToTime = x.CancellationTime == "Day" ? x.ToTime / 24 : x.ToTime,
+                        MinRoom = x.MinRoom,
+                        MaxRoom = x.MaxRoom,
+                        PolicyDescription = x.PolicyDescription,
+                        IsActive = x.IsActive,
+                        CreatedDate = x.CreatedDate,
+                        UpdatedDate = x.UpdatedDate,
+                        UserId = x.UserId,
+                        CompanyId = x.CompanyId
+                    }).ToListAsync();
 
                 if (data.Count == 0)
                 {
@@ -3406,7 +3425,25 @@ namespace hotel_api.Controllers
             try
             {
                 var data = await _context.CancelPolicyMaster
-                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).FirstOrDefaultAsync();
+                          .Where(x => x.Id == id && x.IsActive && x.CompanyId == companyId).Select(x => new CancelPolicyMaster
+                          {
+                              Id = x.Id,
+                              PolicyCode = x.PolicyCode,
+                              DeductionBy = x.DeductionBy,
+                              ChargesApplicableOn = x.ChargesApplicableOn,
+                              DeductionAmount = x.DeductionAmount,
+                              CancellationTime = x.CancellationTime,
+                              FromTime = x.CancellationTime == "Day" ? x.FromTime / 24 : x.FromTime,
+                              ToTime = x.CancellationTime == "Day" ? x.ToTime / 24 : x.ToTime,
+                              MinRoom = x.MinRoom,
+                              MaxRoom = x.MaxRoom,
+                              PolicyDescription = x.PolicyDescription,
+                              IsActive = x.IsActive,
+                              CreatedDate = x.CreatedDate,
+                              UpdatedDate = x.UpdatedDate,
+                              UserId = x.UserId,
+                              CompanyId = x.CompanyId
+                          }).FirstOrDefaultAsync();
 
                 return data == null
                     ? Ok(new { Code = 404, Message = "Data not found", Data = Array.Empty<object>() })
