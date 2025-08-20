@@ -851,10 +851,14 @@ namespace hotel_api.Controllers
                             dataSet = new DataSet();
                             adapter.Fill(dataSet);
                         }
-                        MemoryStream? stream = await ExcelExport(dataSet, request.StartDate, request.EndDate, request.ReportHeading);
+
+                        MemoryStream? stream;
+                        string message = "";    
+                            
+                        (stream, message)   = await ExcelExport(dataSet, request.StartDate, request.EndDate, request.ReportHeading);
                         if (stream == null)
                         {
-                            return Ok("Error while creating excel");
+                            return Ok(message);
                         }
                         else
                         {
@@ -871,7 +875,7 @@ namespace hotel_api.Controllers
         }
 
 
-        private async Task<MemoryStream?> ExcelExport(DataSet dataSet, string startDate, string endDate, string reportHeading)
+        private async Task<(MemoryStream?, string)> ExcelExport(DataSet dataSet, string startDate, string endDate, string reportHeading)
         {
             MemoryStream stream = null;
 
@@ -946,11 +950,11 @@ namespace hotel_api.Controllers
 
                 stream = new MemoryStream();
                 wb.SaveAs(stream);
-                return stream;
+                return (stream, "File created successfully");
             }
             catch (Exception ex)
             {
-                return stream;
+                return (stream, ex.Message);
             }
 
 
