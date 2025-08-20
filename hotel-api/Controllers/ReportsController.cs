@@ -582,7 +582,7 @@ namespace hotel_api.Controllers
                     (stream, message) = await ExcelExport(dataSet, request.StartDate, request.EndDate, CompanyId);
                     if (stream == null)
                     {
-                        return Ok("Error while creating excel");
+                        return Ok(message);
                     }
                     else
                     {
