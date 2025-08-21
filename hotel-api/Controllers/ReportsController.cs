@@ -3,8 +3,10 @@ using DocumentFormat.OpenXml.Office.Word;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Repository.DTO;
 using Repository.ReportModels;
 using RepositoryModels.Repository;
+using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
 using System.Text;
@@ -963,5 +965,84 @@ namespace hotel_api.Controllers
 
 
         }
+
+
+        [HttpPost("GetAllPropertiesRoomAvailability")]
+        public async Task<IActionResult> GetAllPropertiesRoomAvailability([FromBody] RoomAvailabilityExcel request)
+        {
+            try
+            {
+                Dictionary<string, Dictionary<string, List<RoomStatus>>> response  = new Dictionary<string, Dictionary<string, List<RoomStatus>>>();
+               
+                List<int> CompanyId = new List<int>();
+                foreach (var item in request.Properties)
+                {
+                    CompanyId.Add(item.PropertyId);
+                }
+                var writer = new StringWriter();
+                var serializer = new XmlSerializer(typeof(List<int>));
+                serializer.Serialize(writer, CompanyId);
+                string xml = writer.ToString();
+
+                DataSet dataSet = new DataSet();
+                using (var connection = new SqlConnection(_context.Database.GetConnectionString()))
+                {
+                    using (var command = new SqlCommand("GetAllPropertiesRoomAvailability", connection))
+                    {
+                        command.CommandType = CommandType.StoredProcedure;
+                        command.Parameters.AddWithValue("@startDate", request.StartDate);
+                        command.Parameters.AddWithValue("@endDate", request.EndDate);
+                        command.Parameters.AddWithValue("@xml", xml);
+
+                        await connection.OpenAsync();
+
+                        using (var adapter = new SqlDataAdapter(command))
+                        {
+                            adapter.Fill(dataSet);
+                        }
+                        await connection.CloseAsync();
+                    }
+                    
+                    for(int i = 0;i < dataSet.Tables.Count; i++)
+                    {
+                        string propertyName = request.Properties[i].PropertyName;
+                        DataTable table = dataSet.Tables[i];
+                        Dictionary<string, List<RoomStatus>> dates = new Dictionary<string, List<RoomStatus>>();
+                        foreach (DataRow row in table.Rows)
+                        {
+                            
+                            List<RoomStatus> rooms = new List<RoomStatus>();
+                            foreach (DataColumn col in table.Columns)
+                            {
+                                
+                                if (col.ColumnName != "DateStr")
+                                {
+                                    string status = row[col].ToString() ?? "";
+                                    rooms.Add(new RoomStatus
+                                    {
+                                        RoomNo = col.ColumnName,
+                                        Status = status
+                                    });
+                                }
+
+
+                            }
+                            dates.Add(row["DateStr"].ToString() ?? "", rooms);
+                           
+                        }
+                        response.Add(propertyName, dates);
+
+
+                    }
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", data = response });
+                }
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = ex.Message });
+            }
+        }
+
+
     }
 }

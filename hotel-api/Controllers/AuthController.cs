@@ -1034,5 +1034,100 @@ namespace hotel_api.Controllers
                 return Ok(new { Code = 500, Message = Constants.Constants.ErrorMessage });
             }
         }
+
+        [HttpGet("GetClusters")]
+        public async Task<IActionResult> GetClusters(string userrole)
+        {
+            try
+            {
+                Response response = new Response();
+                if(userrole == Constants.Constants.SuperAdmin)
+                {
+                    response.Properties = await _context.CompanyDetails.Where(x => x.IsActive == true && x.ClusterId == 0).Select(x => new PropertyDTO
+                    {
+                        PropertyId = x.PropertyId,
+                        PropertyName = x.CompanyName
+                    }).ToListAsync();
+
+                    response.Clusters = await _context.ClusterMaster
+                                         .Where(x => x.IsActive == true)
+                                         .Select(x => new ClusterPropertyDTO
+                                         {
+                                             ClusterId = x.ClusterId,
+                                             ClusterName = x.ClusterName,
+                                             Properties = _context.CompanyDetails
+                                                 .Where(c => c.IsActive == true && c.ClusterId == x.ClusterId)
+                                                 .Select(c => new PropertyDTO
+                                                 {
+                                                     PropertyId = c.PropertyId,
+                                                     PropertyName = c.CompanyName
+                                                 })
+                                                 .ToList()
+                                         })
+                                         .ToListAsync();
+
+                }
+                else
+                {
+                    response.Properties = await (from prop in _context.CompanyDetails
+                                                 join map in _context.UserPropertyMapping on prop.PropertyId equals map.PropertyId
+                                                 where prop.IsActive == true && prop.ClusterId == 0 && map.UserId == userId
+                                                 select new PropertyDTO
+                                                 {
+                                                     PropertyId = prop.PropertyId,
+                                                     PropertyName = prop.CompanyName
+                                                 }).ToListAsync();
+
+                   
+
+                    response.Clusters = await (
+    from clusters in _context.ClusterMaster
+    join map in _context.UserPropertyMapping on clusters.ClusterId equals map.ClusterId
+    where clusters.IsActive && map.UserId == userId
+    group map by new { clusters.ClusterId, clusters.ClusterName, map.AllProperties } into g
+    select new ClusterPropertyDTO
+    {
+        ClusterId = g.Key.ClusterId,
+        ClusterName = g.Key.ClusterName,
+        IsAllProperties = g.Key.AllProperties,
+
+        Properties = g.Key.AllProperties
+            ? _context.CompanyDetails
+                .Where(c => c.ClusterId == g.Key.ClusterId && c.IsActive)
+                .Select(c => new PropertyDTO
+                {
+                    PropertyId = c.PropertyId,
+                    PropertyName = c.CompanyName
+                })
+                .ToList()
+            : (from m in g
+               join c in _context.CompanyDetails on m.PropertyId equals c.PropertyId
+               where c.IsActive
+               select new PropertyDTO
+               {
+                   PropertyId = c.PropertyId,
+                   PropertyName = c.CompanyName
+               }).ToList()
+    }
+).ToListAsync();
+
+
+
+
+
+
+                }
+
+                return Ok(new { Code = 200, Message = "Data fetched", data = response });
+            }
+            catch(Exception ex)
+            {
+                return Ok(new { Code = 500, Message = ex.Message });
+            }
+        }
+    
+
+
+
     }
 }

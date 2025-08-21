@@ -67,6 +67,8 @@ namespace hotel_api.Constants
         public static string Dnd = "DND";
         public static string Other = "Other";
 
+        public static List<string> Statuses= new List<string> { "CheckIn", "Confirmed", "Pending", "Dirty", "Management Block", "Under Repair" };
+
         //document type
         public static string DocumentReservation = "Reservation";
         public static string DocumentInvoice = "Invoice";

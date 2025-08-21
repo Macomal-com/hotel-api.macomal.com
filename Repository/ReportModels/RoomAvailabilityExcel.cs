@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Repository.DTO;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -13,6 +14,8 @@ namespace Repository.ReportModels
 
 
         public Dictionary<int, bool> ClusterIds { get; set; } = new Dictionary<int, bool>();
+
+        public List<PropertyDTO> Properties { get; set; } = new List<PropertyDTO>();
     }
 
     
