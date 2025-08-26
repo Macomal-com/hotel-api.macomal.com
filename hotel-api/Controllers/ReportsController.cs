@@ -3,6 +3,7 @@ using DocumentFormat.OpenXml.Office.Word;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Repository.DTO;
 using Repository.ReportModels;
 using RepositoryModels.Repository;
@@ -627,13 +628,16 @@ namespace hotel_api.Controllers
                 Assembly asm = Assembly.GetExecutingAssembly();
                 string path = System.IO.Path.GetDirectoryName(asm.Location);
                 string filePath = path + "\\" + "Room Avaialability" + ".xlsx";
+                string fileTextPath = $"path\\File.txt";
+
+                System.IO.File.WriteAllText(filePath, "File created succcessfully");
 
                 XLWorkbook wb = new XLWorkbook();
                 IXLWorksheet worksheet = wb.Worksheets.Add("Room Avaialability"); ;
                 int currentRow = 1;
 
 
-
+                System.IO.File.WriteAllText(filePath, "Worksheet addded");
                 //Heading
                 string headerText = $"Room Availability ({startDate} - {endDate})";
                 worksheet.Row(currentRow).Cell(1).Value = headerText;
@@ -644,12 +648,14 @@ namespace hotel_api.Controllers
                 worksheet.Row(currentRow).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
                 worksheet.Row(currentRow).Style.Border.OutsideBorderColor = XLColor.Black;
                 currentRow++;
-
+                System.IO.File.WriteAllText(filePath, "Header addded");
                 int count = 0;
 
                 //insert table 
                 for (int t = 0; t < dataSet.Tables.Count; t++)
                 {
+                    System.IO.File.WriteAllText(filePath, "Enter loop");
+
                     DataTable table = dataSet.Tables[t];
                     count = table.Columns.Count;
                     if (table.Rows.Count == 0)
@@ -658,7 +664,7 @@ namespace hotel_api.Controllers
                     }
                     string? propertyName = properties.Where(x => x.PropertyId == companyIds[t]).Select(x => x.CompanyName).FirstOrDefault();
                     string? currentClusterName = properties.Where(x => x.PropertyId == companyIds[t]).Select(x => x.ClusterName).FirstOrDefault();
-
+                    System.IO.File.WriteAllText(filePath, "Property name - " + propertyName);
                     if (currentClusterName != null && currentClusterName != clusterName)
                     {
 
@@ -696,7 +702,7 @@ namespace hotel_api.Controllers
                         worksheet.Cell(currentRow, i + 1).Style.Font.FontSize = 10;
 
                     }
-
+                    System.IO.File.WriteAllText(filePath, "Columns added - " + propertyName);
                     //worksheet.Range(currentRow, 1, currentRow, table.Columns.Count).Style.Fill.BackgroundColor = XLColor.FromArgb(79, 129, 189);  // Same as #4F81BD
                     //worksheet.Range(currentRow, 1, currentRow, table.Columns.Count).Style
                     //    .Font.Bold = true;
@@ -798,13 +804,18 @@ namespace hotel_api.Controllers
 
                 //adjust column width
                 worksheet.Columns().AdjustToContents();
-
+                System.IO.File.WriteAllText(filePath, "Content added" );
                 stream = new MemoryStream();
+
+                System.IO.File.WriteAllText(filePath, stream.ToString());
+
                 wb.SaveAs(stream);
                 return (stream,"success");
             }
             catch (Exception ex)
             {
+               
+
                 return (stream, ex.Message
                     );
             }
