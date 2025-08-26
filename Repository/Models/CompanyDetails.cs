@@ -217,15 +217,15 @@ namespace Repository.Models
                .NotNull().WithMessage("Contanct No is required")
                .Length(10)
                    .WithMessage("Contact No length should be 10 digits");
-            //RuleFor(x => x)
-            //    .MustAsync(IsUniqueProperty)
-            //    .When(x => x.PropertyId == 0)
-            //    .WithMessage("Property already exists");
+            RuleFor(x => x)
+                .MustAsync(IsUniqueProperty)
+                .When(x => x.PropertyId == 0)
+                .WithMessage("Property already exists");
 
-            //RuleFor(x => x)
-            //    .MustAsync(IsUniqueUpdateProperty)
-            //    .When(x => x.PropertyId > 0)
-            //    .WithMessage("Property already exists");
+           RuleFor(x => x)
+                .MustAsync(IsUniqueUpdateProperty)
+                .When(x => x.PropertyId > 0)
+                .WithMessage("Property already exists");
 
         }
         private async Task<bool> IsUniqueProperty(CompanyDetails cm, CancellationToken cancellationToken)
