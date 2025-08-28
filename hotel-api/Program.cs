@@ -1,4 +1,5 @@
 using hotel_api.Configurations;
+using hotel_api.Middleware;
 using hotel_api.Notifications.ReminderEmail;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -77,8 +78,8 @@ builder.Services.AddQuartzHostedService();
 var app = builder.Build();
 
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseStaticFiles(new StaticFileOptions()
 {
@@ -91,6 +92,7 @@ app.UseDirectoryBrowser(new DirectoryBrowserOptions()
     RequestPath = new PathString("/uploads")
 });
 app.UseCors("AllowAllOrigins");
+app.UseMiddleware<UserExistenceMiddleware>();
 app.UseHttpsRedirection();
 
 //app.UseSwagger();

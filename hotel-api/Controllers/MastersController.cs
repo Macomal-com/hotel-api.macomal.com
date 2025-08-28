@@ -4370,6 +4370,10 @@ namespace hotel_api.Controllers
                     return Ok(new { Code = 404, Message = "User Not Found" });
                 }
 
+                if(user.Password.ToLower() == dto.NewPassword)
+                {
+                    return Ok(new { Code = 404, Message = "New password cannot be the same as the old password." });
+                }
                 user.Password = dto.NewPassword;
 
                 (int code, string message) = CreateOrUpdateUser(user, companyId, userId, dbName);
