@@ -19,6 +19,7 @@ using System.Diagnostics.Metrics;
 using System.Globalization;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
+using Repository.RequestDTO;
 namespace hotel_api.Controllers
 {
     [Route("api/[controller]")]
@@ -2494,6 +2495,7 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string userRole = Convert.ToString(HttpContext.Request.Headers["UserRole"]);
                 string dbName = Convert.ToString(HttpContext.Request.Headers["Database"]);
 
                 var cm = _mapper.Map<UserDetails>(gm);
@@ -2501,7 +2503,7 @@ namespace hotel_api.Controllers
                 cm.ModifyDate = DateTime.Now;
                 cm.IsActive = true;
                 cm.CompanyId = companyId;
-                var validator = new UserValidator(_context);
+                var validator = new UserValidator(_context, userRole);
 
                 var result = await validator.ValidateAsync(cm);
                 if (!result.IsValid)
@@ -2544,6 +2546,7 @@ namespace hotel_api.Controllers
             {
                 int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
                 int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string userRole = Convert.ToString(HttpContext.Request.Headers["UserRole"]);
                 string dbName = Convert.ToString(HttpContext.Request.Headers["Database"]);
                 if (patchDocument == null)
                 {
@@ -2561,13 +2564,23 @@ namespace hotel_api.Controllers
                 patchDocument.ApplyTo(gm, ModelState);
                 if (gm.IsActive == false)
                 {
-                    (int code1, string message1) = CreateOrUpdateUser(gm, companyId, userId, dbName);
+                    bool isAuthorized = new UserValidator(_context, userRole).IsAuthorized(gm.Roles, userRole);
+                    if (isAuthorized)
+                    {
+                        (int code1, string message1) = CreateOrUpdateUser(gm, companyId, userId, dbName);
 
-                    return Ok(new { Code = code1, Message = message1 });
+                        return Ok(new { Code = code1, Message = message1 });
+                    }
+                    else
+                    {
+
+                        return Ok(new { Code = 400, Message = $"{userRole} cannot delete {gm.Roles}" });
+                    }
+                    
                     //await _context.SaveChangesAsync();
                     //return Ok(new { Code = 200, Message = "User deleted successfully!" });
                 }
-                var validator = new UserValidator(_context);
+                var validator = new UserValidator(_context, userRole);
                 var result = await validator.ValidateAsync(gm);
                 if (!result.IsValid)
                 {
@@ -3541,7 +3554,7 @@ namespace hotel_api.Controllers
 
                 await _context.SaveChangesAsync();
 
-                return Ok(new { Code = 200, Message = "Policy updated successfully" });
+                return Ok(new { Code = 200, Message = "Cancel Policy updated successfully" });
             }
             catch (Exception ex)
             {
@@ -4326,5 +4339,52 @@ namespace hotel_api.Controllers
             }
 
         }
+
+        [HttpPost("ChangePassword")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+
+            try
+            {
+                int companyId = Convert.ToInt32(HttpContext.Request.Headers["CompanyId"]);
+                int userId = Convert.ToInt32(HttpContext.Request.Headers["UserId"]);
+                string userRole = Convert.ToString(HttpContext.Request.Headers["UserRole"]);
+                string dbName = Convert.ToString(HttpContext.Request.Headers["Database"]);
+
+                var validator = new ChangePasswordDtoValidator();
+                var result = await validator.ValidateAsync(dto);
+                if (!result.IsValid)
+                {
+                    var firstError = result.Errors.FirstOrDefault();
+                    if (firstError != null)
+                    {
+                        return Ok(new { Code = 202, message = firstError.ErrorMessage });
+                    }
+                }
+
+
+                var user = await _context.UserDetails.FirstOrDefaultAsync(x=>x.UserId == dto.UserId && x.IsActive == true);
+
+                if (user == null)
+                {
+                    return Ok(new { Code = 404, Message = "User Not Found" });
+                }
+
+                user.Password = dto.NewPassword;
+
+                (int code, string message) = CreateOrUpdateUser(user, companyId, userId, dbName);
+
+                return Ok(new { Code = code, Message = code ==200 ? "Password updated successfully" : message });
+              
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Code = 500, Message = Constants.Constants.ErrorMessage });
+            }
+
+        }
+
+
+
     }
 }

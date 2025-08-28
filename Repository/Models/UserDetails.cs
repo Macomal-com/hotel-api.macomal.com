@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
 using RepositoryModels.Repository;
 using System;
 using System.Collections.Generic;
@@ -62,9 +63,19 @@ namespace Repository.Models
     public class UserValidator : AbstractValidator<UserDetails>
     {
         private readonly DbContextSql _context;
-        public UserValidator(DbContextSql context)
+        private readonly string _currentUserRole;
+        public UserValidator(DbContextSql context, string currentUserRole)
         {
             _context = context;
+            _currentUserRole = currentUserRole;
+            RuleFor(x => x.Roles)
+     .Cascade(CascadeMode.Stop)
+     .NotEmpty()
+     .Must(role => IsAuthorized(role, _currentUserRole))
+     .WithMessage(x=> $"{_currentUserRole} cannot add/update {x.Roles}");
+
+
+
             RuleFor(x => x.UserName)
                 .Cascade(CascadeMode.Stop)
                 .NotNull().WithMessage("User Name is required")
@@ -91,6 +102,23 @@ namespace Repository.Models
                 .MustAsync(IsUniqueUpdateUserName)
                 .When(x => x.UserId > 0)
                 .WithMessage("UserName already exists");
+        }
+
+        public bool IsAuthorized(string role, string logginUserRole)
+        {
+            if(logginUserRole == "Member" && role == "Admin")
+            {
+                return false;
+            }
+            else if(logginUserRole == "Admin" && role == "SuperAdmin")
+            {
+                return false;
+            }
+            else if (logginUserRole == "Admin" && role == "Admin")
+            {
+                return false;
+            }
+            return true;
         }
         private async Task<bool> IsUniqueUserName(UserDetails ud, CancellationToken cancellationToken)
         {

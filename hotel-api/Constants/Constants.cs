@@ -9,6 +9,8 @@ namespace hotel_api.Constants
 
         //user roles
         public static string SuperAdmin = "SuperAdmin";
+        public static string Admin = "Admin";
+        public static string Member = "Member";
 
         //room rates type
         public static string Standard = "Standard";

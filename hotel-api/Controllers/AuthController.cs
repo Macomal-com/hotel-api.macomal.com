@@ -19,6 +19,7 @@ namespace hotel_api.Controllers
         private int companyId;
         private string financialYear = string.Empty;
         private int userId;
+        private string currentUserRole = string.Empty;
         public AuthController(DbContextSql context, IHttpContextAccessor httpContextAccessor)
         {
             _context = context;
@@ -41,6 +42,11 @@ namespace hotel_api.Controllers
                 int.TryParse(userIdHeader, out int id))
                 {
                     this.userId = id;
+                }
+
+                if (headers.TryGetValue("UserRole", out var userRoleHeader))
+                {
+                    this.currentUserRole = userRoleHeader.ToString();
                 }
             }
         }
@@ -670,13 +676,36 @@ namespace hotel_api.Controllers
         {
             try
             {
-                var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Roles != Constants.Constants.SuperAdmin).Select(x => new
+                if(currentUserRole == Constants.Constants.Member)
                 {
-                    UserId = x.UserId,
-                    UserName = x.UserName
-                }).ToListAsync(); 
+                    var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Roles == Constants.Constants.Member).Select(x => new
+                    {
+                        UserId = x.UserId,
+                        UserName = x.UserName
+                    }).ToListAsync();
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", users = users });
+                }
+                else if (currentUserRole == Constants.Constants.Admin)
+                {
+                    var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Roles == Constants.Constants.Admin).Select(x => new
+                    {
+                        UserId = x.UserId,
+                        UserName = x.UserName
+                    }).ToListAsync();
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", users = users });
+                }
+                else
+                {
+                    var users = await _context.UserDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.Roles != Constants.Constants.SuperAdmin).Select(x => new
+                    {
+                        UserId = x.UserId,
+                        UserName = x.UserName
+                    }).ToListAsync();
+
+                    return Ok(new { Code = 200, Message = "Data fetched successfully", users = users });
+                }
+                   
                
-                return Ok(new { Code = 200, Message = "Data fetched successfully",users = users });
             }
             catch (Exception ex)
             {

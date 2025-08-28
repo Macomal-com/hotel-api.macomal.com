@@ -45,6 +45,17 @@ public class AddRequiredHeaderParameter : IOperationFilter
 
             operation.Parameters.Add(new OpenApiParameter
             {
+                Name = "UserRole",
+                In = ParameterLocation.Header,
+                Required = false, // Set to true if the header is required
+                Schema = new OpenApiSchema
+                {
+                    Type = "string" // Adjust the type based on your header's type
+                }
+            });
+
+            operation.Parameters.Add(new OpenApiParameter
+            {
                 Name = "FinancialYear",
                 In = ParameterLocation.Header,
                 Required = false, // Set to true if the header is required
