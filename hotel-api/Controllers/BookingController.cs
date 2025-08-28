@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Azure;
 using hotel_api.Constants;
 using hotel_api.GeneralMethods;
 using hotel_api.Notifications;
@@ -577,7 +578,7 @@ namespace hotel_api.Controllers
                         totalTransactionAmout = paymentDetails.TransactionAmount;
                     }
                     paymentDetails.ReservationNo = request.ReservationDetailsDTO.ReservationNo;
-                    paymentDetails.PaymentLeft = request.PaymentDetailsDTO.PaymentAmount - paymentDetails.TransactionAmount;
+                    paymentDetails.PaymentLeft = request.PaymentDetailsDTO.PaymentAmount;
                     await _context.PaymentDetails.AddAsync(paymentDetails);
 
                 }
@@ -1121,7 +1122,8 @@ namespace hotel_api.Controllers
                                                             TransactionAmount = x.TransactionAmount,
                                                             TransactionType = x.TransactionType,
                                                             TransactionCharges = x.TransactionCharges,
-                                                            IsEditable = (x.PaymentAmount - x.TransactionAmount) != x.PaymentLeft ? false : true
+                                                            IsEditable = (x.PaymentAmount) != x.PaymentLeft ? false : true,
+                                                            TotalAmount = x.PaymentAmount + x.TransactionAmount
                                                         }).ToListAsync();
 
 
@@ -1516,7 +1518,7 @@ namespace hotel_api.Controllers
                             {
                                 payment.TransactionAmount = 0;
                             }
-                            payment.PaymentLeft = paymentDetails.PaymentAmount - payment.TransactionAmount;
+                            payment.PaymentLeft = paymentDetails.PaymentAmount;
                             transactionCharges = transactionCharges + payment.TransactionAmount;
                             payment.UpdatedDate = currentDate;
                         }
@@ -1542,7 +1544,7 @@ namespace hotel_api.Controllers
                         }
 
                     }
-                    paymentDetails.PaymentLeft = paymentDetails.PaymentAmount - paymentDetails.TransactionAmount;
+                    paymentDetails.PaymentLeft = paymentDetails.PaymentAmount;
                     transactionCharges = transactionCharges + paymentDetails.TransactionAmount;
                     Constants.Constants.SetMastersDefault(paymentDetails, companyId, userId, currentDate);
                     await _context.PaymentDetails.AddAsync(paymentDetails);
@@ -2740,7 +2742,7 @@ namespace hotel_api.Controllers
                                                      TransactionAmount = pay.TransactionAmount,
                                                      TransactionType = pay.TransactionType,
                                                      TransactionCharges = pay.TransactionCharges,
-                                                     IsEditable = (pay.PaymentAmount - pay.TransactionAmount) != pay.PaymentLeft ? false : true
+                                                     IsEditable = pay.PaymentAmount != pay.PaymentLeft ? false : true
                                                  }).ToListAsync();
 
 
@@ -3015,7 +3017,7 @@ namespace hotel_api.Controllers
                                                      TransactionAmount = pay.TransactionAmount,
                                                      TransactionType = pay.TransactionType,
                                                      TransactionCharges = pay.TransactionCharges,
-                                                     IsEditable = (pay.PaymentAmount - pay.TransactionAmount) != pay.PaymentLeft ? false : true
+                                                     IsEditable = (pay.PaymentAmount) != pay.PaymentLeft ? false : true
                                                  }).ToListAsync();
 
 
@@ -3406,12 +3408,14 @@ namespace hotel_api.Controllers
                             if (balance >= pay.PaymentLeft)
                             {
                                 booking.ReceivedAmount = booking.ReceivedAmount + pay.PaymentLeft;
-
-                                pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, pay.PaymentLeft));
-
+                                var paymentUsed = pay.PaymentLeft;
                                 pay.RefundAmount = 0;
                                 pay.PaymentLeft = 0;
                                 pay.IsReceived = true;
+
+                                pay.InvoiceHistories.Add(CreateInvoiceHistory(booking, pay, paymentUsed));
+
+                                
 
                                 booking.BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(booking) : CalculateBalanceCancelAmount(booking);
 
@@ -3670,12 +3674,14 @@ namespace hotel_api.Controllers
                                 else
                                 {
                                     bookings[i].ReceivedAmount += payments[paymentIndex].PaymentLeft;
+                                    var paymentUsed = payments[paymentIndex].PaymentLeft;
                                     currentBalance = currentBalance - payments[paymentIndex].PaymentLeft;
                                     payments[paymentIndex].PaymentLeft = 0;
                                     payments[paymentIndex].IsReceived = true;
 
-                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], payments[paymentIndex].PaymentLeft));
+                                    payments[paymentIndex].InvoiceHistories.Add(CreateInvoiceHistory(bookings[i], payments[paymentIndex], paymentUsed));
 
+                                   
                                     bookings[i].BalanceAmount = status == Constants.Constants.CheckOut ? CalculateCheckOutBalanceBooking(bookings[i]) : CalculateBalanceCancelAmount(bookings[i]);
                                 }
                                 paymentIndex++;
@@ -4248,7 +4254,43 @@ namespace hotel_api.Controllers
 
 
 
-                List<PaymentDetails> paymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.PaymentLeft > 0 && x.ReservationNo == reservationNo).ToListAsync();
+                List<PaymentDetails> paymentDetails =  await (from pay in _context.PaymentDetails
+                                                               join room in _context.RoomMaster on pay.RoomId equals room.RoomId into rooms
+                                                               from roommaster in rooms.DefaultIfEmpty()
+                                                               where pay.IsActive == true && pay.IsReceived == false && pay.PaymentLeft > 0 && pay.CompanyId == companyId && pay.ReservationNo == reservationNo
+                                                               select new PaymentDetails
+                                                               {
+                                                                   PaymentId = pay.PaymentId,
+                                                                   BookingId = pay.BookingId,
+                                                                   ReservationNo = pay.ReservationNo,
+                                                                   PaymentDate = pay.PaymentDate,
+                                                                   PaymentMethod = pay.PaymentMethod,
+                                                                   TransactionId = pay.TransactionId,
+                                                                   PaymentStatus = pay.PaymentStatus,
+                                                                   PaymentType = pay.PaymentType,
+                                                                   BankName = pay.BankName,
+                                                                   PaymentReferenceNo = pay.PaymentReferenceNo,
+                                                                   PaidBy = pay.PaidBy,
+                                                                   Remarks = pay.Remarks,
+                                                                   Other1 = pay.Other1,
+                                                                   Other2 = pay.Other2,
+                                                                   IsActive = pay.IsActive,
+                                                                   IsReceived = pay.IsReceived,
+                                                                   RoomId = pay.RoomId,
+                                                                   UserId = pay.UserId,
+                                                                   PaymentFormat = pay.PaymentFormat,
+                                                                   RefundAmount = pay.RefundAmount,
+                                                                   PaymentAmount = pay.PaymentAmount,
+                                                                   PaymentLeft = pay.PaymentLeft,
+                                                                   CreatedDate = pay.CreatedDate,
+                                                                   UpdatedDate = pay.UpdatedDate,
+                                                                   CompanyId = pay.CompanyId,
+                                                                   RoomNo = roommaster != null ? roommaster.RoomNo : "",
+                                                                   TransactionAmount = pay.TransactionAmount,
+                                                                   TransactionType = pay.TransactionType,
+                                                                   TransactionCharges = pay.TransactionCharges,
+                                                                   IsEditable = pay.PaymentAmount != pay.PaymentLeft ? false : true
+                                                               }).ToListAsync();
 
 
                 List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == property.CancelCalculatedBy).ToListAsync();
@@ -4446,10 +4488,47 @@ namespace hotel_api.Controllers
 
                 cancelBookingResponse.IsAllCancel = allbookingDetails.Count == bookingDetails.Count ? true : false;
 
+                List<PaymentDetails> paymentDetails = await (from pay in _context.PaymentDetails
+                                                 join room in _context.RoomMaster on pay.RoomId equals room.RoomId into rooms
+                                                 from roommaster in rooms.DefaultIfEmpty()
+                                                 where pay.IsActive == true && pay.IsReceived == false && pay.PaymentLeft > 0 && pay.CompanyId == companyId && pay.ReservationNo == request.ReservationNo
+                                                  select new PaymentDetails
+                                                 {
+                                                     PaymentId = pay.PaymentId,
+                                                     BookingId = pay.BookingId,
+                                                     ReservationNo = pay.ReservationNo,
+                                                     PaymentDate = pay.PaymentDate,
+                                                     PaymentMethod = pay.PaymentMethod,
+                                                     TransactionId = pay.TransactionId,
+                                                     PaymentStatus = pay.PaymentStatus,
+                                                     PaymentType = pay.PaymentType,
+                                                     BankName = pay.BankName,
+                                                     PaymentReferenceNo = pay.PaymentReferenceNo,
+                                                     PaidBy = pay.PaidBy,
+                                                     Remarks = pay.Remarks,
+                                                     Other1 = pay.Other1,
+                                                     Other2 = pay.Other2,
+                                                     IsActive = pay.IsActive,
+                                                     IsReceived = pay.IsReceived,
+                                                     RoomId = pay.RoomId,
+                                                     UserId = pay.UserId,
+                                                     PaymentFormat = pay.PaymentFormat,
+                                                     RefundAmount = pay.RefundAmount,
+                                                     PaymentAmount = pay.PaymentAmount,
+                                                     PaymentLeft = pay.PaymentLeft,
+                                                     CreatedDate = pay.CreatedDate,
+                                                     UpdatedDate = pay.UpdatedDate,
+                                                     CompanyId = pay.CompanyId,
+                                                     RoomNo = roommaster != null ? roommaster.RoomNo : "",
+                                                     TransactionAmount = pay.TransactionAmount,
+                                                     TransactionType = pay.TransactionType,
+                                                     TransactionCharges = pay.TransactionCharges,
+                                                     IsEditable = pay.PaymentAmount != pay.PaymentLeft ? false : true
+                                                 }).ToListAsync();
 
 
 
-                List<PaymentDetails> paymentDetails = await _context.PaymentDetails.Where(x => x.IsActive == true && x.CompanyId == companyId && x.PaymentLeft > 0 && x.ReservationNo == request.ReservationNo).ToListAsync();
+                 
 
 
                 List<CancelPolicyMaster> cancelPolicies = await _context.CancelPolicyMaster.Where(x => x.IsActive == true && x.CompanyId == companyId && x.DeductionBy == property.CancelCalculatedBy).ToListAsync();
@@ -6465,7 +6544,7 @@ namespace hotel_api.Controllers
             invoiceHistory.BookingId = booking.BookingId;
             invoiceHistory.ReservationNo = booking.ReservationNo;
             invoiceHistory.RoomId = booking.RoomId;
-            invoiceHistory.PaymentAmount = payment.PaymentAmount - payment.TransactionAmount;
+            invoiceHistory.PaymentAmount = payment.PaymentAmount;
             invoiceHistory.PaymentStatus = payment.PaymentStatus;
             invoiceHistory.PaymentAmountUsed = paymentUsed;
             invoiceHistory.PaymentLeft = payment.PaymentLeft;
@@ -6648,7 +6727,7 @@ namespace hotel_api.Controllers
         {
 
             var summary = new PaymentCheckInSummary();
-
+            summary.TotalRooms = bookings.Count;
 
             foreach (var item in bookings)
             {

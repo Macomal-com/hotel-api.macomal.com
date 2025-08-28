@@ -46,6 +46,10 @@ namespace Repository.Models
         public bool IsEditable { get; set; }
 
         [NotMapped]
+        public decimal TotalAmount { get; set; }
+
+
+        [NotMapped]
         public string RoomNo { get; set; } = string.Empty;
 
         [NotMapped]

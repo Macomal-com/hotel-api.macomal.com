@@ -23,6 +23,7 @@ namespace Repository.DTO
 
     public class PaymentCheckInSummary
     {
+        public int TotalRooms { get; set; }
         public decimal RoomAmount { get; set; }
         public decimal GstAmount { get; set; }
         public decimal EarlyCheckIn { get; set; }
